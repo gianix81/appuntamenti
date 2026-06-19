@@ -44,13 +44,14 @@ async function showNotification(title: string, body: string, tag: string) {
   const reg = await navigator.serviceWorker.ready
   await reg.showNotification(title, {
     body,
-    icon:             '/icons/icon-192.png',
-    badge:            '/icons/icon-192.png',
+    icon:               '/icons/icon-192.png',
+    badge:              '/icons/icon-192.png',
     tag,
-    requireInteraction: true,   // rimane visibile finché l'utente non la chiude
-    vibrate:          [300, 100, 300, 100, 300],
-    data:             { url: '/dashboard' },
-  })
+    requireInteraction: true,
+    data:               { url: '/dashboard' },
+    // vibrate non è nei tipi TypeScript ma è supportato dai browser
+    ...({ vibrate: [300, 100, 300, 100, 300] } as object),
+  } as NotificationOptions)
 }
 
 async function checkUpcomingAppointments() {
