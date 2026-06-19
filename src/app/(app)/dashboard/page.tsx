@@ -381,6 +381,7 @@ export default function DashboardPage() {
               appointment={apt}
               now={isToday(date) ? now : undefined}
               reminderMins={reminderMins}
+              onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
             />
           ))}
         </div>
