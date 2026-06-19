@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estetista-v1'
+const CACHE_NAME = 'appuntamenti-v2'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', event => {
@@ -37,34 +37,49 @@ self.addEventListener('fetch', event => {
   )
 })
 
-// Ricezione notifica push
+// Notifica push server-side (via web-push)
 self.addEventListener('push', event => {
   if (!event.data) return
-  const data = event.data.json()
+  let data
+  try { data = event.data.json() } catch { data = { title: 'Appuntamenti', body: event.data.text() } }
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: { url: data.url || '/dashboard' },
-      vibrate: [200, 100, 200],
+    self.registration.showNotification(data.title ?? 'Appuntamenti App', {
+      body:             data.body ?? '',
+      icon:             '/icons/icon-192.png',
+      badge:            '/icons/icon-192.png',
+      data:             { url: data.url || '/dashboard' },
+      requireInteraction: true,
+      vibrate:          [300, 100, 300, 100, 300],
+      tag:              data.tag || 'push',
     })
   )
 })
 
-// Click sulla notifica → apre l'app
+// Click sulla notifica → apre / porta in primo piano l'app
 self.addEventListener('notificationclick', event => {
   event.notification.close()
   const url = event.notification.data?.url || '/dashboard'
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // Cerca una finestra già aperta dell'app
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+        if (client.url.includes(self.location.origin)) {
           client.navigate(url)
           return client.focus()
         }
       }
+      // Nessuna finestra aperta → apri una nuova
       if (clients.openWindow) return clients.openWindow(url)
     })
   )
+})
+
+// Notifica chiusa dall'utente → togli il badge
+self.addEventListener('notificationclose', () => {
+  // Il numero badge viene gestito dalla pagina; qui proviamo a pulirlo
+  if ('clearAppBadge' in self.navigator) {
+    self.navigator.clearAppBadge().catch(() => {})
+  }
 })
