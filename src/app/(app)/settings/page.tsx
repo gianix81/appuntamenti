@@ -4,15 +4,19 @@ import { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
+import { useReminderContext } from '@/components/layout/ReminderCheckerProvider'
+import { clearAllNotified, type CheckResult } from '@/hooks/useReminderChecker'
 import type { Settings } from '@/types/database'
-import { Bell, BellOff, CheckCircle } from 'lucide-react'
+import { Bell, BellOff, CheckCircle, RefreshCw } from 'lucide-react'
 
 export default function SettingsPage() {
-  const [settings, setSettings]   = useState<Settings | null>(null)
-  const [loading, setLoading]     = useState(true)
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-  const [testSent, setTestSent]   = useState(false)
+  const [settings, setSettings] = useState<Settings | null>(null)
+  const [loading, setLoading]   = useState(true)
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
+  const [testSent, setTestSent] = useState(false)
+  const [checkResult, setCheckResult] = useState<CheckResult | null>(null)
+  const [checking, setChecking] = useState(false)
   const [form, setForm] = useState({
     center_name:      '',
     phone_number:     '',
@@ -21,6 +25,7 @@ export default function SettingsPage() {
   })
 
   const { permission, subscribed, subscribe, unsubscribe } = usePushNotifications()
+  const { forceCheck } = useReminderContext()
 
   useEffect(() => {
     async function load() {
@@ -81,6 +86,18 @@ export default function SettingsPage() {
     }
     setTestSent(true)
     setTimeout(() => setTestSent(false), 3000)
+  }
+
+  async function handleForceCheck() {
+    setChecking(true)
+    setCheckResult(null)
+    try {
+      clearAllNotified() // resetta la cache localStorage
+      const result = await forceCheck()
+      setCheckResult(result)
+    } finally {
+      setChecking(false)
+    }
   }
 
   if (loading) return (
@@ -170,6 +187,26 @@ export default function SettingsPage() {
                 className="flex-1 text-sm border border-red-200 hover:bg-red-50 text-red-500 font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
                 <BellOff className="w-4 h-4" /> Disattiva
               </button>
+            </div>
+
+            {/* Verifica promemoria */}
+            <div className="border-t border-slate-100 pt-3 space-y-2">
+              <button
+                onClick={handleForceCheck}
+                disabled={checking}
+                className="w-full flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
+                {checking ? 'Verifica in corso…' : 'Verifica ora (forza promemoria)'}
+              </button>
+              {checkResult && (
+                <div className={`rounded-xl px-4 py-3 text-xs font-mono ${checkResult.ok ? 'bg-slate-50 text-slate-600' : 'bg-red-50 text-red-600'}`}>
+                  {checkResult.message}
+                  {checkResult.found > 0 && (
+                    <span className="ml-2 text-slate-400">· trovati: {checkResult.found}</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ) : (
