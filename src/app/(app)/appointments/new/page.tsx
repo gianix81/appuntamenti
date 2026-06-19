@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 
 export default function NewAppointmentPage() {
