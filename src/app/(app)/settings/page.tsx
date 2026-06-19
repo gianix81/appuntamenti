@@ -91,28 +91,28 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">Nome centro *</label>
             <input required value={form.center_name}
               onChange={e => setForm(p => ({ ...p, center_name: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
               placeholder="Il Mio Centro Estetico" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Telefono del centro</label>
             <input type="tel" value={form.phone_number}
               onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
               placeholder="+39 02 1234567" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Indirizzo</label>
             <input value={form.address}
               onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
               placeholder="Via Roma 1, Milano" />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Anticipo promemoria</label>
             <select value={form.reminder_minutes}
               onChange={e => setForm(p => ({ ...p, reminder_minutes: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
               <option value="15">15 minuti prima</option>
               <option value="30">30 minuti prima</option>
               <option value="60">1 ora prima</option>

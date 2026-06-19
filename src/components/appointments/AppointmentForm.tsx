@@ -94,7 +94,7 @@ export function AppointmentForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
         <select required value={form.client_id} onChange={e => set('client_id', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
           <option value="">Seleziona cliente…</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.last_name} {c.first_name} — {c.phone}</option>)}
         </select>
@@ -103,7 +103,7 @@ export function AppointmentForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Servizio *</label>
         <select required value={form.service_id} onChange={e => set('service_id', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
           <option value="">Seleziona servizio…</option>
           {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration_minutes} min — €{Number(s.price).toFixed(2)})</option>)}
         </select>
@@ -115,7 +115,7 @@ export function AppointmentForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Data e ora *</label>
         <input required type="datetime-local" value={form.start_time} onChange={e => set('start_time', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
       </div>
 
       {existing && (
@@ -123,7 +123,7 @@ export function AppointmentForm({ existing }: Props) {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Stato</label>
             <select value={form.status} onChange={e => set('status', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
               <option value="scheduled">Programmato</option>
               <option value="confirmed">Confermato</option>
               <option value="cancelled">Annullato</option>
@@ -134,7 +134,7 @@ export function AppointmentForm({ existing }: Props) {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Conferma</label>
             <select value={form.confirmation_status} onChange={e => set('confirmation_status', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
               <option value="pending">In attesa</option>
               <option value="confirmed">Confermato</option>
               <option value="declined">Rifiutato</option>

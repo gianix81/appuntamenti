@@ -61,23 +61,23 @@ export function ClientForm({ existing }: Props) {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Nome *</label>
           <input required value={form.first_name} onChange={e => set('first_name', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="Maria" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="Maria" />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Cognome *</label>
           <input required value={form.last_name} onChange={e => set('last_name', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="Rossi" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="Rossi" />
         </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Telefono *</label>
         <input required type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="+39 333 1234567" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="+39 333 1234567" />
       </div>
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
         <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="maria@email.com" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="maria@email.com" />
       </div>
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Note</label>

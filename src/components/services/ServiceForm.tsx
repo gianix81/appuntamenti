@@ -57,18 +57,18 @@ export function ServiceForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Nome servizio *</label>
         <input required value={form.name} onChange={e => set('name', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" placeholder="Es. Manicure, Pulizia viso…" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="Es. Manicure, Pulizia viso…" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Durata (minuti) *</label>
           <input required type="number" min={5} step={5} value={form.duration_minutes} onChange={e => set('duration_minutes', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Prezzo (€) *</label>
           <input required type="number" min={0} step={0.5} value={form.price} onChange={e => set('price', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
         </div>
       </div>
       <div>
