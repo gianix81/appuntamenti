@@ -62,7 +62,7 @@ export default function SettingsPage() {
   async function handleTestNotification() {
     if (!('Notification' in window)) return
     if (Notification.permission !== 'granted') return
-    new Notification('Test notifica Estetista App', {
+    new Notification('Test notifica Appuntamenti App', {
       body: 'Le notifiche funzionano correttamente!',
       icon: '/icons/icon-192.png',
     })

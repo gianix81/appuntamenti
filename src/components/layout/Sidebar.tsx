@@ -39,7 +39,7 @@ export function Sidebar() {
           <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center">
             <Scissors className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-gray-800 text-sm leading-tight">Estetista<br/>App</span>
+          <span className="font-bold text-gray-800 text-sm leading-tight">Appuntamenti<br/>App</span>
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 {
-  "name": "Estetista App",
-  "short_name": "Estetista",
-  "description": "Gestione appuntamenti per centro estetico",
+  "name": "Appuntamenti App",
+  "short_name": "Appuntamenti",
+  "description": "Gestione appuntamenti con promemoria WhatsApp",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#fff1f2",

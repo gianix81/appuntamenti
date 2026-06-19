@@ -5,13 +5,13 @@ import './globals.css'
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
 export const metadata: Metadata = {
-  title: 'Estetista App',
+  title: 'Appuntamenti App',
   description: 'Gestione appuntamenti per centro estetico con promemoria SMS',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Estetista App',
+    title: 'Appuntamenti App',
   },
 }
 
