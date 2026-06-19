@@ -33,13 +33,13 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-white border-r border-gray-100 py-6 px-3">
+    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-blue-950 border-r border-blue-900 py-6 px-3">
       <div className="px-3 mb-8">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-rose-500 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-sky-400 flex items-center justify-center">
             <Scissors className="w-4 h-4 text-white" />
           </div>
-          <span className="font-bold text-gray-800 text-sm leading-tight">Appuntamenti<br/>App</span>
+          <span className="font-bold text-white text-sm leading-tight">Appuntamenti<br/>App</span>
         </div>
       </div>
 
@@ -51,8 +51,8 @@ export function Sidebar() {
             className={clsx(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
               pathname.startsWith(href)
-                ? 'bg-rose-50 text-rose-600'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-white/10 text-white'
+                : 'text-blue-200 hover:bg-white/10 hover:text-white'
             )}
           >
             <Icon className="w-4 h-4 shrink-0" />
@@ -63,7 +63,7 @@ export function Sidebar() {
 
       <button
         onClick={handleLogout}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors mt-4"
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-blue-300 hover:bg-white/10 hover:text-white transition-colors mt-4"
       >
         <LogOut className="w-4 h-4 shrink-0" />
         Esci

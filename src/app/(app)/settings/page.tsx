@@ -72,47 +72,47 @@ export default function SettingsPage() {
 
   if (loading) return (
     <div className="p-6">
-      <div className="w-6 h-6 border-2 border-rose-300 border-t-rose-500 rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
     </div>
   )
 
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto w-full space-y-6">
       <div className="mb-2">
-        <h1 className="text-xl font-bold text-gray-800">Impostazioni</h1>
-        <p className="text-gray-400 text-sm">Configura il tuo centro estetico</p>
+        <h1 className="text-xl font-bold text-slate-800">Impostazioni</h1>
+        <p className="text-slate-400 text-sm">Configura il tuo centro estetico</p>
       </div>
 
       {/* Centro */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Dati del centro</h2>
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <h2 className="text-sm font-semibold text-slate-700 mb-4">Dati del centro</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome centro *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nome centro *</label>
             <input required value={form.center_name}
               onChange={e => setForm(p => ({ ...p, center_name: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
               placeholder="Il Mio Centro Estetico" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Telefono del centro</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Telefono del centro</label>
             <input type="tel" value={form.phone_number}
               onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
               placeholder="+39 02 1234567" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Indirizzo</label>
             <input value={form.address}
               onChange={e => setForm(p => ({ ...p, address: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
               placeholder="Via Roma 1, Milano" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Anticipo promemoria</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Anticipo promemoria</label>
             <select value={form.reminder_minutes}
               onChange={e => setForm(p => ({ ...p, reminder_minutes: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
               <option value="15">15 minuti prima</option>
               <option value="30">30 minuti prima</option>
               <option value="60">1 ora prima</option>
@@ -121,16 +121,16 @@ export default function SettingsPage() {
             </select>
           </div>
           <button type="submit" disabled={saving}
-            className="w-full bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
             {saving ? 'Salvataggio…' : saved ? '✓ Salvato!' : 'Salva impostazioni'}
           </button>
         </form>
       </div>
 
       {/* Notifiche */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <h2 className="text-sm font-semibold text-gray-700 mb-1">Notifiche promemoria</h2>
-        <p className="text-xs text-gray-400 mb-4">
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <h2 className="text-sm font-semibold text-slate-700 mb-1">Notifiche promemoria</h2>
+        <p className="text-xs text-slate-400 mb-4">
           Ricevi una notifica sul dispositivo prima di ogni appuntamento per decidere se inviare un messaggio WhatsApp al cliente.
         </p>
 
@@ -150,7 +150,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex gap-2">
               <button onClick={handleTestNotification}
-                className="flex-1 text-sm border border-gray-200 hover:bg-gray-50 text-gray-600 font-medium py-2.5 rounded-xl transition-colors">
+                className="flex-1 text-sm border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium py-2.5 rounded-xl transition-colors">
                 {testSent ? '✓ Inviata!' : 'Prova notifica'}
               </button>
               <button onClick={unsubscribe}
@@ -161,7 +161,7 @@ export default function SettingsPage() {
           </div>
         ) : (
           <button onClick={subscribe}
-            className="w-full flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
             <Bell className="w-4 h-4" />
             Attiva notifiche
           </button>

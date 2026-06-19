@@ -17,7 +17,7 @@ export function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 flex">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 flex">
       {nav.map(({ href, label, icon: Icon }) => (
         <Link
           key={href}
@@ -25,8 +25,8 @@ export function MobileNav() {
           className={clsx(
             'flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-xs font-medium transition-colors',
             pathname.startsWith(href)
-              ? 'text-rose-500'
-              : 'text-gray-400 hover:text-gray-600'
+              ? 'text-blue-600'
+              : 'text-slate-400 hover:text-slate-600'
           )}
         >
           <Icon className="w-5 h-5" />

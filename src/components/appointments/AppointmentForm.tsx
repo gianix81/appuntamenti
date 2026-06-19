@@ -92,38 +92,38 @@ export function AppointmentForm({ existing }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
         <select required value={form.client_id} onChange={e => set('client_id', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm bg-white">
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
           <option value="">Seleziona cliente…</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.last_name} {c.first_name} — {c.phone}</option>)}
         </select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Servizio *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Servizio *</label>
         <select required value={form.service_id} onChange={e => set('service_id', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm bg-white">
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
           <option value="">Seleziona servizio…</option>
           {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.duration_minutes} min — €{Number(s.price).toFixed(2)})</option>)}
         </select>
         {selectedService && form.start_time && (
-          <p className="text-xs text-gray-400 mt-1">Fine prevista: {format(addMinutes(new Date(form.start_time), selectedService.duration_minutes), 'HH:mm')}</p>
+          <p className="text-xs text-slate-400 mt-1">Fine prevista: {format(addMinutes(new Date(form.start_time), selectedService.duration_minutes), 'HH:mm')}</p>
         )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Data e ora *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Data e ora *</label>
         <input required type="datetime-local" value={form.start_time} onChange={e => set('start_time', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
       </div>
 
       {existing && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Stato</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Stato</label>
             <select value={form.status} onChange={e => set('status', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
               <option value="scheduled">Programmato</option>
               <option value="confirmed">Confermato</option>
               <option value="cancelled">Annullato</option>
@@ -132,9 +132,9 @@ export function AppointmentForm({ existing }: Props) {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Conferma</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Conferma</label>
             <select value={form.confirmation_status} onChange={e => set('confirmation_status', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm bg-white">
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white">
               <option value="pending">In attesa</option>
               <option value="confirmed">Confermato</option>
               <option value="declined">Rifiutato</option>
@@ -145,18 +145,18 @@ export function AppointmentForm({ existing }: Props) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Note</label>
         <textarea rows={3} value={form.notes} onChange={e => set('notes', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-rose-300 text-sm resize-none" placeholder="Note interne…" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none" placeholder="Note interne…" />
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">{error}</div>}
 
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={() => router.back()}
-          className="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors">Annulla</button>
+          className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">Annulla</button>
         <button type="submit" disabled={loading}
-          className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Salva appuntamento'}
         </button>
       </div>

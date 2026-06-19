@@ -73,7 +73,6 @@ export default function DashboardPage() {
         setError('Sessione scaduta. Ricarica la pagina o accedi di nuovo.')
         return
       }
-      // Assicura che il token sia disponibile prima della query Firestore
       await auth.currentUser?.getIdToken()
       const list = await fetchAppointmentsWithRelations(date)
       setAppointments(list)
@@ -101,32 +100,32 @@ export default function DashboardPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto w-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">{isToday(date) ? 'Oggi' : format(date, 'EEEE', { locale: it })}</h1>
-          <p className="text-gray-400 text-sm capitalize">{format(date, 'd MMMM yyyy', { locale: it })}</p>
+          <h1 className="text-xl font-bold text-slate-800">{isToday(date) ? 'Oggi' : format(date, 'EEEE', { locale: it })}</h1>
+          <p className="text-slate-400 text-sm capitalize">{format(date, 'd MMMM yyyy', { locale: it })}</p>
         </div>
-        <Link href="/appointments/new" className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+        <Link href="/appointments/new" className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
           <Plus className="w-4 h-4" /> Nuovo
         </Link>
       </div>
 
-      <div className="flex items-center justify-between bg-white rounded-2xl border border-gray-100 p-3 mb-4">
-        <button onClick={prevDay} className="p-2 hover:bg-gray-50 rounded-xl transition-colors"><ChevronLeft className="w-4 h-4 text-gray-500" /></button>
-        <button onClick={() => setDate(new Date())} className="text-sm font-medium text-gray-700 hover:text-rose-500 transition-colors">
+      <div className="flex items-center justify-between bg-white rounded-2xl border border-slate-100 p-3 mb-4">
+        <button onClick={prevDay} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><ChevronLeft className="w-4 h-4 text-slate-500" /></button>
+        <button onClick={() => setDate(new Date())} className="text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors">
           {isToday(date) ? 'Oggi' : 'Vai a oggi'}
         </button>
-        <button onClick={nextDay} className="p-2 hover:bg-gray-50 rounded-xl transition-colors"><ChevronRight className="w-4 h-4 text-gray-500" /></button>
+        <button onClick={nextDay} className="p-2 hover:bg-slate-50 rounded-xl transition-colors"><ChevronRight className="w-4 h-4 text-slate-500" /></button>
       </div>
 
       {!loading && !error && appointments.length > 0 && (
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-3 text-center">
-            <p className="text-xl font-bold text-gray-800">{stats.total}</p><p className="text-xs text-gray-400">Totali</p>
+          <div className="bg-white rounded-2xl border border-slate-100 p-3 text-center">
+            <p className="text-xl font-bold text-slate-800">{stats.total}</p><p className="text-xs text-slate-400">Totali</p>
           </div>
           <div className="bg-white rounded-2xl border border-yellow-100 p-3 text-center">
-            <p className="text-xl font-bold text-yellow-600">{stats.pending}</p><p className="text-xs text-gray-400">In attesa</p>
+            <p className="text-xl font-bold text-yellow-600">{stats.pending}</p><p className="text-xs text-slate-400">In attesa</p>
           </div>
           <div className="bg-white rounded-2xl border border-green-100 p-3 text-center">
-            <p className="text-xl font-bold text-green-600">{stats.confirmed}</p><p className="text-xs text-gray-400">Confermati</p>
+            <p className="text-xl font-bold text-green-600">{stats.confirmed}</p><p className="text-xs text-slate-400">Confermati</p>
           </div>
         </div>
       )}
@@ -135,12 +134,12 @@ export default function DashboardPage() {
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
           <p className="text-red-600 text-sm font-medium mb-1">Errore di connessione</p>
           <p className="text-red-500 text-xs">{error}</p>
-          <button onClick={load} className="mt-4 text-sm text-rose-500 hover:text-rose-700 underline">Riprova</button>
+          <button onClick={load} className="mt-4 text-sm text-blue-600 hover:text-blue-700 underline">Riprova</button>
         </div>
       ) : appointments.length === 0 ? (
         <EmptyState icon={CalendarDays} title="Nessun appuntamento"
           description={`Nessun appuntamento per ${isToday(date) ? 'oggi' : format(date, 'd MMMM', { locale: it })}.`}
-          action={<Link href="/appointments/new" className="inline-flex items-center gap-2 bg-rose-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-rose-600 transition-colors"><Plus className="w-4 h-4" /> Aggiungi appuntamento</Link>} />
+          action={<Link href="/appointments/new" className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"><Plus className="w-4 h-4" /> Aggiungi appuntamento</Link>} />
       ) : (
         <div className="space-y-3">
           {appointments.map(apt => (

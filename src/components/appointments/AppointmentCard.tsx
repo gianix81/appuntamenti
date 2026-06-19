@@ -30,31 +30,31 @@ export function AppointmentCard({ appointment, onSendReminder, sending }: Props)
   return (
     <div className={clsx(
       'bg-white rounded-2xl border p-4 flex gap-4',
-      isPending ? 'border-yellow-200 ring-1 ring-yellow-100' : 'border-gray-100'
+      isPending ? 'border-yellow-200 ring-1 ring-yellow-100' : 'border-slate-100'
     )}>
       <div className="flex flex-col items-center justify-center w-14 shrink-0">
-        <span className="text-xl font-bold text-rose-500">{format(start, 'HH:mm')}</span>
-        <span className="text-xs text-gray-400">{format(end, 'HH:mm')}</span>
+        <span className="text-xl font-bold text-blue-600">{format(start, 'HH:mm')}</span>
+        <span className="text-xs text-slate-400">{format(end, 'HH:mm')}</span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-semibold text-gray-800 truncate">
+            <p className="font-semibold text-slate-800 truncate">
               {appointment.clients.first_name} {appointment.clients.last_name}
             </p>
-            <div className="flex items-center gap-1 text-gray-500 text-xs mt-0.5">
+            <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
               <Scissors className="w-3 h-3 shrink-0" />
               <span className="truncate">{appointment.services.name}</span>
             </div>
-            <div className="flex items-center gap-1 text-gray-500 text-xs mt-0.5">
+            <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
               <Clock className="w-3 h-3 shrink-0" />
               <span>{appointment.services.duration_minutes} min</span>
             </div>
           </div>
           <Link
             href={`/appointments/${appointment.id}/edit`}
-            className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
           >
             <Pencil className="w-3.5 h-3.5" />
           </Link>
@@ -66,13 +66,13 @@ export function AppointmentCard({ appointment, onSendReminder, sending }: Props)
         </div>
 
         {appointment.notes && (
-          <p className="text-xs text-gray-400 mt-2 italic truncate">{appointment.notes}</p>
+          <p className="text-xs text-slate-400 mt-2 italic truncate">{appointment.notes}</p>
         )}
 
         <div className="flex items-center justify-between mt-3 gap-2">
           <a
             href={`tel:${appointment.clients.phone}`}
-            className="flex items-center gap-1 text-rose-500 text-xs font-medium hover:underline"
+            className="flex items-center gap-1 text-blue-600 text-xs font-medium hover:underline"
           >
             <Phone className="w-3 h-3" />
             {appointment.clients.phone}
