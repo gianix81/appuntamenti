@@ -1,4 +1,4 @@
-const CACHE_NAME = 'appuntamenti-v3'
+const CACHE_NAME = 'appuntamenti-v4'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', event => {
@@ -50,7 +50,7 @@ self.addEventListener('push', event => {
       badge:            '/icons/icon-192.png',
       data:             { url: data.url || '/dashboard' },
       requireInteraction: true,
-      vibrate:          [300, 100, 300, 100, 300],
+      vibrate:          [800, 200, 800, 200, 800, 200, 800, 200, 800],
       tag:              data.tag || 'push',
     })
   )

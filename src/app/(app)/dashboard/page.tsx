@@ -199,6 +199,49 @@ export default function DashboardPage() {
         </span>
       </div>
 
+      {/* ── Conto alla rovescia prossimo appuntamento ── */}
+      {isToday(date) && (() => {
+        const next = appointments.find(a => {
+          const ms = new Date(a.start_time).getTime() - now.getTime()
+          return ms > -5 * 60_000 // nasconde se passato da più di 5 min
+        })
+        if (!next) return null
+
+        const ms       = new Date(next.start_time).getTime() - now.getTime()
+        const isNow    = ms <= 0
+        const sec      = Math.max(0, Math.floor(ms / 1000))
+        const hh       = Math.floor(sec / 3600)
+        const mm       = Math.floor((sec % 3600) / 60)
+        const ss       = sec % 60
+        const timeStr  = isNow ? '⚡ ADESSO!'
+          : hh > 0 ? `${hh}h ${String(mm).padStart(2,'0')}m ${String(ss).padStart(2,'0')}s`
+          : `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`
+
+        const isVeryClose = !isNow && ms < 5  * 60_000
+        const isClose     = !isNow && ms < 30 * 60_000
+
+        const bg = isNow       ? 'bg-red-600 animate-pulse'
+                 : isVeryClose ? 'bg-red-500'
+                 : isClose     ? 'bg-amber-500'
+                 : 'bg-slate-700'
+
+        return (
+          <div className={`${bg} rounded-2xl px-5 py-4 select-none`}>
+            <p className="text-xs text-white/70 mb-1 truncate">
+              {next.clients.first_name} {next.clients.last_name} · {next.services.name}
+            </p>
+            <div className="flex items-end justify-between gap-2">
+              <span className="text-3xl font-bold text-white tabular-nums tracking-tight leading-none">
+                {timeStr}
+              </span>
+              <span className="text-sm text-white/80 font-medium shrink-0 pb-0.5">
+                alle {format(new Date(next.start_time), 'HH:mm')}
+              </span>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Mini calendario ── */}
       <div className="bg-white rounded-2xl border border-slate-100 p-4">
         {/* Navigazione mese */}

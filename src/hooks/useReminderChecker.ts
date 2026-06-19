@@ -7,11 +7,14 @@ import { auth, db } from '@/lib/firebase/client'
 import { onAuthStateChanged } from 'firebase/auth'
 
 // ── localStorage ──────────────────────────────────────────────
-const KEY = (id: string) => `notified_v2_${id}`
-const wasNotified  = (id: string) => !!localStorage.getItem(KEY(id))
-const markNotified = (id: string) => localStorage.setItem(KEY(id), '1')
+const KEY     = (id: string) => `notified_v2_${id}`
+const KEY_NOW = (id: string) => `now_v2_${id}`
+const wasNotified    = (id: string) => !!localStorage.getItem(KEY(id))
+const markNotified   = (id: string) => localStorage.setItem(KEY(id), '1')
+const wasNowNotified = (id: string) => !!localStorage.getItem(KEY_NOW(id))
+const markNowNotified = (id: string) => localStorage.setItem(KEY_NOW(id), '1')
 export function clearAllNotified() {
-  Object.keys(localStorage).filter(k => k.startsWith('notified_')).forEach(k => localStorage.removeItem(k))
+  Object.keys(localStorage).filter(k => k.startsWith('notified_') || k.startsWith('now_v2_')).forEach(k => localStorage.removeItem(k))
 }
 
 // ── Auth ──────────────────────────────────────────────────────
@@ -37,20 +40,29 @@ async function setAppBadge(n: number) {
 }
 
 // ── Suono ─────────────────────────────────────────────────────
-async function playAlarm() {
+async function playAlarm(intense = false) {
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     const ctx = new AC()
     await ctx.resume()
-    const bip = (t: number, f = 880) => {
+    const bip = (t: number, f = 880, vol = 0.7, dur = 0.35) => {
       const o = ctx.createOscillator(); const g = ctx.createGain()
       o.connect(g); g.connect(ctx.destination)
-      o.type = 'sine'; o.frequency.value = f
-      g.gain.setValueAtTime(0.6, ctx.currentTime + t)
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.35)
-      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.35)
+      o.type = 'square'; o.frequency.value = f
+      g.gain.setValueAtTime(vol, ctx.currentTime + t)
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
+      o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + dur)
     }
-    bip(0); bip(0.45); bip(0.9)
+    if (intense) {
+      // suono urgente: 5 beep acuti alternati
+      bip(0,    1046, 0.9, 0.4)
+      bip(0.5,  880,  0.9, 0.4)
+      bip(1.0,  1046, 0.9, 0.4)
+      bip(1.5,  880,  0.9, 0.4)
+      bip(2.0,  1318, 0.9, 0.6) // nota finale più alta e lunga
+    } else {
+      bip(0); bip(0.45); bip(0.9)
+    }
   } catch { /* audio bloccato */ }
 }
 
@@ -60,7 +72,13 @@ function buildWhatsAppUrl(phone: string, msg: string) {
 }
 
 // ── SW notification ───────────────────────────────────────────
-async function showSwNotification(title: string, body: string, tag: string, whatsappUrl?: string) {
+async function showSwNotification(
+  title: string,
+  body: string,
+  tag: string,
+  whatsappUrl?: string,
+  vibrate = [500, 100, 500, 100, 500, 100, 500],
+) {
   if (!('serviceWorker' in navigator)) return
   try {
     const reg = await navigator.serviceWorker.ready
@@ -68,7 +86,7 @@ async function showSwNotification(title: string, body: string, tag: string, what
       body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
       tag, requireInteraction: true,
       data: { url: '/dashboard', whatsappUrl },
-      ...({ vibrate: [300, 100, 300, 100, 300] } as object),
+      ...({ vibrate } as object),
       ...({ actions: whatsappUrl ? [{ action: 'whatsapp', title: '📱 WhatsApp' }] : [] } as object),
     } as NotificationOptions)
   } catch (err) { console.error('[Reminder] SW notification:', err) }
@@ -78,7 +96,7 @@ async function showSwNotification(title: string, body: string, tag: string, what
 interface AptRow { id: string; start_time: string; status: string; client_id: string; service_id: string }
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
-async function fireAlarm(apt: AptRow, mins: number, centerName: string) {
+async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = false) {
   let client: Record<string, unknown>, service: Record<string, unknown>
   try {
     const [c, s] = await Promise.all([
@@ -96,11 +114,18 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string) {
   const msg         = `Buongiorno ${String(client.first_name)}, la ricordiamo del suo appuntamento per ${serviceName} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
   const whatsappUrl = phone ? buildWhatsAppUrl(phone, msg) : undefined
 
-  await showSwNotification(`⏰ Appuntamento tra ${mins} min`, `${clientName} — ${serviceName} alle ${time}`, apt.id, whatsappUrl)
+  const title   = isNow ? `⚡ Appuntamento ADESSO!` : `⏰ Appuntamento tra ${mins} min`
+  const body    = isNow ? `${clientName} — ${serviceName} · ore ${time}` : `${clientName} — ${serviceName} alle ${time}`
+  const tag     = isNow ? `${apt.id}_now` : apt.id
+  const vibrate = isNow
+    ? [1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000]
+    : [500,  100,  500,  100,  500,  100,  500]
+
+  await showSwNotification(title, body, tag, whatsappUrl, vibrate)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
     detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, whatsappUrl },
   }))
-  playAlarm()
+  playAlarm(isNow)
   setAppBadge(1)
 }
 
@@ -155,6 +180,7 @@ export function useReminderChecker() {
   const reminderMinsRef = useRef(30)
   const centerNameRef   = useRef('')
   const alarmFiredRef   = useRef<Set<string>>(new Set())
+  const nowFiredRef     = useRef<Set<string>>(new Set())
   const loadedRef       = useRef(false)
 
   // Carica impostazioni + appuntamenti di oggi via getDocs (affidabile come dashboard)
@@ -199,16 +225,31 @@ export function useReminderChecker() {
 
       for (const apt of todayAptsRef.current) {
         if (apt.status === 'cancelled') continue
-        if (alarmFiredRef.current.has(apt.id)) continue
-        if (wasNotified(apt.id)) { alarmFiredRef.current.add(apt.id); continue }
 
         const msUntil = new Date(apt.start_time).getTime() - now.getTime()
 
-        if (msUntil > 0 && msUntil <= reminderMs) {
-          alarmFiredRef.current.add(apt.id)
-          markNotified(apt.id)
-          fireAlarm(apt, reminderMinsRef.current, centerNameRef.current)
-            .catch(err => console.error('[Reminder] fireAlarm:', err))
+        // Allarme N minuti prima
+        if (!alarmFiredRef.current.has(apt.id)) {
+          if (wasNotified(apt.id)) {
+            alarmFiredRef.current.add(apt.id)
+          } else if (msUntil > 0 && msUntil <= reminderMs) {
+            alarmFiredRef.current.add(apt.id)
+            markNotified(apt.id)
+            fireAlarm(apt, reminderMinsRef.current, centerNameRef.current, false)
+              .catch(err => console.error('[Reminder] fireAlarm:', err))
+          }
+        }
+
+        // Allarme ADESSO (entro 30 secondi dopo l'orario)
+        if (!nowFiredRef.current.has(apt.id)) {
+          if (wasNowNotified(apt.id)) {
+            nowFiredRef.current.add(apt.id)
+          } else if (msUntil <= 0 && msUntil > -30_000) {
+            nowFiredRef.current.add(apt.id)
+            markNowNotified(apt.id)
+            fireAlarm(apt, 0, centerNameRef.current, true)
+              .catch(err => console.error('[Reminder] fireAlarm now:', err))
+          }
         }
       }
     }, 1000)
