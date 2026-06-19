@@ -1,4 +1,4 @@
-const CACHE_NAME = 'appuntamenti-v2'
+const CACHE_NAME = 'appuntamenti-v3'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', event => {
@@ -56,21 +56,26 @@ self.addEventListener('push', event => {
   )
 })
 
-// Click sulla notifica → apre / porta in primo piano l'app
+// Click sulla notifica → apre WhatsApp (azione) o porta in primo piano l'app
 self.addEventListener('notificationclick', event => {
   event.notification.close()
-  const url = event.notification.data?.url || '/dashboard'
+  const data = event.notification.data || {}
 
+  // Azione "whatsapp" → apre WhatsApp direttamente
+  if (event.action === 'whatsapp' && data.whatsappUrl) {
+    event.waitUntil(clients.openWindow(data.whatsappUrl))
+    return
+  }
+
+  const url = data.url || '/dashboard'
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      // Cerca una finestra già aperta dell'app
       for (const client of clientList) {
         if (client.url.includes(self.location.origin)) {
           client.navigate(url)
           return client.focus()
         }
       }
-      // Nessuna finestra aperta → apri una nuova
       if (clients.openWindow) return clients.openWindow(url)
     })
   )

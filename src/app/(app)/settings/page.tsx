@@ -60,12 +60,25 @@ export default function SettingsPage() {
   }
 
   async function handleTestNotification() {
-    if (!('Notification' in window)) return
+    if (typeof Notification === 'undefined') return
     if (Notification.permission !== 'granted') return
-    new Notification('Test notifica Appuntamenti App', {
-      body: 'Le notifiche funzionano correttamente!',
-      icon: '/icons/icon-192.png',
-    })
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready
+        await reg.showNotification('Test notifica Appuntamenti App', {
+          body: 'Le notifiche funzionano correttamente! ✓',
+          icon: '/icons/icon-192.png',
+          requireInteraction: false,
+        })
+      } else {
+        new Notification('Test notifica Appuntamenti App', {
+          body: 'Le notifiche funzionano correttamente! ✓',
+          icon: '/icons/icon-192.png',
+        })
+      }
+    } catch (err) {
+      console.error('Test notification failed:', err)
+    }
     setTestSent(true)
     setTimeout(() => setTestSent(false), 3000)
   }
@@ -153,7 +166,7 @@ export default function SettingsPage() {
                 className="flex-1 text-sm border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium py-2.5 rounded-xl transition-colors">
                 {testSent ? '✓ Inviata!' : 'Prova notifica'}
               </button>
-              <button onClick={unsubscribe}
+              <button onClick={() => { unsubscribe(); alert('Per disattivare completamente le notifiche, vai nelle impostazioni del browser.') }}
                 className="flex-1 text-sm border border-red-200 hover:bg-red-50 text-red-500 font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
                 <BellOff className="w-4 h-4" /> Disattiva
               </button>
