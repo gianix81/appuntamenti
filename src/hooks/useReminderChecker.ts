@@ -9,10 +9,10 @@ import { onAuthStateChanged } from 'firebase/auth'
 // ── localStorage ──────────────────────────────────────────────
 const KEY     = (id: string) => `notified_v2_${id}`
 const KEY_NOW = (id: string) => `now_v2_${id}`
-const wasNotified    = (id: string) => !!localStorage.getItem(KEY(id))
-const markNotified   = (id: string) => localStorage.setItem(KEY(id), '1')
-const wasNowNotified = (id: string) => !!localStorage.getItem(KEY_NOW(id))
-const markNowNotified = (id: string) => localStorage.setItem(KEY_NOW(id), '1')
+export const wasNotified     = (id: string) => !!localStorage.getItem(KEY(id))
+export const markNotified    = (id: string) => localStorage.setItem(KEY(id), '1')
+export const wasNowNotified  = (id: string) => !!localStorage.getItem(KEY_NOW(id))
+export const markNowNotified = (id: string) => localStorage.setItem(KEY_NOW(id), '1')
 export function clearAllNotified() {
   Object.keys(localStorage).filter(k => k.startsWith('notified_') || k.startsWith('now_v2_')).forEach(k => localStorage.removeItem(k))
 }
@@ -94,6 +94,35 @@ async function showSwNotification(
 
 // ── Tipo ─────────────────────────────────────────────────────
 interface AptRow { id: string; start_time: string; status: string; client_id: string; service_id: string }
+
+// ── Allarme con dati già risolti (usato dal dashboard) ────────
+export async function triggerAlarm(
+  aptId: string,
+  clientName: string,
+  serviceName: string,
+  startTime: string,
+  phone: string | undefined,
+  centerName: string,
+  isNow: boolean,
+  mins: number,
+) {
+  const time = new Date(startTime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+  const firstName = clientName.split(' ')[0]
+  const msg = `Buongiorno ${firstName}, la ricordiamo del suo appuntamento per ${serviceName} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
+  const whatsappUrl = phone ? buildWhatsAppUrl(phone, msg) : undefined
+
+  const title   = isNow ? `⚡ Appuntamento ADESSO!` : `⏰ Appuntamento tra ${mins} min`
+  const body    = isNow ? `${clientName} — ${serviceName} · ore ${time}` : `${clientName} — ${serviceName} alle ${time}`
+  const tag     = isNow ? `${aptId}_now` : aptId
+  const vibrate = isNow ? [1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000] : [500, 100, 500, 100, 500, 100, 500]
+
+  await showSwNotification(title, body, tag, whatsappUrl, vibrate)
+  window.dispatchEvent(new CustomEvent('appointment-reminder', {
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, whatsappUrl },
+  }))
+  playAlarm(isNow)
+  setAppBadge(1)
+}
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
 async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = false) {

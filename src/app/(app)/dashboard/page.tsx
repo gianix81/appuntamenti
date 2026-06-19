@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   format, isToday, isSameDay, startOfDay, endOfDay, addMonths, subMonths,
 } from 'date-fns'
@@ -10,6 +10,9 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
+import {
+  triggerAlarm, wasNotified, markNotified, wasNowNotified, markNowNotified,
+} from '@/hooks/useReminderChecker'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react'
@@ -79,6 +82,12 @@ export default function DashboardPage() {
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
   const [stats, setStats]             = useState({ total: 0, pending: 0, confirmed: 0 })
+  const [reminderMins, setReminderMins] = useState(30)
+  const [centerName, setCenterName]     = useState('')
+
+  // Refs per deduplicazione allarmi (questa sessione)
+  const alarmFiredRef    = useRef<Set<string>>(new Set())
+  const nowAlarmFiredRef = useRef<Set<string>>(new Set())
 
   // Orologio live
   const [now, setNow] = useState(new Date())
@@ -124,7 +133,14 @@ export default function DashboardPage() {
       const authed = await waitForAuth()
       if (!authed) { setError('Sessione scaduta. Ricarica la pagina.'); return }
       await auth.currentUser?.getIdToken()
-      const list = await fetchDayAppointments(date)
+      const [list, settingsSnap] = await Promise.all([
+        fetchDayAppointments(date),
+        getDoc(doc(db, 'settings', 'main')),
+      ])
+      if (settingsSnap.exists()) {
+        setReminderMins(settingsSnap.data().reminder_minutes ?? 30)
+        setCenterName(settingsSnap.data().center_name ?? '')
+      }
       setAppointments(list)
       setStats({
         total:     list.length,
@@ -139,6 +155,61 @@ export default function DashboardPage() {
   }, [date])
 
   useEffect(() => { load() }, [load])
+
+  // ── Allarme sveglia: gira ogni secondo con i dati già caricati ──
+  useEffect(() => {
+    if (typeof Notification === 'undefined') return
+    if (Notification.permission !== 'granted') return
+    if (!appointments.length) return
+
+    const reminderMs = reminderMins * 60_000
+
+    for (const apt of appointments) {
+      if (apt.status === 'cancelled') continue
+      const msUntil = new Date(apt.start_time).getTime() - now.getTime()
+
+      // Allarme promemoria (N minuti prima)
+      if (!alarmFiredRef.current.has(apt.id)) {
+        if (wasNotified(apt.id)) {
+          alarmFiredRef.current.add(apt.id)
+        } else if (msUntil > 0 && msUntil <= reminderMs) {
+          alarmFiredRef.current.add(apt.id)
+          markNotified(apt.id)
+          triggerAlarm(
+            apt.id,
+            `${apt.clients.first_name} ${apt.clients.last_name}`,
+            apt.services.name,
+            apt.start_time,
+            apt.clients.phone,
+            centerName,
+            false,
+            reminderMins,
+          ).catch(console.error)
+        }
+      }
+
+      // Allarme ADESSO (all'orario esatto, finestra 30 sec)
+      if (!nowAlarmFiredRef.current.has(apt.id)) {
+        if (wasNowNotified(apt.id)) {
+          nowAlarmFiredRef.current.add(apt.id)
+        } else if (msUntil <= 0 && msUntil > -30_000) {
+          nowAlarmFiredRef.current.add(apt.id)
+          markNowNotified(apt.id)
+          triggerAlarm(
+            apt.id,
+            `${apt.clients.first_name} ${apt.clients.last_name}`,
+            apt.services.name,
+            apt.start_time,
+            apt.clients.phone,
+            centerName,
+            true,
+            0,
+          ).catch(console.error)
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, appointments, reminderMins, centerName])
 
   function selectDay(day: Date) {
     setDate(day)
@@ -198,49 +269,6 @@ export default function DashboardPage() {
           :{format(now, 'ss')}
         </span>
       </div>
-
-      {/* ── Conto alla rovescia prossimo appuntamento ── */}
-      {isToday(date) && (() => {
-        const next = appointments.find(a => {
-          const ms = new Date(a.start_time).getTime() - now.getTime()
-          return ms > -5 * 60_000 // nasconde se passato da più di 5 min
-        })
-        if (!next) return null
-
-        const ms       = new Date(next.start_time).getTime() - now.getTime()
-        const isNow    = ms <= 0
-        const sec      = Math.max(0, Math.floor(ms / 1000))
-        const hh       = Math.floor(sec / 3600)
-        const mm       = Math.floor((sec % 3600) / 60)
-        const ss       = sec % 60
-        const timeStr  = isNow ? '⚡ ADESSO!'
-          : hh > 0 ? `${hh}h ${String(mm).padStart(2,'0')}m ${String(ss).padStart(2,'0')}s`
-          : `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`
-
-        const isVeryClose = !isNow && ms < 5  * 60_000
-        const isClose     = !isNow && ms < 30 * 60_000
-
-        const bg = isNow       ? 'bg-red-600 animate-pulse'
-                 : isVeryClose ? 'bg-red-500'
-                 : isClose     ? 'bg-amber-500'
-                 : 'bg-slate-700'
-
-        return (
-          <div className={`${bg} rounded-2xl px-5 py-4 select-none`}>
-            <p className="text-xs text-white/70 mb-1 truncate">
-              {next.clients.first_name} {next.clients.last_name} · {next.services.name}
-            </p>
-            <div className="flex items-end justify-between gap-2">
-              <span className="text-3xl font-bold text-white tabular-nums tracking-tight leading-none">
-                {timeStr}
-              </span>
-              <span className="text-sm text-white/80 font-medium shrink-0 pb-0.5">
-                alle {format(new Date(next.start_time), 'HH:mm')}
-              </span>
-            </div>
-          </div>
-        )
-      })()}
 
       {/* ── Mini calendario ── */}
       <div className="bg-white rounded-2xl border border-slate-100 p-4">
@@ -348,7 +376,12 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-3">
           {appointments.map(apt => (
-            <AppointmentCard key={apt.id} appointment={apt} />
+            <AppointmentCard
+              key={apt.id}
+              appointment={apt}
+              now={isToday(date) ? now : undefined}
+              reminderMins={reminderMins}
+            />
           ))}
         </div>
       )}

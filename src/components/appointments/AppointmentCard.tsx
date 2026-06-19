@@ -1,5 +1,7 @@
+'use client'
+
 import Link from 'next/link'
-import { format } from 'date-fns'
+import { format, isToday } from 'date-fns'
 import { it } from 'date-fns/locale'
 import type { AppointmentWithRelations } from '@/types/database'
 import { AppointmentStatusBadge, ConfirmationStatusBadge } from '@/components/ui/StatusBadge'
@@ -10,6 +12,8 @@ interface Props {
   appointment: AppointmentWithRelations
   onSendReminder?: (id: string) => void
   sending?: boolean
+  now?: Date
+  reminderMins?: number
 }
 
 function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
@@ -22,75 +26,112 @@ function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 
-export function AppointmentCard({ appointment, onSendReminder, sending }: Props) {
+function Countdown({ start, now, reminderMins = 30 }: { start: Date; now: Date; reminderMins?: number }) {
+  const ms = start.getTime() - now.getTime()
+  if (ms < -5 * 60_000) return null // passato da più di 5 min
+
+  const isNow      = ms <= 0
+  const sec        = Math.max(0, Math.floor(ms / 1000))
+  const hh         = Math.floor(sec / 3600)
+  const mm         = Math.floor((sec % 3600) / 60)
+  const ss         = sec % 60
+  const timeStr    = isNow     ? '⚡ ADESSO!'
+                   : hh > 0   ? `${hh}h ${String(mm).padStart(2, '0')}m ${String(ss).padStart(2, '0')}s`
+                   :             `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+
+  const isVeryClose = !isNow && ms < 5 * 60_000
+  const isClose     = !isNow && ms < reminderMins * 60_000
+
+  const bg = isNow       ? 'bg-red-500 animate-pulse'
+           : isVeryClose ? 'bg-red-400'
+           : isClose     ? 'bg-amber-400'
+           : 'bg-blue-50'
+
+  const text = isNow || isVeryClose || isClose ? 'text-white' : 'text-blue-600'
+
+  return (
+    <div className={`${bg} rounded-b-2xl px-4 py-2 flex items-center justify-between`}>
+      <span className={`text-xs font-medium ${text} opacity-80`}>⏰ tra</span>
+      <span className={`text-sm font-bold tabular-nums tracking-tight ${text}`}>{timeStr}</span>
+    </div>
+  )
+}
+
+export function AppointmentCard({ appointment, onSendReminder, sending, now, reminderMins }: Props) {
   const isPending = appointment.confirmation_status === 'pending'
   const start = new Date(appointment.start_time)
   const end   = new Date(appointment.end_time)
 
+  const showCountdown = !!now && isToday(start) && appointment.status !== 'cancelled'
+
   return (
     <div className={clsx(
-      'bg-white rounded-2xl border p-4 flex gap-4',
+      'bg-white rounded-2xl border overflow-hidden',
       isPending ? 'border-yellow-200 ring-1 ring-yellow-100' : 'border-slate-100'
     )}>
-      <div className="flex flex-col items-center justify-center w-14 shrink-0">
-        <span className="text-xl font-bold text-blue-600">{format(start, 'HH:mm')}</span>
-        <span className="text-xs text-slate-400">{format(end, 'HH:mm')}</span>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-800 truncate">
-              {appointment.clients.first_name} {appointment.clients.last_name}
-            </p>
-            <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
-              <Scissors className="w-3 h-3 shrink-0" />
-              <span className="truncate">{appointment.services.name}</span>
-            </div>
-            <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
-              <Clock className="w-3 h-3 shrink-0" />
-              <span>{appointment.services.duration_minutes} min</span>
-            </div>
-          </div>
-          <Link
-            href={`/appointments/${appointment.id}/edit`}
-            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Link>
+      <div className="p-4 flex gap-4">
+        <div className="flex flex-col items-center justify-center w-14 shrink-0">
+          <span className="text-xl font-bold text-blue-600">{format(start, 'HH:mm')}</span>
+          <span className="text-xs text-slate-400">{format(end, 'HH:mm')}</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          <AppointmentStatusBadge status={appointment.status} />
-          <ConfirmationStatusBadge status={appointment.confirmation_status} />
-        </div>
-
-        {appointment.notes && (
-          <p className="text-xs text-slate-400 mt-2 italic truncate">{appointment.notes}</p>
-        )}
-
-        <div className="flex items-center justify-between mt-3 gap-2">
-          <a
-            href={`tel:${appointment.clients.phone}`}
-            className="flex items-center gap-1 text-blue-600 text-xs font-medium hover:underline"
-          >
-            <Phone className="w-3 h-3" />
-            {appointment.clients.phone}
-          </a>
-
-          {appointment.status !== 'cancelled' && (
-            <a
-              href={buildWhatsAppUrl(appointment)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-full font-medium transition-colors"
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-semibold text-slate-800 truncate">
+                {appointment.clients.first_name} {appointment.clients.last_name}
+              </p>
+              <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
+                <Scissors className="w-3 h-3 shrink-0" />
+                <span className="truncate">{appointment.services.name}</span>
+              </div>
+              <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
+                <Clock className="w-3 h-3 shrink-0" />
+                <span>{appointment.services.duration_minutes} min</span>
+              </div>
+            </div>
+            <Link
+              href={`/appointments/${appointment.id}/edit`}
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors shrink-0"
             >
-              <MessageCircle className="w-3 h-3" />
-              WhatsApp
-            </a>
+              <Pencil className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <AppointmentStatusBadge status={appointment.status} />
+            <ConfirmationStatusBadge status={appointment.confirmation_status} />
+          </div>
+
+          {appointment.notes && (
+            <p className="text-xs text-slate-400 mt-2 italic truncate">{appointment.notes}</p>
           )}
+
+          <div className="flex items-center justify-between mt-3 gap-2">
+            <a
+              href={`tel:${appointment.clients.phone}`}
+              className="flex items-center gap-1 text-blue-600 text-xs font-medium hover:underline"
+            >
+              <Phone className="w-3 h-3" />
+              {appointment.clients.phone}
+            </a>
+
+            {appointment.status !== 'cancelled' && (
+              <a
+                href={buildWhatsAppUrl(appointment)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-full font-medium transition-colors"
+              >
+                <MessageCircle className="w-3 h-3" />
+                WhatsApp
+              </a>
+            )}
+          </div>
         </div>
       </div>
+
+      {showCountdown && <Countdown start={start} now={now} reminderMins={reminderMins} />}
     </div>
   )
 }
