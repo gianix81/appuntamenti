@@ -174,13 +174,14 @@ export default function DashboardPage() {
 
   // ── Allarme sveglia: gira ogni secondo con i dati già caricati ──
   useEffect(() => {
-    if (!appointments.length) return
+    if (!appointments.length || !isToday(date)) return
 
     for (const apt of appointments) {
       if (apt.status === 'cancelled') continue
+      if (!apt.clients || !apt.services) continue
       const msUntil = new Date(apt.start_time).getTime() - now.getTime()
       const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-      const clientName = `${apt.clients.first_name} ${apt.clients.last_name}`
+      const clientName = `${apt.clients.first_name ?? ''} ${apt.clients.last_name ?? ''}`.trim() || 'Cliente'
 
       for (const slot of notificationSlots) {
         const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
@@ -193,7 +194,7 @@ export default function DashboardPage() {
             alarmFiredRef.current.add(alarmKey)
             markSlotNotified(apt.id, slot.interval, slot.type)
             setActiveAlarms(p => p.some(a => a.key === alarmKey) ? p : [...p, {
-              key: alarmKey, clientName, serviceName: apt.services.name,
+              key: alarmKey, clientName, serviceName: apt.services.name ?? '',
               time, phone: apt.clients.phone ?? '',
               isNow: false, slotType: slot.type, intervalMinutes: slot.interval,
             }])
@@ -210,7 +211,7 @@ export default function DashboardPage() {
           markNowNotified(apt.id)
           const key = `${apt.id}_now`
           setActiveAlarms(p => p.some(a => a.key === key) ? p : [...p, {
-            key, clientName, serviceName: apt.services.name,
+            key, clientName, serviceName: apt.services.name ?? '',
             time, phone: apt.clients.phone ?? '',
             isNow: true, slotType: 'reminder', intervalMinutes: 0,
           }])
@@ -219,7 +220,7 @@ export default function DashboardPage() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, appointments, notificationSlots, centerName])
+  }, [now, appointments, notificationSlots, centerName, date])
 
   function selectDay(day: Date) {
     setDate(day)
@@ -252,8 +253,13 @@ export default function DashboardPage() {
     const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
     const key = apt.id + '_test_' + Date.now()
     setActiveAlarms(p => [...p, {
-      key, clientName: `${apt.clients.first_name} ${apt.clients.last_name}`,
-      serviceName: apt.services.name, time, phone: apt.clients.phone ?? '',
+      key,
+      clientName: apt.clients
+        ? `${apt.clients.first_name ?? ''} ${apt.clients.last_name ?? ''}`.trim() || 'Cliente'
+        : 'Cliente',
+      serviceName: apt.services?.name ?? 'Servizio',
+      time,
+      phone: apt.clients?.phone ?? '',
       isNow: false, slotType: 'reminder', intervalMinutes: 60,
     }])
     playBeep(false)
@@ -262,6 +268,48 @@ export default function DashboardPage() {
   const cells = getMonthCells(calMonth)
 
   return (
+    <>
+      {/* ── ALLARMI ATTIVI ── fuori da qualsiasi container per garantire fixed viewport-level ── */}
+      {activeAlarms.map(alarm => {
+        const smsBody = buildSmsBody(alarm.slotType, {
+          firstName: alarm.clientName.split(' ')[0],
+          lastName: alarm.clientName.split(' ').slice(1).join(' '),
+          serviceName: alarm.serviceName,
+          startTime: (() => { const d = new Date(); const [h, m] = alarm.time.split(':'); d.setHours(+h, +m, 0); return d.toISOString() })(),
+          centerName,
+          intervalMinutes: alarm.intervalMinutes,
+        })
+        const smsUrl = alarm.phone ? buildSmsUrl(alarm.phone, smsBody) : null
+        const waUrl  = alarm.phone ? `https://wa.me/${alarm.phone.replace(/\D/g, '')}?text=${encodeURIComponent(smsBody)}` : null
+        return (
+          <div key={alarm.key} className={`fixed inset-x-0 top-0 z-[9999] p-3 ${alarm.isNow ? 'bg-red-600' : 'bg-blue-700'}`}>
+            <div className="max-w-lg mx-auto">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-white font-bold text-sm">
+                  {alarm.isNow ? '⚡ ADESSO!' : `⏰ Tra ${alarm.intervalMinutes} min`}
+                  {' — '}{alarm.clientName} · {alarm.serviceName} alle {alarm.time}
+                </p>
+                <button onClick={() => dismissAlarm(alarm.key)} className="text-white/70 hover:text-white text-xl leading-none shrink-0">✕</button>
+              </div>
+              <div className="flex gap-2">
+                {waUrl && (
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 text-center bg-[#25D366] text-white text-xs font-bold py-2 rounded-lg">
+                    💬 WhatsApp
+                  </a>
+                )}
+                {smsUrl && (
+                  <a href={smsUrl}
+                    className={`flex-1 text-center text-white text-xs font-bold py-2 rounded-lg ${alarm.slotType === 'confirmation' ? 'bg-sky-400' : 'bg-amber-400'}`}>
+                    📱 {alarm.slotType === 'confirmation' ? 'SMS Conferma' : 'SMS Promemoria'}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+
     <div className="p-4 md:p-6 max-w-3xl mx-auto w-full space-y-4">
 
       {/* ── Header ── */}
@@ -306,47 +354,6 @@ export default function DashboardPage() {
 
       {/* ── Orologio ── */}
       <div className="bg-blue-950 rounded-2xl px-6 py-5 flex items-center justify-center gap-1 select-none">
-
-      {/* ── ALLARMI ATTIVI ── mostrati direttamente inline, senza eventi ── */}
-      {activeAlarms.map(alarm => {
-        const smsBody = buildSmsBody(alarm.slotType, {
-          firstName: alarm.clientName.split(' ')[0],
-          lastName: alarm.clientName.split(' ').slice(1).join(' '),
-          serviceName: alarm.serviceName,
-          startTime: (() => { const d = new Date(); const [h, m] = alarm.time.split(':'); d.setHours(+h, +m, 0); return d.toISOString() })(),
-          centerName,
-          intervalMinutes: alarm.intervalMinutes,
-        })
-        const smsUrl = alarm.phone ? buildSmsUrl(alarm.phone, smsBody) : null
-        const waUrl  = alarm.phone ? `https://wa.me/${alarm.phone.replace(/\D/g, '')}?text=${encodeURIComponent(smsBody)}` : null
-        return (
-          <div key={alarm.key} className={`fixed inset-x-0 top-0 z-[9999] p-3 ${alarm.isNow ? 'bg-red-600' : 'bg-blue-700'}`}>
-            <div className="max-w-lg mx-auto">
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <p className="text-white font-bold text-sm">
-                  {alarm.isNow ? '⚡ ADESSO!' : `⏰ Tra ${alarm.intervalMinutes} min`}
-                  {' — '}{alarm.clientName} · {alarm.serviceName} alle {alarm.time}
-                </p>
-                <button onClick={() => dismissAlarm(alarm.key)} className="text-white/70 hover:text-white text-xl leading-none shrink-0">✕</button>
-              </div>
-              <div className="flex gap-2">
-                {waUrl && (
-                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex-1 text-center bg-[#25D366] text-white text-xs font-bold py-2 rounded-lg">
-                    💬 WhatsApp
-                  </a>
-                )}
-                {smsUrl && (
-                  <a href={smsUrl}
-                    className={`flex-1 text-center text-white text-xs font-bold py-2 rounded-lg ${alarm.slotType === 'confirmation' ? 'bg-sky-400' : 'bg-amber-400'}`}>
-                    📱 {alarm.slotType === 'confirmation' ? 'SMS Conferma' : 'SMS Promemoria'}
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )
-      })}
         <span className="text-5xl font-bold text-white tabular-nums tracking-tight">
           {format(now, 'HH')}
         </span>
@@ -476,5 +483,6 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+    </>
   )
 }
