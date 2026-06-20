@@ -8,7 +8,7 @@ import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations } from '@/types/database'
 import { AppointmentStatusBadge, ConfirmationStatusBadge } from '@/components/ui/StatusBadge'
-import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2 } from 'lucide-react'
+import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2, CalendarPlus } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface Props {
@@ -53,6 +53,47 @@ function Countdown({ start, now, reminderMins = 30 }: { start: Date; now: Date; 
       <span className={`text-sm font-bold tabular-nums tracking-tight ${text}`}>{timeStr}</span>
     </div>
   )
+}
+
+function downloadICS(appointment: AppointmentWithRelations, reminderMins: number) {
+  const start = new Date(appointment.start_time)
+  const end   = new Date(appointment.end_time || appointment.start_time)
+  const clientName  = `${appointment.clients?.first_name ?? ''} ${appointment.clients?.last_name ?? ''}`.trim()
+  const serviceName = appointment.services?.name ?? ''
+  const summary     = `${clientName} - ${serviceName}`
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const toUTC = (d: Date) =>
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`
+
+  const uid = `${appointment.id}-${Date.now()}@appuntamenti`
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Appuntamenti App//IT',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTART:${toUTC(start)}`,
+    `DTEND:${toUTC(end)}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:Appuntamento: ${serviceName} (${appointment.services?.duration_minutes ?? 0} min)`,
+    'BEGIN:VALARM',
+    `TRIGGER:-PT${reminderMins}M`,
+    'ACTION:DISPLAY',
+    `DESCRIPTION:Tra ${reminderMins} min: ${summary}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n')
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `appuntamento.ics` })
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Props) {
@@ -104,8 +145,15 @@ export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Pr
               </div>
             </div>
 
-            {/* Azioni modifica / elimina */}
+            {/* Azioni */}
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => downloadICS(appointment, reminderMins ?? 30)}
+                className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                title={`Aggiungi al calendario (sveglia ${reminderMins ?? 30} min prima)`}
+              >
+                <CalendarPlus className="w-3.5 h-3.5" />
+              </button>
               <Link
                 href={`/appointments/${appointment.id}/edit`}
                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
