@@ -3,45 +3,96 @@
 import { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
-import { CheckCircle } from 'lucide-react'
+import { saveAlarmSettings, getAlarmSettings } from '@/lib/alarmDB'
+import { CheckCircle, Bell } from 'lucide-react'
+
+const ALARM_OPTIONS: { label: string; minutes: number }[] = [
+  { label: '24 ore prima',   minutes: 1440 },
+  { label: '2 ore prima',    minutes: 120  },
+  { label: '30 min prima',   minutes: 30   },
+  { label: "All'orario esatto", minutes: 0 },
+]
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
-  const [form, setForm]       = useState({
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | 'unsupported'>('default')
+
+  const [form, setForm] = useState({
     center_name:  '',
     phone_number: '',
     address:      '',
   })
+  const [alarmOffsets, setAlarmOffsets] = useState<number[]>([1440, 120, 30])
 
+  // Load settings from Firestore + IndexedDB
   useEffect(() => {
-    getDoc(doc(db, 'settings', 'main')).then(snap => {
-      if (snap.exists()) {
-        const d = snap.data()
-        setForm({
-          center_name:  d.center_name  ?? '',
-          phone_number: d.phone_number ?? '',
-          address:      d.address      ?? '',
-        })
-      }
-    }).catch(() => {}).finally(() => setLoading(false))
+    async function load() {
+      try {
+        const [snap, idbSettings] = await Promise.all([
+          getDoc(doc(db, 'settings', 'main')).catch(() => null),
+          getAlarmSettings().catch(() => null),
+        ])
+        if (snap?.exists()) {
+          const d = snap.data()
+          setForm({
+            center_name:  d.center_name  ?? '',
+            phone_number: d.phone_number ?? '',
+            address:      d.address      ?? '',
+          })
+          if (d.alarm_offsets_minutes) {
+            setAlarmOffsets(d.alarm_offsets_minutes)
+          }
+        }
+        // IndexedDB overrides Firestore for alarm settings (more up-to-date locally)
+        if (idbSettings?.offsets_minutes?.length) {
+          setAlarmOffsets(idbSettings.offsets_minutes)
+        }
+      } catch { /* ignore */ }
+      setLoading(false)
+    }
+    load()
+
+    if ('Notification' in window) {
+      setNotifPerm(Notification.permission)
+    } else {
+      setNotifPerm('unsupported')
+    }
   }, [])
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  function toggleOffset(minutes: number) {
+    setAlarmOffsets(prev =>
+      prev.includes(minutes) ? prev.filter(m => m !== minutes) : [...prev, minutes]
+    )
+  }
+
+  async function requestNotifPermission() {
+    if (!('Notification' in window)) return
+    const result = await Notification.requestPermission()
+    setNotifPerm(result)
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     try {
+      // Save to IndexedDB (offline-first)
+      await saveAlarmSettings({ offsets_minutes: alarmOffsets })
+
+      // Save to Firestore (sync)
       await setDoc(doc(db, 'settings', 'main'), {
-        center_name:  form.center_name.trim(),
-        phone_number: form.phone_number.trim() || null,
-        address:      form.address.trim()      || null,
-        updated_at:   new Date().toISOString(),
+        center_name:          form.center_name.trim(),
+        phone_number:         form.phone_number.trim() || null,
+        address:              form.address.trim()      || null,
+        alarm_offsets_minutes: alarmOffsets,
+        updated_at:           new Date().toISOString(),
       }, { merge: true })
+
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
@@ -58,6 +109,62 @@ export default function SettingsPage() {
       <h1 className="text-xl font-bold text-slate-800 mb-6">Impostazioni</h1>
 
       <form onSubmit={handleSave} className="space-y-4">
+
+        {/* Notifiche */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-semibold text-slate-700">Sveglie appuntamenti</h2>
+          </div>
+
+          {notifPerm === 'unsupported' && (
+            <p className="text-xs text-slate-400">Le notifiche non sono supportate su questo browser.</p>
+          )}
+          {notifPerm === 'default' && (
+            <button
+              type="button"
+              onClick={requestNotifPermission}
+              className="w-full text-sm bg-blue-50 text-blue-700 font-medium py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+              Attiva permesso notifiche
+            </button>
+          )}
+          {notifPerm === 'granted' && (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" /> Notifiche attive
+            </p>
+          )}
+          {notifPerm === 'denied' && (
+            <p className="text-xs text-red-500">
+              Notifiche bloccate. Abilitale nelle impostazioni del browser.
+            </p>
+          )}
+
+          <p className="text-xs text-slate-500">Sveglie da creare per ogni appuntamento:</p>
+          <div className="space-y-2">
+            {ALARM_OPTIONS.map(opt => (
+              <label key={opt.minutes} className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={alarmOffsets.includes(opt.minutes)}
+                  onChange={() => toggleOffset(opt.minutes)}
+                  className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
+                />
+                <span className="text-sm text-slate-700 group-hover:text-blue-600 transition-colors">
+                  {opt.label}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          {alarmOffsets.length === 0 && (
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
+              Seleziona almeno un'opzione per ricevere sveglie.
+            </p>
+          )}
+        </div>
+
+        {/* Informazioni centro */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
           <h2 className="text-sm font-semibold text-slate-700">Informazioni centro</h2>
 

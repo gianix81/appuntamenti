@@ -3,18 +3,19 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, addMinutes, parseISO } from 'date-fns'
-import { collection, getDocs, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore'
+import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus } from '@/types/database'
+import { scheduleAlarms, cancelAlarms } from '@/lib/alarmScheduler'
 
 interface Props { existing?: Appointment }
 
 export function AppointmentForm({ existing }: Props) {
   const router = useRouter()
-  const [clients, setClients] = useState<Client[]>([])
+  const [clients, setClients]   = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
 
   const defaultDate = existing
     ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
@@ -68,14 +69,39 @@ export function AppointmentForm({ existing }: Props) {
     }
 
     try {
+      let appointmentId: string
+
       if (existing) {
         await updateDoc(doc(db, 'appointments', existing.id), payload)
+        appointmentId = existing.id
       } else {
-        await addDoc(collection(db, 'appointments'), {
+        const ref = await addDoc(collection(db, 'appointments'), {
           ...payload,
           created_at: new Date().toISOString(),
         })
+        appointmentId = ref.id
       }
+
+      // Schedule alarms — fetch client and service data
+      const [clientSnap, serviceSnap] = await Promise.all([
+        getDoc(doc(db, 'clients',  form.client_id)),
+        getDoc(doc(db, 'services', form.service_id)),
+      ])
+      const client  = clientSnap.exists()  ? { id: clientSnap.id,  ...clientSnap.data()  } as Client  : null
+      const service = serviceSnap.exists() ? { id: serviceSnap.id, ...serviceSnap.data() } as Service : null
+
+      if (client && service && payload.status !== 'cancelled') {
+        await scheduleAlarms({
+          id:         appointmentId,
+          start_time: payload.start_time,
+          client:     { first_name: client.first_name, last_name: client.last_name, phone: client.phone },
+          service:    { name: service.name },
+          notes:      payload.notes,
+        }).catch(() => { /* non-critical */ })
+      } else if (payload.status === 'cancelled') {
+        await cancelAlarms(appointmentId).catch(() => {})
+      }
+
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
