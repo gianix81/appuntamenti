@@ -21,6 +21,8 @@ export default function SettingsPage() {
   const [newInterval, setNewInterval]     = useState<number | ''>('')
   const [newType, setNewType]             = useState<'confirmation' | 'reminder'>('reminder')
   const [expandedCard, setExpandedCard]   = useState<string | null>(null)
+  const [diagInfo, setDiagInfo]           = useState<string | null>(null)
+  const [diagRunning, setDiagRunning]     = useState(false)
 
   const REMINDER_OPTIONS = [
     { value: 15,   label: '15 minuti prima' },
@@ -146,6 +148,47 @@ export default function SettingsPage() {
     } finally {
       setChecking(false)
     }
+  }
+
+  async function runDiagnostics() {
+    setDiagRunning(true)
+    const lines: string[] = []
+    try {
+      // 1. Notification API
+      lines.push(`Notification API: ${'Notification' in window ? '✅' : '❌ non disponibile'}`)
+      if ('Notification' in window) {
+        lines.push(`Permesso notifiche: ${Notification.permission === 'granted' ? '✅ granted' : `❌ ${Notification.permission}`}`)
+      }
+      // 2. Service Worker
+      lines.push(`Service Worker: ${'serviceWorker' in navigator ? '✅' : '❌ non supportato'}`)
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations()
+        lines.push(`SW registrati: ${regs.length > 0 ? `✅ ${regs.length}` : '❌ nessuno'}`)
+        if (regs.length > 0) {
+          const sw = regs[0]
+          lines.push(`SW stato: ${sw.active ? '✅ active' : sw.installing ? '⚠️ installing' : sw.waiting ? '⚠️ waiting' : '❌'}`)
+        }
+      }
+      // 3. Push Manager
+      lines.push(`PushManager: ${'PushManager' in window ? '✅' : '❌ non supportato'}`)
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const reg = await navigator.serviceWorker.ready.catch(() => null)
+        if (reg) {
+          const sub = await reg.pushManager.getSubscription().catch(() => null)
+          lines.push(`Push subscription: ${sub ? '✅ presente' : '❌ NON presente — clicca "Attiva notifiche"'}`)
+        }
+      }
+      // 4. VAPID key
+      const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      lines.push(`VAPID key: ${vapid ? '✅ configurata' : '❌ MANCANTE (controlla Vercel env vars)'}`)
+      // 5. Slot configurati
+      const slotCount = form.notification_slots.length
+      lines.push(`Slot notifiche: ${slotCount > 0 ? `✅ ${slotCount} configurati` : '❌ nessuno — aggiungine in "Notifiche programmate"'}`)
+    } catch (err) {
+      lines.push(`Errore: ${err}`)
+    }
+    setDiagInfo(lines.join('\n'))
+    setDiagRunning(false)
   }
 
   if (loading) return (
@@ -429,6 +472,20 @@ export default function SettingsPage() {
                   {checkResult.found > 0 && (
                     <span className="ml-2 text-slate-400">· trovati: {checkResult.found}</span>
                   )}
+                </div>
+              )}
+
+              {/* Diagnostica */}
+              <button
+                onClick={runDiagnostics}
+                disabled={diagRunning}
+                className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                🔍 {diagRunning ? 'Diagnostica in corso…' : 'Diagnostica notifiche'}
+              </button>
+              {diagInfo && (
+                <div className="rounded-xl bg-slate-900 text-green-300 text-xs font-mono px-4 py-3 whitespace-pre-line leading-relaxed">
+                  {diagInfo}
                 </div>
               )}
             </div>

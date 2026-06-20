@@ -77,8 +77,8 @@ function buildWhatsAppUrl(phone: string, msg: string) {
   return `https://wa.me/${phone.replace(/[^\d+]/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(msg)}`
 }
 
-// ── SW notification ───────────────────────────────────────────
-async function showSwNotification(
+// ── SW notification (fire-and-forget, 3s timeout) ────────────
+function showSwNotification(
   title: string,
   body: string,
   tag: string,
@@ -86,16 +86,21 @@ async function showSwNotification(
   vibrate = [500, 100, 500, 100, 500, 100, 500],
 ) {
   if (!('serviceWorker' in navigator)) return
-  try {
-    const reg = await navigator.serviceWorker.ready
-    await reg.showNotification(title, {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+
+  const timeout = new Promise<ServiceWorkerRegistration>((_, reject) =>
+    setTimeout(() => reject(new Error('SW timeout')), 3000)
+  )
+  Promise.race([navigator.serviceWorker.ready, timeout])
+    .then(reg => reg.showNotification(title, {
       body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
-      tag, requireInteraction: true,
+      tag, requireInteraction: true, silent: false,
       data: { url: '/dashboard', whatsappUrl },
       ...({ vibrate } as object),
+      ...({ renotify: true } as object),
       ...({ actions: whatsappUrl ? [{ action: 'whatsapp', title: '📱 WhatsApp' }] : [] } as object),
-    } as NotificationOptions)
-  } catch (err) { console.error('[Reminder] SW notification:', err) }
+    } as NotificationOptions))
+    .catch(err => console.warn('[Reminder] SW push:', err))
 }
 
 // ── Tipo ─────────────────────────────────────────────────────
@@ -123,27 +128,25 @@ export async function triggerAlarm(
   const tag     = isNow ? `${aptId}_now` : aptId
   const vibrate = isNow ? [1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000] : [500, 100, 500, 100, 500, 100, 500]
 
-  await showSwNotification(title, body, tag, whatsappUrl, vibrate)
-
-  // Auto-invio SMS al cliente (solo per slot con intervallo, non per "adesso")
-  let autoSentSms = false
-  if (!isNow && mins > 0) {
-    try {
-      const r = await fetch('/api/reminders/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ appointmentId: aptId, type: slotType, intervalMinutes: mins }),
-      })
-      autoSentSms = r.ok
-    } catch { /* ignora */ }
-  }
-
+  // 1. Popup in-app + suono IMMEDIATAMENTE (nessun await)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms },
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms: false },
   }))
   playAlarm(isNow)
   setAppBadge(1)
+
+  // 2. Push SW (fire-and-forget)
+  showSwNotification(title, body, tag, whatsappUrl, vibrate)
+
+  // 3. SMS automatico (fire-and-forget)
+  if (!isNow && mins > 0) {
+    fetch('/api/reminders/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appointmentId: aptId, type: slotType, intervalMinutes: mins }),
+    }).catch(() => {})
+  }
 }
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
@@ -172,27 +175,25 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
     ? [1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000]
     : [500,  100,  500,  100,  500,  100,  500]
 
-  await showSwNotification(title, body, tag, whatsappUrl, vibrate)
-
-  // Auto-invio SMS al cliente (solo per slot con intervallo, non per "adesso")
-  let autoSentSms = false
-  if (!isNow && mins > 0) {
-    try {
-      const r = await fetch('/api/reminders/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ appointmentId: apt.id, type: slotType, intervalMinutes: mins }),
-      })
-      autoSentSms = r.ok
-    } catch { /* ignora */ }
-  }
-
+  // 1. Popup in-app + suono IMMEDIATAMENTE
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms },
+    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms: false },
   }))
   playAlarm(isNow)
   setAppBadge(1)
+
+  // 2. Push SW (fire-and-forget)
+  showSwNotification(title, body, tag, whatsappUrl, vibrate)
+
+  // 3. SMS automatico (fire-and-forget)
+  if (!isNow && mins > 0) {
+    fetch('/api/reminders/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ appointmentId: apt.id, type: slotType, intervalMinutes: mins }),
+    }).catch(() => {})
+  }
 }
 
 // ── Check on-demand per "Verifica ora" ────────────────────────
@@ -301,8 +302,7 @@ export function useReminderChecker() {
   useEffect(() => {
     const tick = setInterval(() => {
       if (!loadedRef.current) return
-      if (typeof Notification === 'undefined') return
-      if (Notification.permission !== 'granted') return
+
 
       const now = new Date()
 
