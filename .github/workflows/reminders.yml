@@ -1,0 +1,18 @@
+name: Appointment Reminders
+
+on:
+  schedule:
+    # ogni 5 minuti dalle 5:00 alle 20:00 UTC (7:00-22:00 ora italiana)
+    - cron: '*/5 5-20 * * *'
+  workflow_dispatch: # permette di avviarlo manualmente dalla dashboard GitHub
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminder check
+        run: |
+          curl -sf "${{ secrets.APP_URL }}/api/cron/reminders" \
+            -H "Accept: application/json" \
+            --max-time 30 \
+            || echo "Request failed (non-fatal)"

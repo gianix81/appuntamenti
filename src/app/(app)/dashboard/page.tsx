@@ -115,6 +115,17 @@ export default function DashboardPage() {
     if (typeof Notification !== 'undefined') setNotifPerm(Notification.permission)
   }, [])
 
+  // Sincronizza app badge (numeretto sull'icona PWA) con gli allarmi attivi
+  useEffect(() => {
+    if (!('setAppBadge' in navigator)) return
+    const n = activeAlarms.length
+    if (n > 0) {
+      (navigator as Navigator & { setAppBadge(n: number): Promise<void> }).setAppBadge(n).catch(() => {})
+    } else {
+      (navigator as Navigator & { clearAppBadge(): Promise<void> }).clearAppBadge().catch(() => {})
+    }
+  }, [activeAlarms])
+
   // Punti del calendario: date del mese corrente che hanno appuntamenti
   const [monthDates, setMonthDates] = useState<Set<string>>(new Set())
   const loadMonthDates = useCallback(async (month: Date) => {
@@ -331,17 +342,22 @@ export default function DashboardPage() {
           >
             🔔
           </button>
-          {/* Campanello */}
+          {/* Campanello con badge */}
           <Link
             href="/settings"
             title={notifPerm === 'granted' ? 'Notifiche attive' : 'Attiva notifiche'}
-            className={`p-2.5 rounded-xl transition-colors ${
+            className={`relative p-2.5 rounded-xl transition-colors ${
               notifPerm === 'granted'
                 ? 'bg-green-50 text-green-600 hover:bg-green-100'
                 : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
             }`}
           >
             {notifPerm === 'granted' ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            {activeAlarms.length > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none ring-2 ring-white">
+                {activeAlarms.length}
+              </span>
+            )}
           </Link>
           <Link
             href="/appointments/new"
