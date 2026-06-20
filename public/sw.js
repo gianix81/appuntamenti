@@ -1,4 +1,4 @@
-const CACHE_NAME = 'appuntamenti-v5'
+const CACHE_NAME = 'appuntamenti-v6'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', event => {
