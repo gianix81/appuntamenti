@@ -17,9 +17,10 @@ export default function SettingsPage() {
   const [testSent, setTestSent] = useState(false)
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null)
   const [checking, setChecking]         = useState(false)
-  const [showAddReminder, setShowAddReminder] = useState(false)
-  const [newInterval, setNewInterval]         = useState<number | ''>('')
-  const [expandedCard, setExpandedCard]       = useState<string | null>(null)
+  const [showAdd, setShowAdd]             = useState(false)
+  const [newInterval, setNewInterval]     = useState<number | ''>('')
+  const [newType, setNewType]             = useState<'confirmation' | 'reminder'>('reminder')
+  const [expandedCard, setExpandedCard]   = useState<string | null>(null)
 
   const REMINDER_OPTIONS = [
     { value: 15,   label: '15 minuti prima' },
@@ -50,7 +51,10 @@ export default function SettingsPage() {
     phone_number:         '',
     address:              '',
     reminder_enabled:     true,
-    reminder_intervals:   [1440, 120] as number[],
+    notification_slots:   [
+      { interval: 1440, type: 'confirmation' as const },
+      { interval: 120,  type: 'reminder'     as const },
+    ],
     notification_messages: { confirmation: '', reminder: '' },
   })
 
@@ -68,8 +72,11 @@ export default function SettingsPage() {
             center_name:          data.center_name ?? '',
             phone_number:         data.phone_number ?? '',
             address:              data.address ?? '',
-            reminder_enabled:     data.reminder_enabled ?? true,
-            reminder_intervals:   data.reminder_intervals ?? (data.reminder_minutes ? [data.reminder_minutes] : [1440, 120]),
+            reminder_enabled:   data.reminder_enabled ?? true,
+            notification_slots: data.notification_slots ?? (
+              (data.reminder_intervals ?? (data.reminder_minutes ? [data.reminder_minutes] : [1440, 120]))
+                .map((interval: number) => ({ interval, type: 'reminder' as const }))
+            ),
             notification_messages: {
               confirmation: (data.notification_messages as Record<string, string>)?.confirmation ?? '',
               reminder:     (data.notification_messages as Record<string, string>)?.reminder ?? '',
@@ -86,15 +93,16 @@ export default function SettingsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    const minInterval = form.reminder_intervals.length > 0 ? Math.min(...form.reminder_intervals) : 30
+    const minInterval = form.notification_slots.length > 0 ? Math.min(...form.notification_slots.map(s => s.interval)) : 30
     await setDoc(doc(db, 'settings', 'main'), {
       center_name:          form.center_name.trim(),
       phone_number:         form.phone_number.trim() || null,
       address:              form.address.trim() || null,
 
-      reminder_enabled:     form.reminder_enabled,
-      reminder_intervals:    form.reminder_intervals,
-      reminder_minutes:      minInterval,
+      reminder_enabled:    form.reminder_enabled,
+      notification_slots:  form.notification_slots,
+      reminder_intervals:  form.notification_slots.map(s => s.interval),
+      reminder_minutes:    minInterval,
       notification_messages: form.notification_messages,
       updated_at:           new Date().toISOString(),
       created_at:           settings?.created_at ?? new Date().toISOString(),
@@ -193,59 +201,105 @@ export default function SettingsPage() {
 
             {form.reminder_enabled && (
               <>
-                {/* Orari di notifica */}
+                {/* Notifiche programmate: ogni slot ha tempo + tipo */}
                 <div className="space-y-2">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Orari di notifica</p>
-                    <p className="text-xs text-slate-400 mt-0.5">A questi orari potrai scegliere se inviare la <strong>Conferma</strong> o il <strong>Promemoria</strong> al cliente.</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Notifiche programmate</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Configura quando inviare la notifica e di che tipo.</p>
                   </div>
 
-                  {form.reminder_intervals.length === 0 && (
-                    <p className="text-xs text-slate-400 italic py-1">Nessun orario configurato.</p>
+                  {form.notification_slots.length === 0 && (
+                    <p className="text-xs text-slate-400 italic py-1">Nessuna notifica configurata.</p>
                   )}
 
-                  {[...form.reminder_intervals].sort((a, b) => b - a).map(interval => {
-                    const { time, unit } = intervalToDisplay(interval)
+                  {[...form.notification_slots].sort((a, b) => b.interval - a.interval).map((slot, i) => {
+                    const { time, unit } = intervalToDisplay(slot.interval)
+                    const isConf = slot.type === 'confirmation'
                     return (
-                      <div key={interval} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-3xl font-bold text-slate-800 tabular-nums leading-none">{time}</span>
-                          <span className="text-sm text-slate-500">{unit}</span>
+                      <div key={i} className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                        {/* Orario */}
+                        <div className="flex items-baseline gap-1 min-w-[72px]">
+                          <span className="text-2xl font-bold text-slate-800 tabular-nums leading-none">{time}</span>
+                          <span className="text-xs text-slate-500 leading-tight">{unit}</span>
                         </div>
+                        {/* Badge tipo */}
+                        <div className={`flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${
+                          isConf ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          <span>{isConf ? '✉️' : '🔔'}</span>
+                          <span>{isConf ? 'Conferma' : 'Promemoria'}</span>
+                        </div>
+                        {/* Elimina */}
                         <button type="button"
-                          onClick={() => setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== interval) }))}
-                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          onClick={() => setForm(p => ({ ...p, notification_slots: p.notification_slots.filter((_, j) => j !== i) }))}
+                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     )
                   })}
 
-                  {showAddReminder ? (
-                    <div className="flex gap-2 items-center">
-                      <select value={newInterval} onChange={e => setNewInterval(Number(e.target.value))}
-                        className="flex-1 px-3 py-2.5 rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
-                        <option value="">Seleziona…</option>
-                        {REMINDER_OPTIONS.filter(o => !form.reminder_intervals.includes(o.value)).map(o => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                      <button type="button" disabled={newInterval === ''}
-                        onClick={() => { if (newInterval !== '') { setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, newInterval as number].sort((a, b) => b - a) })); setNewInterval(''); setShowAddReminder(false) } }}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-semibold rounded-xl transition-colors">
-                        Aggiungi
-                      </button>
-                      <button type="button" onClick={() => { setShowAddReminder(false); setNewInterval('') }}
-                        className="p-2.5 border border-slate-200 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
-                        <span className="text-sm">✕</span>
-                      </button>
+                  {showAdd ? (
+                    <div className="rounded-2xl border-2 border-blue-200 bg-blue-50/30 p-3 space-y-3">
+                      {/* 1. Seleziona orario */}
+                      <div>
+                        <p className="text-xs font-medium text-slate-600 mb-1.5">1. Quando inviare</p>
+                        <select value={newInterval} onChange={e => setNewInterval(Number(e.target.value))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
+                          <option value="">Seleziona orario…</option>
+                          {REMINDER_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {/* 2. Seleziona tipo */}
+                      <div>
+                        <p className="text-xs font-medium text-slate-600 mb-1.5">2. Tipo di messaggio</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={() => setNewType('confirmation')}
+                            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                              newType === 'confirmation'
+                                ? 'bg-blue-600 border-blue-600 text-white'
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+                            }`}>
+                            ✉️ Conferma
+                          </button>
+                          <button type="button" onClick={() => setNewType('reminder')}
+                            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors ${
+                              newType === 'reminder'
+                                ? 'bg-amber-500 border-amber-500 text-white'
+                                : 'bg-white border-slate-200 text-slate-500 hover:border-amber-300'
+                            }`}>
+                            🔔 Promemoria
+                          </button>
+                        </div>
+                      </div>
+                      {/* Aggiungi / Annulla */}
+                      <div className="flex gap-2">
+                        <button type="button" disabled={newInterval === ''}
+                          onClick={() => {
+                            if (newInterval !== '') {
+                              setForm(p => ({ ...p, notification_slots: [...p.notification_slots, { interval: newInterval as number, type: newType }] }))
+                              setNewInterval('')
+                              setNewType('reminder')
+                              setShowAdd(false)
+                            }
+                          }}
+                          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-semibold rounded-xl transition-colors">
+                          Aggiungi
+                        </button>
+                        <button type="button" onClick={() => { setShowAdd(false); setNewInterval(''); setNewType('reminder') }}
+                          className="p-2.5 border border-slate-200 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
+                          <span className="text-sm">✕</span>
+                        </button>
+                      </div>
                     </div>
-                  ) : REMINDER_OPTIONS.some(o => !form.reminder_intervals.includes(o.value)) ? (
-                    <button type="button" onClick={() => setShowAddReminder(true)}
+                  ) : (
+                    <button type="button" onClick={() => setShowAdd(true)}
                       className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 hover:border-blue-400 text-blue-500 hover:text-blue-700 text-sm font-medium py-3 rounded-2xl transition-colors">
-                      <Plus className="w-4 h-4" /> Aggiungi orario
+                      <Plus className="w-4 h-4" /> Aggiungi notifica
                     </button>
-                  ) : null}
+                  )}
                 </div>
 
                 {/* Messaggi */}

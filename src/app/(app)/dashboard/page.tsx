@@ -11,7 +11,7 @@ import { auth, db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import {
-  triggerAlarm, wasIntervalNotified, markIntervalNotified, wasNowNotified, markNowNotified,
+  triggerAlarm, wasSlotNotified, markSlotNotified, wasNowNotified, markNowNotified,
 } from '@/hooks/useReminderChecker'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -82,7 +82,7 @@ export default function DashboardPage() {
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
   const [stats, setStats]             = useState({ total: 0, pending: 0, confirmed: 0 })
-  const [reminderIntervals, setReminderIntervals] = useState<number[]>([30])
+  const [notificationSlots, setNotificationSlots] = useState<Array<{ interval: number; type: 'confirmation' | 'reminder' }>>([])
   const [centerName, setCenterName]     = useState('')
 
   // Refs per deduplicazione allarmi (questa sessione)
@@ -139,7 +139,9 @@ export default function DashboardPage() {
       ])
       if (settingsSnap.exists()) {
         const d = settingsSnap.data()
-        setReminderIntervals(d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30]))
+        setNotificationSlots(d.notification_slots ??
+          ((d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30]))
+            .map((i: number) => ({ interval: i, type: 'reminder' as const }))))
         setCenterName(d.center_name ?? '')
       }
       setAppointments(list)
@@ -167,17 +169,17 @@ export default function DashboardPage() {
       if (apt.status === 'cancelled') continue
       const msUntil = new Date(apt.start_time).getTime() - now.getTime()
 
-      // Allarme per ogni intervallo configurato
-      for (const interval of reminderIntervals) {
-        const alarmKey   = `${apt.id}_${interval}`
-        const reminderMs = interval * 60_000
+      // Allarme per ogni slot configurato (tempo + tipo)
+      for (const slot of notificationSlots) {
+        const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
+        const reminderMs = slot.interval * 60_000
 
         if (!alarmFiredRef.current.has(alarmKey)) {
-          if (wasIntervalNotified(apt.id, interval)) {
+          if (wasSlotNotified(apt.id, slot.interval, slot.type)) {
             alarmFiredRef.current.add(alarmKey)
           } else if (msUntil > 0 && msUntil <= reminderMs) {
             alarmFiredRef.current.add(alarmKey)
-            markIntervalNotified(apt.id, interval)
+            markSlotNotified(apt.id, slot.interval, slot.type)
             triggerAlarm(
               apt.id,
               `${apt.clients.first_name} ${apt.clients.last_name}`,
@@ -186,7 +188,8 @@ export default function DashboardPage() {
               apt.clients.phone,
               centerName,
               false,
-              interval,
+              slot.interval,
+              slot.type,
             ).catch(console.error)
           }
         }
@@ -208,12 +211,13 @@ export default function DashboardPage() {
             centerName,
             true,
             0,
+            'reminder',
           ).catch(console.error)
         }
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, appointments, reminderIntervals, centerName])
+  }, [now, appointments, notificationSlots, centerName])
 
   function selectDay(day: Date) {
     setDate(day)
@@ -384,7 +388,7 @@ export default function DashboardPage() {
               key={apt.id}
               appointment={apt}
               now={isToday(date) ? now : undefined}
-              reminderMins={Math.min(...reminderIntervals)}
+              reminderMins={notificationSlots.length > 0 ? Math.min(...notificationSlots.map(s => s.interval)) : 30}
               onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
             />
           ))}

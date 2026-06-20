@@ -5,11 +5,9 @@ import { sendSms } from '@/lib/twilio'
 import type { AppointmentWithRelations, Client, Service, NotificationType } from '@/types/database'
 
 // ── Chiave per la mappa notifications_sent ───────────────────────────────────
-export function notificationKey(type: 'confirmation'): string
-export function notificationKey(type: 'reminder', intervalMinutes: number): string
-export function notificationKey(type: NotificationType, intervalMinutes?: number): string {
-  if (type === 'confirmation') return 'confirmation'
-  return `reminder_${intervalMinutes}`
+const NOTIFICATION_KEY_SEP = '_'
+export function notificationKey(type: NotificationType, intervalMinutes: number): string {
+  return `${type}${NOTIFICATION_KEY_SEP}${intervalMinutes}`
 }
 
 // ── Template e variabili ─────────────────────────────────────────────────────
@@ -92,14 +90,17 @@ async function resolveAppointmentWithRelations(appointmentId: string) {
 }
 
 // ── Invia SMS di conferma appuntamento ───────────────────────────────────────
-export async function sendConfirmationMessage(appointmentId: string): Promise<{ success: boolean; error?: string }> {
+export async function sendConfirmationMessage(
+  appointmentId: string,
+  intervalMinutes: number,
+): Promise<{ success: boolean; error?: string }> {
   const resolved = await resolveAppointmentWithRelations(appointmentId)
   if ('error' in resolved) return { success: false, error: resolved.error }
 
   const { appointment, aptData, centerName, notificationMessages, db } = resolved
-  const key = notificationKey('confirmation')
+  const key = notificationKey('confirmation', intervalMinutes)
 
-  if (aptData.notifications_sent?.[key]) return { success: false, error: 'Conferma già inviata' }
+  if (aptData.notifications_sent?.[key]) return { success: false, error: 'Conferma già inviata per questo orario' }
 
   const messageBody = buildConfirmationMessage(appointment, centerName, notificationMessages.confirmation || undefined)
 

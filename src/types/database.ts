@@ -4,6 +4,11 @@ export type MessageChannel = 'sms' | 'whatsapp'
 export type MessageDirection = 'outbound' | 'inbound'
 export type NotificationType = 'confirmation' | 'reminder'
 
+export interface NotificationSlot {
+  interval: number        // minuti prima dell'appuntamento
+  type: NotificationType
+}
+
 export interface Client {
   id: string
   first_name: string
@@ -70,10 +75,11 @@ export interface Settings {
   center_name: string
   phone_number: string | null
   address: string | null
-  // SMS di promemoria prima dell'appuntamento (anche per la conferma)
+  // SMS ai clienti
   reminder_enabled: boolean
-  reminder_intervals: number[]  // minuti prima, es. [1440, 120]
-  reminder_minutes: number      // mantenuto per retrocompatibilità
+  notification_slots: NotificationSlot[]  // slot configurati con tempo + tipo
+  reminder_intervals: number[]            // retrocompatibilità
+  reminder_minutes: number                // retrocompatibilità
   // Template dei 2 tipi di messaggio SMS
   notification_messages?: { confirmation?: string; reminder?: string }
   created_at: string

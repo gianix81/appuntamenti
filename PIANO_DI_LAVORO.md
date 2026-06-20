@@ -1,6 +1,6 @@
 # Piano di Lavoro — Estetista App
 ## Da singola professionista a grande azienda — piano scalabile
-**Data redazione:** 20 Giugno 2026
+**Data redazione:** 20 Giugno 2026 | **Aggiornato:** 20 Giugno 2026 (integrazione SimplyBook.me)
 **Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Firebase + Twilio + Web Push
 
 ---
@@ -1769,4 +1769,913 @@ come se fossero sempre state lì — senza migrazioni, senza reinstallazioni, se
 
 ---
 
-*Piano redatto il 20/06/2026 — da aggiornare ad ogni fase completata.*
+---
+
+# SUPPLEMENTO — Analisi SimplyBook.me
+## Funzionalità da integrare che mancavano nel piano originale
+
+*Fonte: analisi diretta di SimplyBook.me (Giugno 2026)*
+
+---
+
+## Gap Analysis: Maki App vs SimplyBook.me vs Nostro Piano
+
+SimplyBook.me ha un'impostazione diversa da Maki App — è più orientato alla **prenotazione online self-service** dei clienti, al **marketing di visibilità** (Google, Instagram, Facebook) e alla **gestione operativa avanzata** (risorse, stanze, buffer time). Ecco ciò che aggiunge al nostro piano.
+
+### Funzionalità di SimplyBook.me NON nel piano originale
+
+| Funzionalità | Priorità | Impatto |
+|---|---|---|
+| **Schede Anamnesi / Intake Forms** | 🔴 Alta | Fondamentale per estetisti professionali |
+| **Caparra / Deposit anti no-show** | 🔴 Alta | Riduce cancellazioni last-minute |
+| **Tempo Buffer tra appuntamenti** | 🔴 Alta | Pulizia cabina, setup, spostamento |
+| **Gestione Cabine / Risorse** | 🔴 Alta | Stanze, lettini, attrezzature limitate |
+| **Auto-rimando appuntamento da cliente** | 🟡 Media | Link reschedule in SMS/WhatsApp |
+| **Approvazione manuale prenotazione** | 🟡 Media | Il gestore approva prima della conferma |
+| **Servizi Aggiuntivi (Add-on)** | 🟡 Media | Upsell durante la prenotazione |
+| **Appuntamenti Ricorrenti** | 🟡 Media | Prenota serie di trattamenti in blocco |
+| **Prenotazione Multi-Servizio** | 🟡 Media | Manicure + pedicure in un'unica sessione |
+| **Classi / Appuntamenti di Gruppo** | 🟡 Media | Workshop, corsi, spa party |
+| **Blocco cliente** | 🟡 Media | Blacklist clienti problematici |
+| **Unione duplicati clienti** | 🟡 Media | Qualità dati CRM |
+| **Foto Prima/Dopo per cliente** | 🟡 Media | Portfolio + documentazione trattamenti |
+| **Note sul calendario** | 🟢 Bassa | Pause, note di setup su slot specifici |
+| **Vendita prodotti senza prenotazione** | 🟢 Bassa | E-commerce leggero integrato |
+| **Sincronizzazione Google Calendar** | 🟢 Bassa | Evita double booking su calendario personale |
+| **Prenotazione da Google / Google Business** | 🟢 Bassa | Visibilità e acquisizione clienti |
+| **Prenotazione da Instagram/Facebook** | 🟢 Bassa | Visibilità social |
+| **AI Voice Booking** | 🔵 Futuro | Prenotazione via assistente vocale |
+| **Consulenza Video** | 🔵 Futuro | Consulenza estetica online |
+
+---
+
+---
+
+# FASE 13 — Schede Anamnesi / Intake Forms
+
+## Idea
+Questa è la funzionalità **più importante che mancava**: le schede di anamnesi. Un'estetista professionista raccoglie obbligatoriamente informazioni mediche e di consenso dalle clienti prima dei trattamenti. Attualmente la raccolta è su carta. Digitalizzarla significa:
+- Nessuna carta da archiviare
+- Dati sempre accessibili durante il trattamento
+- Consenso GDPR tracciabile
+- Anamnesi storica per ogni cliente (confronto nel tempo)
+- Alert automatici su allergie e controindicazioni
+
+## Casi d'Uso per Livello
+
+| Uso | Lv 1 | Lv 2–4 |
+|---|---|---|
+| Scheda anamnesi prima visita | ✅ | ✅ |
+| Consenso al trattamento | ✅ | ✅ |
+| Scheda specifica per servizio | ✅ | ✅ |
+| Alert allergie visibile in agenda | ✅ | ✅ |
+| Compilazione da cliente (link) | ✅ | ✅ |
+| Compilazione da operatore | ✅ | ✅ |
+| Foto prima/dopo allegate | ✅ | ✅ |
+| Firma digitale consenso | ✅ | ✅ |
+| Template multipli per tipo trattamento | ❌ | ✅ |
+
+## Tipi di Schede per un Centro Estetico
+
+1. **Prima Visita (generale)** — dati personali, patologie, farmaci, allergie, gravidanza
+2. **Trattamento Viso** — tipo di pelle, sensibilità, prodotti usati, trattamenti precedenti
+3. **Ceretta / Epilazione** — zone trattate, cute sensibile, prodotti controindicati, isotretinoina
+4. **Pressoterapia / Elettrostimolazione** — controindicazioni cardiache, pacemaker, gravidanza
+5. **Radiofrequenza / Tecnologie** — metalli, impianti, patologie specifiche
+6. **Nail Art / Unghie** — allergie ai gel/acrilici, stato delle unghie naturali
+7. **Massaggi** — zone dolore, patologie osteoarticolari, pressione sanguigna
+8. **Consenso Foto** — autorizzazione utilizzo foto prima/dopo per portfolio/social
+
+## Struttura Dati — Firestore
+
+### Collection: `intake_templates`
+```typescript
+{
+  id: string,
+  name: string,                          // "Scheda Prima Visita"
+  description: string | null,
+  service_ids: string[],                 // a quali servizi è collegato ([] = tutti)
+  trigger: 'first_visit' | 'every_visit' | 'service_specific' | 'manual',
+  fields: Array<{
+    id: string,
+    type: 'text' | 'textarea' | 'select' | 'multiselect' | 'boolean' | 'date' | 'signature' | 'photo',
+    label: string,
+    placeholder: string | null,
+    options: string[] | null,            // per select/multiselect
+    required: boolean,
+    is_alert: boolean,                   // se true e risposta positiva → alert rosso in agenda
+    alert_message: string | null,        // messaggio di allerta personalizzato
+    section: string | null,             // raggruppamento campi
+  }>,
+  requires_signature: boolean,
+  active: boolean,
+  created_at: string
+}
+```
+
+### Collection: `intake_responses`
+```typescript
+{
+  id: string,
+  client_id: string,
+  template_id: string,
+  template_name: string,                 // snapshot
+  appointment_id: string | null,         // null se compilata fuori appuntamento
+  responses: Record<string, unknown>,    // { field_id: valore }
+  signature_url: string | null,          // URL Firebase Storage firma PNG
+  has_alerts: boolean,                   // true se almeno un campo is_alert = true
+  alert_fields: string[],                // lista field id con alert attivi
+  photos: Array<{
+    type: 'before' | 'after' | 'reference',
+    url: string,
+    note: string | null,
+    taken_at: string
+  }>,
+  filled_by: 'client' | 'operator',
+  fill_link_token: string | null,        // token per link di compilazione remota (scade 7 gg)
+  fill_link_expires_at: string | null,
+  completed: boolean,
+  completed_at: string | null,
+  created_at: string
+}
+```
+
+### Modifiche a `appointments`
+```typescript
+intake_required: boolean,               // scheda anamnesi richiesta per questo appuntamento
+intake_completed: boolean,              // scheda compilata
+intake_response_ids: string[],          // riferimenti alle risposte
+has_health_alerts: boolean,             // alert allergie/controindicazioni
+alert_notes: string | null,             // testo alert visibile in agenda
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/(app)/intake/page.tsx` — lista template schede
+- `src/app/(app)/intake/new/page.tsx` — costruttore scheda con drag & drop campi
+- `src/app/(app)/intake/[id]/page.tsx` — visualizza/modifica template
+- `src/app/(app)/clients/[id]/intake/page.tsx` — tutte le schede compilate di un cliente
+- `src/app/(app)/intake/fill/[token]/page.tsx` — pagina pubblica compilazione scheda (senza login)
+- `src/components/intake/IntakeFormBuilder.tsx` — costruttore drag & drop campi
+- `src/components/intake/IntakeFieldEditor.tsx` — editor singolo campo
+- `src/components/intake/IntakeFormRenderer.tsx` — renderizza scheda per compilazione
+- `src/components/intake/SignaturePad.tsx` — firma touch/mouse con canvas
+- `src/components/intake/PhotoCapture.tsx` — scatto/upload foto prima/dopo
+- `src/components/intake/AlertBadge.tsx` — badge rosso con alert allergie
+- `src/components/intake/IntakeResponseView.tsx` — visualizza risposte di una scheda
+- `src/app/api/intake/token/route.ts` — genera token link compilazione
+- `src/app/api/intake/submit/route.ts` — salva risposta (anche senza login)
+
+### Modificati
+- `src/components/appointments/AppointmentCard.tsx` — badge alert allergie se `has_health_alerts = true`
+- `src/app/(app)/dashboard/page.tsx` — badge alert su card appuntamento + avviso in cima alla giornata
+- `src/app/(app)/appointments/new/page.tsx` — opzione "Invia scheda anamnesi"
+- `src/app/(app)/clients/[id]/page.tsx` — tab "Schede & Anamnesi"
+
+## Step di Sviluppo Dettagliati
+
+### Step 13.1 — Template Builder
+- Pagina `/intake/new`: lista campi disponibili a sinistra, preview scheda a destra
+- Tipi di campo: testo breve, testo lungo, sì/no, select singola, select multipla, data, firma digitale, foto
+- Per ogni campo: label, obbligatorio sì/no, flag "Alert se positivo", messaggio alert
+- Sezioni raggruppabili (es. "Dati Generali", "Controindicazioni", "Consenso")
+- Salvataggio template in `intake_templates`
+
+### Step 13.2 — Template Predefiniti (caricati al setup)
+Al completamento dell'onboarding, in base alle `specialties` selezionate, caricare automaticamente i template standard:
+```
+specialties includes 'estetica' → crea "Prima Visita Generale", "Trattamento Viso"
+specialties includes 'nails'    → crea "Scheda Unghie"
+specialties includes 'massaggi' → crea "Scheda Massaggi"
+specialties includes 'epilazione' → crea "Scheda Ceretta"
+```
+
+### Step 13.3 — Invio Link Compilazione Remota
+- Quando si crea un appuntamento che richiede anamnesi: generare token univoco (UUID)
+- Salvare `fill_link_token` e `fill_link_expires_at = now + 7 days` in `intake_responses`
+- Inviare WhatsApp/SMS al cliente con link: `[app_url]/intake/fill/[token]`
+- Testo: "Prima del tuo appuntamento di giovedì, compila la tua scheda: [link]"
+
+### Step 13.4 — Pagina Pubblica di Compilazione
+- `/intake/fill/[token]` — accessibile senza login (solo con il token)
+- Mostra: nome centro, nome scheda, campi del form
+- `SignaturePad.tsx`: canvas HTML5 con supporto touch (mobile) e mouse (desktop), salva firma come PNG su Firebase Storage
+- `PhotoCapture.tsx`: accesso fotocamera device via `getUserMedia()` o upload da galleria
+- Al submit: salva `intake_responses`, aggiorna `appointment.intake_completed = true`
+- Pagina di conferma: "Grazie! La tua scheda è stata ricevuta. Ci vediamo giovedì!"
+
+### Step 13.5 — Alert in Agenda
+- Quando `has_health_alerts = true` su un appuntamento:
+  - `AppointmentCard` mostra badge rosso "⚠ Allergie" in alto a destra
+  - Dashboard: se ci sono appuntamenti con alert oggi → banner giallo in cima "Attenzione: 2 clienti con note mediche oggi"
+  - Click sul badge → modal con lista degli alert (es. "Allergia alla cera al miele", "Isotretinoina in corso")
+
+### Step 13.6 — Storico Schede per Cliente
+- Tab "Anamnesi" nella scheda cliente:
+  - Lista tutte le schede compilate con data
+  - Click → visualizza risposte complete
+  - Confronto fianco a fianco di due schede (utile per vedere variazioni nel tempo)
+  - Sezione "Foto Prima/Dopo": galleria cronologica per trattamento
+
+### Step 13.7 — Compilazione da Operatore (in Studio)
+- Durante l'appuntamento: bottone "Compila scheda ora" → apre `IntakeFormRenderer` in modal fullscreen
+- Ottimizzato per tablet (touch)
+- L'operatore può compilare mentre il cliente è presente
+- La firma viene presa direttamente sul device dell'operatore
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Creare template "Prima Visita" con campo allergie (is_alert) | Template salvato con campo configurato |
+| Appuntamento creato → WhatsApp con link | Link valido e porta alla scheda corretta |
+| Cliente compila scheda e segna "Allergia lattice" | `has_health_alerts=true`, alert visibile in agenda |
+| Badge allergia in dashboard | Compare con link al dettaglio |
+| Link scaduto (dopo 7 gg) | Messaggio "Link non valido o scaduto" |
+| Firma digitale da mobile | Firma salvata come PNG su Storage |
+| Foto prima/dopo caricata | Visibile nella galleria cliente |
+
+---
+
+---
+
+# FASE 14 — Caparra Digitale (Deposit Anti No-Show)
+
+## Idea
+Il no-show è il problema numero 1 delle estetiste. Una cliente prenota e non si presenta, lo slot è perso. Con la caparra digitale, al momento della prenotazione online si addebita una somma (es. 20–50% del servizio) che viene trattenuta in caso di no-show o cancellazione tardiva.
+
+## Perché è Critico
+- Il no-show costa in media 1–3 appuntamenti persi a settimana per una singola estetista
+- La caparra riduce i no-show dell'80%+ (dato SimplyBook.me)
+- SumUp ha già l'infrastruttura di pagamento necessaria (fase 7)
+
+## Comportamento per Livello
+
+Disponibile a tutti i livelli, ma richiede SumUp configurato (Fase 7).
+
+## Struttura Dati — Modifiche
+
+### Modifica a `services`
+```typescript
+deposit_required: boolean,             // caparra richiesta per questo servizio
+deposit_type: 'fixed' | 'percent',
+deposit_amount: number,                // importo fisso o percentuale
+deposit_policy: string | null,         // testo politica cancellazione mostrato al cliente
+cancellation_hours: number,            // entro quante ore prima si può cancellare gratis
+```
+
+### Modifica a `appointments`
+```typescript
+deposit_amount: number | null,
+deposit_payment_id: string | null,     // ID pagamento SumUp della caparra
+deposit_status: 'none' | 'pending' | 'paid' | 'refunded' | 'forfeited',
+deposit_paid_at: string | null,
+deposit_refunded_at: string | null,
+deposit_forfeited_reason: string | null,
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/components/appointments/DepositBadge.tsx` — stato caparra nell'appointment card
+- `src/app/api/appointments/deposit-refund/route.ts` — rimborso caparra
+- `src/app/api/appointments/deposit-forfeit/route.ts` — incassa caparra (no-show)
+
+### Modificati
+- `src/app/(app)/services/[id]/edit/page.tsx` — sezione "Caparra" per ogni servizio
+- `src/app/(app)/appointments/new/page.tsx` — se servizio richiede caparra → mostra info + genera link pagamento SumUp
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — gestione stato caparra (rimborsa / incassa)
+- `src/components/appointments/AppointmentCard.tsx` — badge stato caparra
+
+## Step di Sviluppo
+
+### Step 14.1 — Configurazione per Servizio
+- In `/services/[id]/edit`: sezione "Politica Caparra"
+  - Toggle "Richiedi caparra"
+  - Tipo: importo fisso (€) o percentuale (%)
+  - Valore
+  - Policy di cancellazione: textarea con testo mostrato al cliente ("Cancellazione gratuita entro 24 ore...")
+  - Ore minime per cancellazione gratuita (input numerico)
+
+### Step 14.2 — Flusso Creazione Appuntamento con Caparra
+- Se il servizio selezionato ha `deposit_required = true`:
+  1. Mostrare box informativo: "Questo servizio richiede una caparra di X€. Sarà rimborsata se cancelli entro Y ore."
+  2. Al salvataggio: creare appuntamento con `deposit_status = 'pending'`
+  3. Generare link SumUp Checkout per l'importo della caparra
+  4. Inviare WhatsApp: "Prenotazione confermata! Per garantire il tuo posto, paga la caparra di X€ entro 24h: [link]"
+  5. Se la caparra non viene pagata entro 24h → notifica al gestore
+
+### Step 14.3 — Gestione No-Show e Cancellazioni
+- **Cancellazione in tempo** (entro le ore configurate):
+  - Bottone "Rimborsa caparra" → API SumUp rimborso → `deposit_status = 'refunded'`
+  - WhatsApp cliente: "Caparra rimborsata. Ci dispiace non vederti!"
+- **No-show / cancellazione tardiva**:
+  - Bottone "Incassa caparra" → `deposit_status = 'forfeited'`, importo già in conto SumUp
+  - WhatsApp cliente (opzionale, configurabile): "La tua caparra è stata trattenuta secondo la nostra policy."
+- **Conferma automatica** quando la caparra viene pagata: `appointment.status → confirmed`
+
+### Step 14.4 — Dashboard No-Show Tracking
+- In statistiche (Fase 9): sezione "Affidabilità Clienti"
+  - N° no-show per cliente → badge "Cliente inaffidabile" se > 2 no-show
+  - Perdita economica stimata da no-show nel periodo
+  - Tasso no-show % (no-show / totale appuntamenti)
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Servizio con caparra 30€ obbligatoria | Al salvataggio appuntamento → WhatsApp con link pagamento |
+| Cliente paga caparra | `deposit_status='paid'`, appuntamento confermato automaticamente |
+| Cliente cancella in tempo | Rimborso caparra, `deposit_status='refunded'` |
+| No-show: "Incassa caparra" | `deposit_status='forfeited'`, importo in conto gestore |
+| Caparra non pagata entro 24h | Notifica al gestore con link per contattare cliente |
+
+---
+
+---
+
+# FASE 15 — Buffer Time, Risorse e Gestione Cabine
+
+## Idea
+Due funzionalità operative critiche:
+1. **Buffer Time**: tempo di pulizia/setup tra un appuntamento e l'altro (es. 10 min dopo ogni ceretta per igienizzare la cabina)
+2. **Gestione Risorse**: stanze e attrezzature limitate (es. 2 lettini, 1 macchinario radiofrequenza, 3 cabine). Il sistema verifica la disponibilità della risorsa oltre che dell'operatore.
+
+## Perché è Importante
+- Senza buffer time, due appuntamenti consecutivi non lasciano tempo per la pulizia
+- Senza gestione risorse, si rischia di prenotare due trattamenti che richiedono lo stesso macchinario contemporaneamente
+- Entrambe sono funzionalità invisibili al cliente ma fondamentali per la qualità del lavoro
+
+## Comportamento per Livello
+
+- **Lv 1**: Buffer time disponibile (anche da soli serve tempo di pulizia). Risorse opzionali.
+- **Lv 2+**: Buffer time + Risorse complete.
+
+## Struttura Dati — Firestore
+
+### Modifica a `services`
+```typescript
+buffer_before_minutes: number,         // default 0 — setup prima del trattamento
+buffer_after_minutes: number,          // default 0 — pulizia/setup dopo il trattamento
+resource_ids: string[],                // risorse richieste per questo servizio
+```
+
+### Collection: `resources`
+```typescript
+{
+  id: string,
+  name: string,                        // "Lettino 1" | "Macchinario RF" | "Cabina Idropittura"
+  type: 'room' | 'equipment' | 'other',
+  quantity: number,                    // quante unità di questa risorsa esistono
+  active: boolean,
+  color: string | null,                // colore in agenda
+  notes: string | null,
+  created_at: string
+}
+```
+
+### Collection: `resource_bookings` (occupazione risorse)
+```typescript
+{
+  id: string,
+  resource_id: string,
+  appointment_id: string,
+  start_time: string,
+  end_time: string,                    // include buffer after
+  created_at: string
+}
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/(app)/resources/page.tsx` — gestione risorse (cabine, attrezzature)
+- `src/app/(app)/resources/new/page.tsx`
+- `src/components/resources/ResourceForm.tsx`
+- `src/components/resources/ResourceAvailability.tsx` — vista occupazione risorse per ora
+- `src/lib/availability.ts` — logica disponibilità (operatore + risorsa + buffer)
+
+### Modificati
+- `src/app/(app)/services/[id]/edit/page.tsx` — sezione "Buffer Time" + "Risorse Richieste"
+- `src/lib/availability.ts` — integra controllo risorse nella verifica disponibilità
+- `src/app/(app)/appointments/new/page.tsx` — mostra avviso se risorsa non disponibile
+
+## Step di Sviluppo
+
+### Step 15.1 — Buffer Time nei Servizi
+- In form servizio: sezione "Tempi Operativi"
+  - "Tempo preparazione prima del trattamento: ___ min" (buffer before)
+  - "Tempo pulizia/igienizzazione dopo il trattamento: ___ min" (buffer after)
+- Nella logica disponibilità: un operatore è occupato da `start - buffer_before` a `end + buffer_after`
+- In agenda: i buffer sono visibili come zone grigie attorno all'appuntamento
+- Esempio: ceretta da 30 min con 10 min buffer after → slot occupa 40 min in agenda
+
+### Step 15.2 — CRUD Risorse
+- Pagina `/resources`: lista risorse con tipo, quantità, colore, stato
+- Form: nome, tipo (stanza/attrezzatura/altro), quantità disponibile, colore, note
+- Esempi preconfigurati al setup: "Cabina 1", "Lettino 1", "Lettino 2"
+
+### Step 15.3 — Collegamento Servizi → Risorse
+- In form servizio: multi-select "Risorse necessarie"
+- Es: "Radiofrequenza" richiede "Macchinario RF" (qty 1)
+- Es: "Massaggio" richiede "Lettino" (qty 1) — se ci sono 2 lettini, 2 massaggi possono essere contemporanei
+
+### Step 15.4 — Verifica Disponibilità Risorse
+- Funzione `checkResourceAvailability(resourceId, startTime, endTime)`:
+  1. Conta `resource_bookings` per quella risorsa in quella finestra temporale
+  2. Se `count >= resource.quantity` → risorsa non disponibile
+  3. Restituisce `{ available: boolean, nextAvailable: Date }`
+- Nel form nuovo appuntamento: oltre a verificare l'operatore, verificare le risorse del servizio
+- Se risorsa non disponibile: messaggio "La cabina 1 è occupata in quell'orario. Primo slot disponibile: 15:30"
+
+### Step 15.5 — Vista Risorse in Agenda (lv 2+)
+- Toggle in agenda: visualizza per "Operatore" / "Risorsa"
+- Vista per risorsa: colonne = risorse, righe = orari, box = appuntamenti
+- Utile per vedere subito se c'è una cabina libera senza cercare operatore per operatore
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Servizio ceretta con 10 min buffer after | Slot occupa 40 min in agenda, prossimo slot inizia dopo 40 min |
+| 2 lettini configurati, 2 massaggi contemporanei | Entrambi accettati (risorsa qty=2) |
+| Terzo massaggio contemporaneo | "Lettino non disponibile" — slot non offerto |
+| Buffer before: prep 15 min | Operatore risulta occupato 15 min prima dell'orario cliente |
+
+---
+
+---
+
+# FASE 16 — Self-Service Cliente: Reschedule, Cancellazione, Approvazioni
+
+## Idea
+Tre funzionalità che riducono il lavoro manuale del gestore:
+1. Il cliente può **spostare o cancellare** il proprio appuntamento autonomamente via link nel messaggio di conferma
+2. Il gestore può richiedere **approvazione manuale** per certi servizi (il sistema notifica, ma non conferma finché il gestore non approva)
+3. **Appuntamenti ricorrenti**: la cliente prenota una serie (es. trattamento viso ogni 3 settimane per 6 volte)
+
+## Struttura Dati — Firestore
+
+### Modifica a `appointments`
+```typescript
+reschedule_token: string | null,       // token per auto-reschedule (scade 24h prima dell'appuntamento)
+cancel_token: string | null,           // token per auto-cancellazione
+requires_approval: boolean,            // approvazione manuale richiesta
+approved_at: string | null,
+approved_by_staff_id: string | null,
+recurrence_group_id: string | null,    // ID gruppo appuntamenti ricorrenti
+recurrence_index: number | null,       // posizione nella serie (1, 2, 3...)
+```
+
+### Collection: `recurrence_groups`
+```typescript
+{
+  id: string,
+  client_id: string,
+  service_id: string,
+  staff_id: string | null,
+  frequency_days: number,              // ogni X giorni (es. 21 per ogni 3 settimane)
+  total_sessions: number,
+  sessions_created: number,
+  first_date: string,
+  last_date: string,
+  status: 'active' | 'completed' | 'cancelled',
+  created_at: string
+}
+```
+
+### Modifica a `services`
+```typescript
+requires_approval: boolean,            // servizi che richiedono approvazione manuale
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/reschedule/[token]/page.tsx` — pagina pubblica reschedule (senza login)
+- `src/app/cancel/[token]/page.tsx` — pagina pubblica cancellazione (senza login)
+- `src/app/(app)/appointments/recurring/page.tsx` — crea serie appuntamenti ricorrenti
+- `src/components/appointments/RecurringForm.tsx`
+- `src/app/api/appointments/approve/route.ts` — approva appuntamento
+- `src/app/api/appointments/reschedule-token/route.ts` — genera token reschedule
+
+### Modificati
+- `src/lib/twilio.ts` — aggiungere token reschedule e cancel nel messaggio di conferma
+- `src/app/(app)/dashboard/page.tsx` — sezione "Da approvare" se ci sono appuntamenti in attesa
+- `src/app/(app)/settings/page.tsx` — configurazione URL base per token links
+
+## Step di Sviluppo
+
+### Step 16.1 — Token Reschedule/Cancellazione
+- Al salvataggio appuntamento: generare `reschedule_token` e `cancel_token` (UUID)
+- Scadenza: `start_time - cancellation_hours` (coerente con policy caparra)
+- Inviare nel messaggio di conferma:
+  ```
+  Appuntamento confermato per Venerdì 20 alle 15:00.
+  Hai bisogno di spostarlo? → [link reschedule]
+  Devi cancellare? → [link cancella]
+  (gratuito entro 24 ore dall'appuntamento)
+  ```
+
+### Step 16.2 — Pagina Reschedule Pubblica
+- `/reschedule/[token]`:
+  1. Verifica token valido e non scaduto
+  2. Mostra: nome cliente, servizio, data/ora attuale
+  3. Mini-calendario con slot disponibili (stessa logica del form interno)
+  4. Cliente seleziona nuovo slot → conferma
+  5. Aggiorna appuntamento su Firestore
+  6. Invia conferma WhatsApp con nuovo orario
+  7. Notifica al gestore: "Maria Rossi ha spostato il suo appuntamento a Sabato 10:00"
+
+### Step 16.3 — Pagina Cancellazione Pubblica
+- `/cancel/[token]`:
+  1. Verifica token e policy caparra (se caparra pagata: avviso trattenimento)
+  2. Mostra: dettagli appuntamento + policy cancellazione
+  3. Campo motivo cancellazione (opzionale)
+  4. Bottone "Conferma cancellazione"
+  5. Aggiorna `appointment.status = 'cancelled'`
+  6. Gestione caparra: se in tempo → rimborso; se tardiva → forfeit
+  7. Notifica gestore con motivo
+
+### Step 16.4 — Approvazione Manuale
+- Per servizi con `requires_approval = true`:
+  - Appuntamento creato con `status = 'pending_approval'`
+  - WhatsApp cliente: "Richiesta ricevuta! Ti confermiamo entro poche ore."
+  - Notifica push al gestore: "Nuova richiesta da approvare: Maria Rossi - Venerdì 15:00"
+  - Dashboard: sezione "Da approvare" con lista richieste pendenti
+  - Bottoni: "Approva" → `status = 'confirmed'` + WhatsApp conferma / "Rifiuta" → WhatsApp con motivazione
+
+### Step 16.5 — Appuntamenti Ricorrenti
+- Form `/appointments/recurring`:
+  - Seleziona cliente, servizio, operatore, data primo appuntamento
+  - Frequenza: ogni X giorni / settimane / mesi
+  - Numero sessioni (o data fine)
+  - Preview: lista di tutte le date generate
+  - Salva: crea tutti gli `appointments` con `recurrence_group_id` comune
+- In agenda: appuntamenti ricorrenti hanno badge "🔄 Serie" + numero sessione
+- Cancellazione: "Cancella solo questo" / "Cancella tutti i futuri"
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Cliente usa link reschedule | Nuovo slot scelto, Firestore aggiornato, gestore notificato |
+| Link reschedule scaduto (dopo policy) | Pagina "Non è più possibile modificare questo appuntamento" |
+| Servizio con approvazione manuale | Stato 'pending_approval', dashboard mostra richiesta |
+| Approvazione → cliente notificata | WhatsApp "Il tuo appuntamento è confermato!" |
+| Rifiuto → cliente notificata | WhatsApp con motivazione |
+| Serie di 6 appuntamenti ogni 3 settimane | 6 documenti creati con recurrence_group_id comune |
+
+---
+
+---
+
+# FASE 17 — Add-On Servizi + Prenotazione Multi-Servizio
+
+## Idea
+Due funzionalità che aumentano il valore medio dell'appuntamento:
+1. **Add-on**: extra opzionali aggiungibili durante la prenotazione (es. maschera viso al collagene +15€ aggiunta alla pulizia viso)
+2. **Multi-servizio**: prenota manicure + pedicure in un'unica sessione, in sequenza o con operatori diversi in parallelo
+
+## Struttura Dati — Firestore
+
+### Collection: `service_addons`
+```typescript
+{
+  id: string,
+  name: string,                        // "Maschera al collagene"
+  description: string | null,
+  price: number,
+  duration_extra_minutes: number,      // minuti aggiuntivi aggiunti alla durata
+  service_ids: string[],               // a quali servizi base è disponibile
+  active: boolean,
+  created_at: string
+}
+```
+
+### Modifica a `appointments`
+```typescript
+addon_ids: string[],
+addons_total: number,
+linked_appointment_ids: string[],      // per multi-servizio: ID degli appuntamenti collegati
+is_multi_service_group: boolean,
+multi_service_group_id: string | null,
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/(app)/addons/page.tsx` — CRUD add-on
+- `src/components/addons/AddonForm.tsx`
+- `src/components/addons/AddonSelector.tsx` — selezione add-on nel form appuntamento
+- `src/app/(app)/appointments/multi/page.tsx` — creazione appuntamento multi-servizio
+
+### Modificati
+- `src/app/(app)/services/[id]/edit/page.tsx` — selezione add-on disponibili per il servizio
+- `src/app/(app)/appointments/new/page.tsx` — sezione add-on + bottone "Aggiungi un altro servizio"
+- `src/components/appointments/AppointmentCard.tsx` — mostrare add-on selezionati
+
+## Step di Sviluppo
+
+### Step 17.1 — CRUD Add-On
+- Lista add-on: nome, prezzo, +X min, servizi compatibili
+- Form: nome, descrizione, prezzo, minuti extra, seleziona servizi compatibili
+- Add-on inattivi nascosti dalla selezione
+
+### Step 17.2 — Selezione Add-On nel Form
+- Dopo aver scelto servizio: mostrare eventuali add-on compatibili come checkbox con prezzo
+- "+15 min, +15€ — Maschera al Collagene"
+- La durata totale dell'appuntamento si aggiorna live: "Durata totale: 75 min (60 + 15 add-on)"
+- Il prezzo totale si aggiorna: "Totale: 85€ (70 + 15)"
+
+### Step 17.3 — Prenotazione Multi-Servizio
+- Nel form appuntamento, dopo il primo servizio: link "Aggiungi un altro servizio"
+- Si espande una seconda sezione identica: servizio, operatore, orario (proposto automaticamente dopo la fine del primo)
+- Opzione: "Stesso operatore" / "Operatore disponibile" / "Operatore specifico"
+- Se stessa operatrice: il secondo inizia subito dopo il primo (rispettando buffer)
+- Se operatori diversi: possono essere paralleli
+- Un unico checkout con totale combinato
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Add-on "Maschera" (+15€, +15 min) su pulizia viso 60 min/70€ | Durata 75 min, totale 85€ |
+| Prenotare manicure + pedicure (stesso operatore) | Secondo inizia dopo il primo + buffer |
+| Prenotare manicure + massaggio (operatori diversi) | Contemporanei se risorse permettono |
+| Totale multi-servizio nel checkout | Somma corretta di tutti i servizi + add-on |
+
+---
+
+---
+
+# FASE 18 — Classi e Appuntamenti di Gruppo
+
+## Idea
+Workshop di bellezza, lezioni di automassaggio, corso nail art, "spa party" con più persone. Il cliente prenota un posto in un evento con N posti disponibili, non un appuntamento individuale.
+
+## Livello: Lv 2+
+
+## Struttura Dati — Firestore
+
+### Collection: `classes`
+```typescript
+{
+  id: string,
+  name: string,                        // "Workshop Gel Nails"
+  description: string | null,
+  service_id: string | null,           // servizio associato (opzionale)
+  instructor_staff_id: string | null,
+  resource_id: string | null,          // sala/stanza
+  max_participants: number,
+  min_participants: number | null,     // minimo per non cancellare
+  price_per_person: number,
+  duration_minutes: number,
+  scheduled_at: string,                // data e ora
+  status: 'scheduled' | 'confirmed' | 'cancelled' | 'completed',
+  cancelled_if_min_not_reached_at: string | null,  // deadline conferma
+  waitlist_enabled: boolean,
+  created_at: string
+}
+```
+
+### Collection: `class_bookings`
+```typescript
+{
+  id: string,
+  class_id: string,
+  client_id: string,
+  participants_count: number,          // 1 persona o gruppo (es. 2 amiche)
+  status: 'confirmed' | 'waitlist' | 'cancelled',
+  paid: boolean,
+  payment_id: string | null,
+  ticket_code: string | null,          // codice QR/barcode per check-in
+  created_at: string
+}
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/(app)/classes/page.tsx` — calendario eventi/classi
+- `src/app/(app)/classes/new/page.tsx`
+- `src/app/(app)/classes/[id]/page.tsx` — dettaglio classe con lista iscritti
+- `src/components/classes/ClassForm.tsx`
+- `src/components/classes/ClassCard.tsx` — card con posti rimasti
+- `src/components/classes/ParticipantList.tsx`
+- `src/components/classes/TicketQR.tsx` — QR code ticket
+
+## Step di Sviluppo
+
+### Step 18.1 — CRUD Classi
+- Form: nome, descrizione, istruttore, sala, max partecipanti, min partecipanti, prezzo per persona, data/ora, durata
+- Se `min_participants` configurato: campo "Cancella entro X se non si raggiunge il minimo"
+
+### Step 18.2 — Iscrizioni
+- Dalla scheda cliente o da dashboard classe: "Iscrivi cliente"
+- Se classe piena: iscrizione in lista d'attesa automatica
+- Se `waitlist_enabled`: notifica WhatsApp quando si libera un posto
+- Generazione `ticket_code` univoco per ogni iscrizione
+
+### Step 18.3 — Gestione Pagamenti Classe
+- Integrazione SumUp: checkout per `price_per_person * participants_count`
+- Se `min_participants` non raggiunto alla deadline: rimborso automatico + WhatsApp notifica
+
+### Step 18.4 — Check-In
+- Pagina `/classes/[id]` → tab "Check-in": lista partecipanti con stato
+- Bottone "Segna presente" per ogni partecipante
+- QR code scanner (via fotocamera device) per check-in veloce
+
+### Step 18.5 — Cancellazione Classe
+- Se cancellata dal gestore: rimborso automatico SumUp a tutti + WhatsApp "Il workshop è stato cancellato. Rimborso in 3-5 gg."
+- Se cancellata per mancanza minimo: stesso flusso + "Non abbiamo raggiunto il numero minimo"
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Classe con 5 posti, 5 iscrizioni | Sesto tentativo → lista d'attesa |
+| Cancellazione di un iscritto | Primo in lista d'attesa notificato automaticamente |
+| Check-in via QR | Partecipante marcato presente |
+| Min partecipanti non raggiunto | Rimborso automatico + notifica |
+
+---
+
+---
+
+# FASE 19 — Integrazioni Visibilità (Google, Instagram, Facebook)
+
+## Idea
+Permettere alle clienti di prenotare direttamente da Google Maps, Google Search, Instagram e Facebook. Queste integrazioni aumentano l'acquisizione di nuove clienti senza costi pubblicitari aggiuntivi.
+
+## Livello: Lv 3+ (richiede struttura solida e volume)
+
+## Sotto-funzionalità
+
+### 19A — Reserve with Google (Google Business)
+- Integrazione con Google Business Profile
+- Le clienti trovano il centro su Google Maps e possono cliccare "Prenota" direttamente
+- La prenotazione entra nel sistema come appuntamento normale
+- Richiede: Google Business Profile verificato + integrazione API (provider certificato come SimplyBook.me)
+
+**Alternativa realistica senza provider**: il link di prenotazione dell'app viene aggiunto manualmente come "URL prenotazione" nel profilo Google Business → le clienti vengono reindirizzate all'app
+
+### 19B — Widget Prenotazione (per sito web o link)
+- Una pagina pubblica di prenotazione: `[app_url]/book/[center_slug]`
+- La cliente sceglie servizio, data, operatore → conferma
+- Genera appuntamento nel sistema
+- Invia conferma automatica WhatsApp
+- Configurabile: colori, logo, servizi visibili, operatori visibili
+
+### 19C — Sincronizzazione Google Calendar
+- Ogni operatore può collegare il proprio Google Calendar
+- Quando arriva una prenotazione → l'evento appare nel Google Calendar personale
+- Se l'operatore aggiunge un evento nel suo Google Calendar → slot bloccato nell'app
+- Implementazione: OAuth Google Calendar API
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/book/[slug]/page.tsx` — pagina prenotazione pubblica
+- `src/app/book/[slug]/confirm/page.tsx` — conferma prenotazione pubblica
+- `src/components/booking-widget/ServicePicker.tsx`
+- `src/components/booking-widget/StaffPicker.tsx`
+- `src/components/booking-widget/SlotPicker.tsx`
+- `src/components/booking-widget/BookingConfirmForm.tsx` — dati cliente + conferma
+- `src/app/api/public/slots/route.ts` — API pubblica disponibilità slot (no auth)
+- `src/app/api/public/book/route.ts` — API pubblica creazione appuntamento
+- `src/app/(app)/settings/integrations/page.tsx` — pagina integrazioni (Google Cal, widget)
+- `src/app/api/google-calendar/oauth/route.ts`
+- `src/app/api/google-calendar/sync/route.ts`
+
+### Modificati
+- `src/app/(app)/settings/page.tsx` — link a pagina integrazioni
+- `src/app/(app)/dashboard/page.tsx` — badge "Nuova prenotazione online" quando arriva da widget pubblico
+
+## Step di Sviluppo
+
+### Step 19.1 — Pagina Prenotazione Pubblica
+- Slug univoco per ogni centro (configurato in onboarding): `estetista-maria-frosinone`
+- Step 1: lista servizi con foto, durata, prezzo
+- Step 2: scelta operatore (o "Primo disponibile")
+- Step 3: calendario con slot disponibili (chiama API pubblica autenticata solo con slug)
+- Step 4: inserimento dati cliente (nome, telefono, email, note)
+- Step 5: conferma + invio WhatsApp automatico
+- Design: minimal, brandizzato con colori e logo del centro
+
+### Step 19.2 — API Pubblica
+- `GET /api/public/slots?slug=xxx&service_id=yyy&date=zzz` — restituisce slot liberi
+- `POST /api/public/book` — crea appuntamento, invia WhatsApp, notifica gestore
+- Rate limiting: max 10 richieste/minuto per IP (protezione spam)
+- GDPR: consenso trattamento dati obbligatorio nel form
+
+### Step 19.3 — Google Calendar Sync
+- In Settings → Integrazioni: "Collega Google Calendar"
+- OAuth flow: redirect Google → callback → salva access_token + refresh_token per staff
+- Cron ogni 15 min: sincronizza nuovi appuntamenti → crea eventi su Google Calendar
+- Webhook Google Calendar (push notification): quando l'operatore aggiunge evento → blocca slot
+
+### Step 19.4 — Link nel Profilo Google Business
+- In Settings → Integrazioni: sezione "Google Business"
+- Istruzioni step-by-step per aggiungere il link di prenotazione al profilo Google Business
+- Preview del link: `https://[app_url]/book/[slug]`
+- Bottone "Copia link" + QR code scaricabile (da mettere in vetrina)
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Prenotazione da link pubblico | Appuntamento creato, WhatsApp inviato, gestore notificato |
+| Slot già occupato | Non mostrato nella pagina pubblica |
+| Rate limiting | IP bloccato dopo 10 richieste/min |
+| Google Calendar sync | Evento appare nel calendario Google dell'operatore |
+| Evento su Google Calendar → blocco slot | Slot non disponibile nell'app |
+
+---
+
+---
+
+# Tabella Gap Colmati — SimplyBook.me vs Piano Originale
+
+| Funzionalità SimplyBook | Fase Nostra | Stato |
+|---|---|---|
+| Intake Forms / Anamnesi | Fase 13 | ✅ Aggiunta |
+| Deposit / Caparra | Fase 14 | ✅ Aggiunta |
+| Buffer Time tra appuntamenti | Fase 15 | ✅ Aggiunta |
+| Gestione Risorse / Cabine | Fase 15 | ✅ Aggiunta |
+| Reschedule self-service cliente | Fase 16 | ✅ Aggiunta |
+| Cancellazione self-service cliente | Fase 16 | ✅ Aggiunta |
+| Approvazione manuale prenotazione | Fase 16 | ✅ Aggiunta |
+| Appuntamenti Ricorrenti | Fase 16 | ✅ Aggiunta |
+| Add-on Servizi | Fase 17 | ✅ Aggiunta |
+| Prenotazione Multi-Servizio | Fase 17 | ✅ Aggiunta |
+| Classi / Workshop / Gruppo | Fase 18 | ✅ Aggiunta |
+| Pagina prenotazione pubblica | Fase 19 | ✅ Aggiunta |
+| Google Calendar Sync | Fase 19 | ✅ Aggiunta |
+| Reserve with Google / link Google Business | Fase 19 | ✅ Aggiunta |
+| Blocco cliente | Fase 4 (CRM) | ⚡ Da aggiungere a Fase 4 |
+| Unione duplicati clienti | Fase 4 (CRM) | ⚡ Da aggiungere a Fase 4 |
+| No-show tracking | Fase 14 | ✅ Aggiunta |
+| Ticket QR per classi | Fase 18 | ✅ Aggiunta |
+| Video meeting (consulenza online) | — | 🔵 Futuro |
+| AI Voice Booking | — | 🔵 Futuro |
+| Instagram/Facebook Bookings | — | 🔵 Futuro |
+| News/Blog | — | 🔵 Futuro |
+
+---
+
+# Riepilogo Globale Aggiornato (Piano Completo)
+
+| Fase | Funzionalità | Per Chi | Priorità | Stima |
+|---|---|---|---|---|
+| 1 | Onboarding + Business Level | Tutti | 🔴 Alta | 2–3 gg |
+| 2 | Agenda Avanzata + DnD | Tutti | 🔴 Alta | 3–4 gg |
+| 3 | Gestione Staff | Lv 2+ | 🟡 Media | 3–4 gg |
+| 4 | CRM Avanzato + Blocco + Merge | Tutti | 🔴 Alta | 3–4 gg |
+| 5 | Pacchetti + Card + Gift Card | Tutti | 🔴 Alta | 5–6 gg |
+| 6 | Fidelity Punti | Tutti | 🟡 Media | 2–3 gg |
+| 7 | SumUp Pagamenti | Tutti | 🔴 Alta | 2–3 gg |
+| 8 | Marketing Automation | Tutti (scala) | 🟡 Media | 4–5 gg |
+| 9 | Statistiche & Report | Tutti (scala) | 🟡 Media | 4–5 gg |
+| 10 | Magazzino Prodotti | Lv 2+ opz | 🟢 Bassa | 3–4 gg |
+| 11 | Scontrino Digitale PDF | Tutti | 🟢 Bassa | 3–4 gg |
+| 12 | Multi-sede | Lv 4 | 🟢 Bassa | 5–7 gg |
+| **13** | **Schede Anamnesi / Intake Forms** | **Tutti** | **🔴 Alta** | **4–5 gg** |
+| **14** | **Caparra Digitale Anti No-Show** | **Tutti** | **🔴 Alta** | **2–3 gg** |
+| **15** | **Buffer Time + Risorse/Cabine** | **Tutti** | **🔴 Alta** | **2–3 gg** |
+| **16** | **Reschedule/Cancel Self-Service + Approvazioni + Ricorrenti** | **Tutti** | **🟡 Media** | **3–4 gg** |
+| **17** | **Add-On Servizi + Multi-Servizio** | **Tutti** | **🟡 Media** | **2–3 gg** |
+| **18** | **Classi e Workshop di Gruppo** | **Lv 2+** | **🟡 Media** | **3–4 gg** |
+| **19** | **Pagina Prenotazione Pubblica + Google Cal** | **Tutti** | **🟡 Media** | **4–5 gg** |
+| **TOT** | | | | **~59–80 gg** |
+
+---
+
+## Ordine Implementazione Aggiornato
+
+```
+FASE 1  → Onboarding & Business Level
+FASE 13 → Schede Anamnesi              ← SALE DI PRIORITÀ (critico per estetica)
+FASE 2  → Agenda + Buffer Time (15 integrata)
+FASE 15 → Buffer Time + Risorse
+FASE 14 → Caparra Anti No-Show
+FASE 4  → CRM + Blocco + Merge
+FASE 7  → SumUp Pagamenti
+FASE 5  → Pacchetti + Card + Gift Card
+FASE 16 → Reschedule/Cancel + Approvazioni + Ricorrenti
+FASE 17 → Add-On + Multi-Servizio
+FASE 6  → Fidelity Punti
+FASE 3  → Staff (quando serve)
+FASE 8  → Marketing Automation
+FASE 9  → Statistiche & Report
+FASE 19 → Pagina Pubblica + Google Calendar
+FASE 18 → Classi e Workshop
+FASE 10 → Magazzino (quando serve)
+FASE 11 → Scontrino PDF
+FASE 12 → Multi-sede (enterprise)
+```
+
+---
+
+*Piano aggiornato il 20/06/2026 con analisi SimplyBook.me — da aggiornare ad ogni fase completata.*

@@ -9,6 +9,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 // ── localStorage ──────────────────────────────────────────────
 const KEY_NOW      = (id: string) => `now_v2_${id}`
 const KEY_INTERVAL = (id: string, interval: number) => `notified_r${interval}_${id}`
+const KEY_SLOT     = (id: string, interval: number, type: string) => `notified_${type}_${interval}_${id}`
 // mantenuti per retrocompatibilità (usati anche dal dashboard)
 export const wasNotified          = (id: string) => !!localStorage.getItem(`notified_v2_${id}`)
 export const markNotified         = (id: string) => localStorage.setItem(`notified_v2_${id}`, '1')
@@ -16,6 +17,8 @@ export const wasNowNotified       = (id: string) => !!localStorage.getItem(KEY_N
 export const markNowNotified      = (id: string) => localStorage.setItem(KEY_NOW(id), '1')
 export const wasIntervalNotified  = (id: string, interval: number) => !!localStorage.getItem(KEY_INTERVAL(id, interval))
 export const markIntervalNotified = (id: string, interval: number) => localStorage.setItem(KEY_INTERVAL(id, interval), '1')
+export const wasSlotNotified      = (id: string, interval: number, type: string) => !!localStorage.getItem(KEY_SLOT(id, interval, type))
+export const markSlotNotified     = (id: string, interval: number, type: string) => localStorage.setItem(KEY_SLOT(id, interval, type), '1')
 export function clearAllNotified() {
   Object.keys(localStorage).filter(k => k.startsWith('notified_') || k.startsWith('now_v2_')).forEach(k => localStorage.removeItem(k))
 }
@@ -108,6 +111,7 @@ export async function triggerAlarm(
   centerName: string,
   isNow: boolean,
   mins: number,
+  slotType: 'confirmation' | 'reminder' = 'reminder',
 ) {
   const time = new Date(startTime).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
   const firstName = clientName.split(' ')[0]
@@ -121,14 +125,14 @@ export async function triggerAlarm(
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, whatsappUrl },
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)
 }
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
-async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = false) {
+async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = false, slotType: 'confirmation' | 'reminder' = 'reminder') {
   let client: Record<string, unknown>, service: Record<string, unknown>
   try {
     const [c, s] = await Promise.all([
@@ -155,7 +159,7 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, whatsappUrl },
+    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)
@@ -173,17 +177,20 @@ export async function runCheck(force = false): Promise<CheckResult> {
   const authed = await waitForAuthReady()
   if (!authed) return { ok: false, message: 'Utente non autenticato', found: 0, notified: 0 }
 
-  let intervals = [30]; let centerName = ''
+  let slots: Array<{ interval: number; type: 'confirmation' | 'reminder' }> = [{ interval: 30, type: 'reminder' }]
+  let centerName = ''
   try {
     const s = await getDoc(doc(db, 'settings', 'main'))
     if (s.exists()) {
       const d = s.data()
-      intervals  = d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30])
+      slots = d.notification_slots ??
+        ((d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30]))
+          .map((i: number) => ({ interval: i, type: 'reminder' as const })))
       centerName = d.center_name ?? ''
     }
   } catch (err) { return { ok: false, message: `Errore settings: ${err}`, found: 0, notified: 0 } }
 
-  const maxInterval = Math.max(...intervals)
+  const maxInterval = slots.length > 0 ? Math.max(...slots.map(s => s.interval)) : 30
   const now  = new Date()
   const from = now.toISOString()
   const to   = new Date(now.getTime() + maxInterval * 60_000 + 60_000).toISOString()
@@ -200,11 +207,11 @@ export async function runCheck(force = false): Promise<CheckResult> {
   let count = 0
   for (const d of upcoming) {
     const msUntil = new Date(d.data().start_time).getTime() - now.getTime()
-    for (const interval of intervals) {
-      if (msUntil > 0 && msUntil <= interval * 60_000) {
-        if (force || !wasIntervalNotified(d.id, interval)) {
-          await fireAlarm({ id: d.id, ...d.data() } as AptRow, interval, centerName)
-          markIntervalNotified(d.id, interval)
+    for (const slot of slots) {
+      if (msUntil > 0 && msUntil <= slot.interval * 60_000) {
+        if (force || !wasSlotNotified(d.id, slot.interval, slot.type)) {
+          await fireAlarm({ id: d.id, ...d.data() } as AptRow, slot.interval, centerName, false, slot.type)
+          markSlotNotified(d.id, slot.interval, slot.type)
           count++
         }
       }
@@ -221,7 +228,7 @@ export async function runCheck(force = false): Promise<CheckResult> {
 // ── Hook principale ───────────────────────────────────────────
 export function useReminderChecker() {
   const todayAptsRef         = useRef<AptRow[]>([])
-  const reminderIntervalsRef = useRef<number[]>([30])
+  const notificationSlotsRef = useRef<Array<{ interval: number; type: 'confirmation' | 'reminder' }>>([])
   const centerNameRef        = useRef('')
   const alarmFiredRef   = useRef<Set<string>>(new Set())
   const nowFiredRef     = useRef<Set<string>>(new Set())
@@ -235,8 +242,10 @@ export function useReminderChecker() {
       const s = await getDoc(doc(db, 'settings', 'main'))
       if (s.exists()) {
         const d = s.data()
-        reminderIntervalsRef.current = d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30])
-        centerNameRef.current        = d.center_name ?? ''
+        notificationSlotsRef.current = d.notification_slots ??
+          ((d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30]))
+            .map((i: number) => ({ interval: i, type: 'reminder' as const })))
+        centerNameRef.current = d.center_name ?? ''
       }
     } catch { /* ignora */ }
     try {
@@ -272,18 +281,18 @@ export function useReminderChecker() {
 
         const msUntil = new Date(apt.start_time).getTime() - now.getTime()
 
-        // Allarme per ogni intervallo configurato
-        for (const interval of reminderIntervalsRef.current) {
-          const alarmKey   = `${apt.id}_${interval}`
-          const reminderMs = interval * 60_000
+        // Allarme per ogni slot configurato (tempo + tipo)
+        for (const slot of notificationSlotsRef.current) {
+          const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
+          const reminderMs = slot.interval * 60_000
 
           if (!alarmFiredRef.current.has(alarmKey)) {
-            if (wasIntervalNotified(apt.id, interval)) {
+            if (wasSlotNotified(apt.id, slot.interval, slot.type)) {
               alarmFiredRef.current.add(alarmKey)
             } else if (msUntil > 0 && msUntil <= reminderMs) {
               alarmFiredRef.current.add(alarmKey)
-              markIntervalNotified(apt.id, interval)
-              fireAlarm(apt, interval, centerNameRef.current, false)
+              markSlotNotified(apt.id, slot.interval, slot.type)
+              fireAlarm(apt, slot.interval, centerNameRef.current, false, slot.type)
                 .catch(err => console.error('[Reminder] fireAlarm:', err))
             }
           }
@@ -296,7 +305,7 @@ export function useReminderChecker() {
           } else if (msUntil <= 0 && msUntil > -30_000) {
             nowFiredRef.current.add(apt.id)
             markNowNotified(apt.id)
-            fireAlarm(apt, 0, centerNameRef.current, true)
+            fireAlarm(apt, 0, centerNameRef.current, true, 'reminder')
               .catch(err => console.error('[Reminder] fireAlarm now:', err))
           }
         }

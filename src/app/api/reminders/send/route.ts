@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'type non valido (usa "confirmation" o "reminder")' }, { status: 400 })
 
   const result = type === 'confirmation'
-    ? await sendConfirmationMessage(appointmentId)
+    ? await sendConfirmationMessage(appointmentId, Number(intervalMinutes))
     : await sendAppointmentReminder(appointmentId, Number(intervalMinutes))
 
   if (!result.success) return NextResponse.json({ error: result.error }, { status: 400 })
