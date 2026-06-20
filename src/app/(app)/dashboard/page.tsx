@@ -103,6 +103,20 @@ export default function DashboardPage() {
   // Refs per deduplicazione allarmi (questa sessione)
   const alarmFiredRef    = useRef<Set<string>>(new Set())
   const nowAlarmFiredRef = useRef<Set<string>>(new Set())
+  // AudioContext creato solo dopo un gesto utente (policy browser anti-autoplay)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  useEffect(() => {
+    const init = () => {
+      if (audioCtxRef.current) return
+      try {
+        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+        audioCtxRef.current = new AC()
+      } catch { /* non supportato */ }
+    }
+    document.addEventListener('click', init)
+    document.addEventListener('touchstart', init)
+    return () => { document.removeEventListener('click', init); document.removeEventListener('touchstart', init) }
+  }, [])
 
   // Allarmi attivi mostrati inline nella pagina
   type ActiveAlarm = {
@@ -259,20 +273,22 @@ export default function DashboardPage() {
   }
 
   function playBeep(intense: boolean) {
-    try {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-      const ctx = new AC()
-      const bip = (t: number, f = 880, dur = 0.4) => {
-        const o = ctx.createOscillator(); const g = ctx.createGain()
-        o.connect(g); g.connect(ctx.destination)
-        o.type = 'square'; o.frequency.value = f
-        g.gain.setValueAtTime(0.8, ctx.currentTime + t)
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
-        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + dur + 0.05)
-      }
-      if (intense) { bip(0, 1046); bip(0.5, 880); bip(1.0, 1046); bip(1.5, 1318) }
-      else { bip(0); bip(0.5); bip(1.0) }
-    } catch { /* audio bloccato */ }
+    const ctx = audioCtxRef.current
+    if (!ctx) return
+    ctx.resume().then(() => {
+      try {
+        const bip = (t: number, f = 880, dur = 0.4) => {
+          const o = ctx.createOscillator(); const g = ctx.createGain()
+          o.connect(g); g.connect(ctx.destination)
+          o.type = 'square'; o.frequency.value = f
+          g.gain.setValueAtTime(0.8, ctx.currentTime + t)
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
+          o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + dur + 0.05)
+        }
+        if (intense) { bip(0, 1046); bip(0.5, 880); bip(1.0, 1046); bip(1.5, 1318) }
+        else { bip(0); bip(0.5); bip(1.0) }
+      } catch { /* audio bloccato */ }
+    }).catch(() => {})
   }
 
   function testAlarm() {
