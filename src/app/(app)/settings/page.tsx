@@ -7,7 +7,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { useReminderContext } from '@/components/layout/ReminderCheckerProvider'
 import { clearAllNotified, type CheckResult } from '@/hooks/useReminderChecker'
 import type { Settings } from '@/types/database'
-import { Bell, BellOff, CheckCircle, RefreshCw } from 'lucide-react'
+import { Bell, BellOff, CheckCircle, RefreshCw, Plus, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null)
@@ -16,7 +16,10 @@ export default function SettingsPage() {
   const [saved, setSaved]       = useState(false)
   const [testSent, setTestSent] = useState(false)
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null)
-  const [checking, setChecking] = useState(false)
+  const [checking, setChecking]         = useState(false)
+  const [showAddReminder, setShowAddReminder] = useState(false)
+  const [newInterval, setNewInterval]     = useState<number | ''>('')
+
   const REMINDER_OPTIONS = [
     { value: 15,   label: '15 minuti prima' },
     { value: 30,   label: '30 minuti prima' },
@@ -27,6 +30,13 @@ export default function SettingsPage() {
     { value: 1440, label: '24 ore prima (giorno prima)' },
     { value: 2880, label: '48 ore prima (2 giorni prima)' },
   ]
+
+  function intervalToDisplay(minutes: number): { time: string; unit: string } {
+    if (minutes >= 2880) return { time: String(minutes / 1440), unit: `${minutes / 1440 === 1 ? 'giorno' : 'giorni'} prima` }
+    if (minutes >= 1440) return { time: '24', unit: 'ore prima' }
+    if (minutes >= 60)   return { time: String(minutes / 60), unit: `${minutes / 60 === 1 ? 'ora' : 'ore'} prima` }
+    return { time: String(minutes), unit: 'minuti prima' }
+  }
 
   const [form, setForm] = useState({
     center_name:          '',
@@ -199,32 +209,79 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* Quando inviare il promemoria */}
+            {/* Promemoria - stile sveglie */}
             {form.reminder_enabled && (
-              <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Quando inviare il promemoria</p>
-                <div className="space-y-2">
-                  {REMINDER_OPTIONS.map(opt => {
-                    const checked = form.reminder_intervals.includes(opt.value)
-                    return (
-                      <label key={opt.value} className="flex items-center gap-3 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, opt.value].sort((a, b) => b - a) }))
-                            } else {
-                              setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== opt.value) }))
-                            }
-                          }}
-                          className="w-4 h-4 rounded accent-blue-600"
-                        />
-                        <span className="text-sm text-slate-700">{opt.label}</span>
-                      </label>
-                    )
-                  })}
-                </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700">Promemoria attivi</p>
+
+                {form.reminder_intervals.length === 0 && (
+                  <p className="text-xs text-slate-400 italic py-1">Nessun promemoria configurato.</p>
+                )}
+
+                {[...form.reminder_intervals].sort((a, b) => b - a).map(interval => {
+                  const { time, unit } = intervalToDisplay(interval)
+                  return (
+                    <div key={interval} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-800 tabular-nums leading-none">{time}</span>
+                        <span className="text-sm text-slate-500">{unit}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== interval) }))}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                        title="Rimuovi"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )
+                })}
+
+                {showAddReminder ? (
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={newInterval}
+                      onChange={e => setNewInterval(Number(e.target.value))}
+                      className="flex-1 px-3 py-2.5 rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white"
+                    >
+                      <option value="">Seleziona…</option>
+                      {REMINDER_OPTIONS.filter(o => !form.reminder_intervals.includes(o.value)).map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={newInterval === ''}
+                      onClick={() => {
+                        if (newInterval !== '') {
+                          setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, newInterval as number].sort((a, b) => b - a) }))
+                          setNewInterval('')
+                          setShowAddReminder(false)
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-semibold rounded-xl transition-colors"
+                    >
+                      Aggiungi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowAddReminder(false); setNewInterval('') }}
+                      className="p-2.5 border border-slate-200 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors"
+                    >
+                      <span className="text-sm">✕</span>
+                    </button>
+                  </div>
+                ) : REMINDER_OPTIONS.some(o => !form.reminder_intervals.includes(o.value)) ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddReminder(true)}
+                    className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 hover:border-blue-400 text-blue-500 hover:text-blue-700 text-sm font-medium py-3 rounded-2xl transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Aggiungi promemoria
+                  </button>
+                ) : null}
               </div>
             )}
           </div>
