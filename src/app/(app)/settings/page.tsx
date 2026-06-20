@@ -77,18 +77,40 @@ export default function SettingsPage() {
   }
 
   async function handleSubscribeCalendar() {
-    const token = await ensureCalendarToken()
-    const feedUrl = `${window.location.origin}/api/calendar/${token}`
-    // webcal:// causes the OS to open the calendar subscription dialog
-    window.open(feedUrl.replace(/^https?:\/\//, 'webcal://'), '_blank')
+    try {
+      const token   = await ensureCalendarToken()
+      const feedUrl = `${window.location.origin}/api/calendar/${token}`
+
+      // Test the feed first — gives a clear error if something's wrong
+      const res = await fetch(feedUrl)
+      if (!res.ok) {
+        const txt = await res.text().catch(() => `HTTP ${res.status}`)
+        alert(`Errore feed calendario (${res.status}): ${txt}`)
+        return
+      }
+
+      // Open webcal:// via anchor click — works in PWA where window.open is blocked
+      const webcalUrl = feedUrl.replace(/^https?:\/\//, 'webcal://')
+      const a = document.createElement('a')
+      a.href  = webcalUrl
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (err) {
+      alert(`Impossibile aprire il calendario: ${err}`)
+    }
   }
 
   async function handleCopyLink() {
-    const token  = await ensureCalendarToken()
-    const feedUrl = `${window.location.origin}/api/calendar/${token}`
-    await navigator.clipboard.writeText(feedUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
+    try {
+      const token   = await ensureCalendarToken()
+      const feedUrl = `${window.location.origin}/api/calendar/${token}`
+      await navigator.clipboard.writeText(feedUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      alert('Copia non riuscita. Prova dal browser.')
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -147,10 +169,15 @@ export default function SettingsPage() {
             <Copy className="w-3.5 h-3.5" />
             {copied ? 'Link copiato!' : 'Copia link (per Google Calendar)'}
           </button>
-          <p className="text-xs text-slate-400">
-            Su iPhone apri direttamente il link qui sopra. Su Android copia il link
-            e incollalo in Google Calendar → Altre agende → Da URL.
-          </p>
+          <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs text-slate-500">
+            <p className="font-medium text-slate-600">Come funziona:</p>
+            <p>📱 <strong>iPhone</strong>: tocca &quot;Iscriviti&quot; → iOS chiede conferma → Aggiungi</p>
+            <p>🤖 <strong>Android</strong>: copia il link → apri Google Calendar →
+               menu ☰ → Altre agende → Da URL → incolla → Aggiungi</p>
+            <p className="text-slate-400 pt-1">
+              Dopo l&apos;iscrizione ogni nuovo appuntamento appare nel calendario automaticamente entro 1 ora.
+            </p>
+          </div>
         </div>
 
         {/* ── Sveglie ────────────────────────────────────────────────── */}

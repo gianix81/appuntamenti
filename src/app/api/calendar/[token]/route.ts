@@ -19,6 +19,7 @@ export async function GET(
   const { token } = await context.params
 
   if (!isAdminConfigured()) {
+    console.error('[calendar] Firebase Admin non configurato — variabili FIREBASE_ADMIN_* mancanti')
     return new NextResponse('Server non configurato', { status: 503 })
   }
 
@@ -29,8 +30,14 @@ export async function GET(
     const settingsSnap = await db.collection('settings').doc('main').get()
     const settings = settingsSnap.data() ?? {}
 
-    if (!settings.calendar_token || settings.calendar_token !== token) {
-      return new NextResponse('Token non valido', { status: 401 })
+    if (!settings.calendar_token) {
+      console.error('[calendar] calendar_token mancante in settings/main')
+      return new NextResponse('Calendario non ancora attivato. Apri Impostazioni nell\'app e tocca "Iscriviti al calendario".', { status: 404 })
+    }
+
+    if (settings.calendar_token !== token) {
+      console.error('[calendar] token non valido:', token, '!==', settings.calendar_token)
+      return new NextResponse('Link non valido o scaduto. Rigenera il link dalle Impostazioni.', { status: 401 })
     }
 
     const offsets: number[] = settings.alarm_offsets_minutes ?? [120, 30]
