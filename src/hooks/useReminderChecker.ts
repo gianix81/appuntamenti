@@ -24,6 +24,15 @@ export function clearAllNotified() {
   Object.keys(localStorage).filter(k => k.startsWith('notified_') || k.startsWith('now_v2_')).forEach(k => localStorage.removeItem(k))
 }
 
+// Pulisce automaticamente le notifiche del giorno precedente a ogni apertura
+function clearStaleNotifications() {
+  const today = new Date().toDateString()
+  if (localStorage.getItem('notified_clear_date') !== today) {
+    clearAllNotified()
+    localStorage.setItem('notified_clear_date', today)
+  }
+}
+
 // ── Auth ──────────────────────────────────────────────────────
 async function waitForAuthReady(): Promise<boolean> {
   if (!auth) return false
@@ -78,30 +87,36 @@ function buildWhatsAppUrl(phone: string, msg: string) {
   return `https://wa.me/${phone.replace(/[^\d+]/g, '').replace(/^\+/, '')}?text=${encodeURIComponent(msg)}`
 }
 
-// ── SW notification (fire-and-forget, 3s timeout) ────────────
-function showSwNotification(
-  title: string,
-  body: string,
-  tag: string,
-  whatsappUrl?: string,
-  vibrate = [500, 100, 500, 100, 500, 100, 500],
-) {
-  if (!('serviceWorker' in navigator)) return
+// ── Notifica OS ("tendina") ───────────────────────────────────
+// Prima prova new Notification() diretto (desktop, immediato).
+// Se non supportato (mobile) usa il Service Worker come fallback.
+function showOsNotification(title: string, body: string, tag: string, whatsappUrl?: string) {
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
 
-  const timeout = new Promise<ServiceWorkerRegistration>((_, reject) =>
-    setTimeout(() => reject(new Error('SW timeout')), 3000)
-  )
-  Promise.race([navigator.serviceWorker.ready, timeout])
+  // 1. Notifica diretta — funziona subito su desktop/laptop
+  try {
+    new Notification(title, {
+      body,
+      icon: '/icons/icon-192.png',
+      tag,
+      requireInteraction: true,
+      silent: false,
+    })
+    return // desktop: fatto, non serve SW
+  } catch { /* mobile non supporta new Notification() → fallback SW */ }
+
+  // 2. SW notification — obbligatorio su mobile/Android
+  if (!('serviceWorker' in navigator)) return
+  navigator.serviceWorker.ready
     .then(reg => reg.showNotification(title, {
       body, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
       tag, requireInteraction: true, silent: false,
       data: { url: '/dashboard', whatsappUrl },
-      ...({ vibrate } as object),
+      ...({ vibrate: [500, 200, 500, 200, 500] } as object),
       ...({ renotify: true } as object),
       ...({ actions: whatsappUrl ? [{ action: 'whatsapp', title: '📱 WhatsApp' }] : [] } as object),
     } as NotificationOptions))
-    .catch(err => console.warn('[Reminder] SW push:', err))
+    .catch(err => console.warn('[Reminder] SW notification:', err))
 }
 
 // ── Tipo ─────────────────────────────────────────────────────
@@ -138,7 +153,7 @@ export async function triggerAlarm(
   setAppBadge(1)
 
   // 2. Push SW (fire-and-forget)
-  showSwNotification(title, body, tag, whatsappUrl, vibrate)
+  showOsNotification(title, body, tag, whatsappUrl)
 }
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
@@ -180,7 +195,7 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
   setAppBadge(1)
 
   // 2. Push SW (fire-and-forget)
-  showSwNotification(title, body, tag, whatsappUrl, vibrate)
+  showOsNotification(title, body, tag, whatsappUrl)
 }
 
 // ── Check on-demand per "Verifica ora" ────────────────────────
@@ -319,6 +334,7 @@ export function useReminderChecker() {
 
   // Carica subito + ricarica ogni 5 minuti
   useEffect(() => {
+    clearStaleNotifications() // reset notifiche del giorno precedente
     loadData()
     const refresh = setInterval(loadData, 5 * 60_000)
     return () => clearInterval(refresh)

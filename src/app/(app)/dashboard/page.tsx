@@ -263,17 +263,41 @@ export default function DashboardPage() {
     if (!apt) { alert('Nessun appuntamento oggi per testare'); return }
     const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
     const key = apt.id + '_test_' + Date.now()
-    setActiveAlarms(p => [...p, {
-      key,
-      clientName: apt.clients
-        ? `${apt.clients.first_name ?? ''} ${apt.clients.last_name ?? ''}`.trim() || 'Cliente'
-        : 'Cliente',
-      serviceName: apt.services?.name ?? 'Servizio',
-      time,
-      phone: apt.clients?.phone ?? '',
-      isNow: false, slotType: 'reminder', intervalMinutes: 60,
-    }])
+    const clientName = apt.clients
+      ? `${apt.clients.first_name ?? ''} ${apt.clients.last_name ?? ''}`.trim() || 'Cliente'
+      : 'Cliente'
+    const serviceName = apt.services?.name ?? 'Servizio'
+
+    // 1. Banner inline
+    setActiveAlarms(p => [...p, { key, clientName, serviceName, time, phone: apt.clients?.phone ?? '', isNow: false, slotType: 'reminder', intervalMinutes: 60 }])
+
+    // 2. Suono
     playBeep(false)
+
+    // 3. Notifica OS ("tendina") — desktop: new Notification, mobile: SW
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      try {
+        new Notification(`⏰ TEST — ${clientName}`, {
+          body: `${serviceName} alle ${time}`,
+          icon: '/icons/icon-192.png',
+          requireInteraction: true,
+          tag: key,
+        })
+      } catch {
+        navigator.serviceWorker?.ready
+          .then(reg => reg.showNotification(`⏰ TEST — ${clientName}`, {
+            body: `${serviceName} alle ${time}`,
+            icon: '/icons/icon-192.png',
+            requireInteraction: true,
+            tag: key,
+          } as NotificationOptions))
+          .catch(() => {})
+      }
+    } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+      Notification.requestPermission().then(p => {
+        if (p === 'granted') alert('Notifiche attivate! Premi di nuovo 🔔 per testare.')
+      })
+    }
   }
 
   const cells = getMonthCells(calMonth)
