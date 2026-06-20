@@ -1,33 +1,103 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+
+// Converte VAPID public key da base64url a Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding  = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64   = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData  = window.atob(base64)
+  const output   = new Uint8Array(rawData.length)
+  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i)
+  return output
+}
+
+async function doSubscribe(): Promise<PushSubscription | null> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null
+
+  const reg    = await navigator.serviceWorker.ready
+  let sub      = await reg.pushManager.getSubscription()
+
+  // Se la subscription esiste già la riusiamo
+  if (!sub) {
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    if (!vapidKey) {
+      console.error('[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY non configurata')
+      return null
+    }
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    })
+  }
+
+  // Salva/aggiorna la subscription sul server
+  await fetch('/api/push/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sub.toJSON()),
+  }).catch(() => {})
+
+  return sub
+}
 
 export function usePushNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [subscribed, setSubscribed] = useState(false)
 
-  useEffect(() => {
+  // Auto-subscribe se il permesso è già stato concesso
+  const tryAutoSubscribe = useCallback(async () => {
     if (typeof Notification === 'undefined') return
     const perm = Notification.permission
     setPermission(perm)
-    // Se già concessa in sessioni precedenti → mostra "Notifiche attive"
-    if (perm === 'granted') setSubscribed(true)
+    if (perm !== 'granted') return
+    try {
+      const sub = await doSubscribe()
+      setSubscribed(!!sub)
+    } catch (err) {
+      console.error('[Push] auto-subscribe error:', err)
+    }
   }, [])
+
+  useEffect(() => {
+    tryAutoSubscribe()
+  }, [tryAutoSubscribe])
 
   async function subscribe() {
     if (typeof Notification === 'undefined') return false
     if (!('serviceWorker' in navigator)) return false
 
-    const result = await Notification.requestPermission()
-    setPermission(result)
-    if (result !== 'granted') return false
-    setSubscribed(true)
-    return true
+    const perm = await Notification.requestPermission()
+    setPermission(perm)
+    if (perm !== 'granted') return false
+
+    try {
+      const sub = await doSubscribe()
+      if (!sub) return false
+      setSubscribed(true)
+      return true
+    } catch (err) {
+      console.error('[Push] subscribe error:', err)
+      return false
+    }
   }
 
-  function unsubscribe() {
+  async function unsubscribe() {
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready
+        const sub = await reg.pushManager.getSubscription()
+        if (sub) {
+          await fetch('/api/push/subscribe', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint }),
+          }).catch(() => {})
+          await sub.unsubscribe()
+        }
+      }
+    } catch { /* ignora */ }
     setSubscribed(false)
-    // La permission del browser non si può revocare via JS — solo dalle impostazioni browser
   }
 
   return { permission, subscribed, subscribe, unsubscribe }

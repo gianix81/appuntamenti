@@ -41,18 +41,30 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   if (!event.data) return
   let data
-  try { data = event.data.json() } catch { data = { title: 'Appuntamenti', body: event.data.text() } }
+  try { data = event.data.json() } catch { data = { title: '⏰ Appuntamento', body: event.data.text() } }
+
+  const title   = data.title ?? '⏰ Appuntamento'
+  const options = {
+    body:               data.body ?? '',
+    icon:               '/icons/icon-192.png',
+    badge:              '/icons/icon-192.png',
+    data:               { url: data.url || '/dashboard', whatsappUrl: data.whatsappUrl },
+    requireInteraction: true,
+    silent:             false,
+    vibrate:            [1000, 300, 1000, 300, 1000, 300, 1000, 300, 1000, 300, 1000],
+    tag:                data.tag || 'appt-push',
+    renotify:           true,
+    actions: [
+      { action: 'open',      title: '📋 Apri app' },
+      { action: 'whatsapp',  title: '💬 WhatsApp' },
+    ],
+  }
 
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'Appuntamenti App', {
-      body:             data.body ?? '',
-      icon:             '/icons/icon-192.png',
-      badge:            '/icons/icon-192.png',
-      data:             { url: data.url || '/dashboard' },
-      requireInteraction: true,
-      vibrate:          [800, 200, 800, 200, 800, 200, 800, 200, 800],
-      tag:              data.tag || 'push',
-    })
+    // Chiudi notifiche precedenti con lo stesso tag, poi mostra la nuova
+    self.registration.getNotifications({ tag: options.tag })
+      .then(existing => existing.forEach(n => n.close()))
+      .then(() => self.registration.showNotification(title, options))
   )
 })
 
