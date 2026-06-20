@@ -191,7 +191,9 @@ export default function DashboardPage() {
         confirmed: list.filter(a => a.confirmation_status === 'confirmed').length,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore nel caricamento.')
+      const msg = err instanceof Error ? err.message : String(err)
+      // Aggiungi la data nella diagnostica per capire cosa stava cercando
+      setError(`${msg} [${date.toLocaleDateString('it-IT')}]`)
     } finally {
       setLoading(false)
     }
@@ -509,12 +511,17 @@ export default function DashboardPage() {
           title="Nessun appuntamento"
           description={`Nessun appuntamento per ${isToday(date) ? 'oggi' : format(date, 'd MMMM', { locale: it })}.`}
           action={
-            <Link
-              href="/appointments/new"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Aggiungi appuntamento
-            </Link>
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href="/appointments/new"
+                className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Aggiungi appuntamento
+              </Link>
+              <Link href="/appointments" className="text-sm text-blue-500 hover:underline">
+                Vai all&apos;Agenda →
+              </Link>
+            </div>
           }
         />
       ) : (
