@@ -17,9 +17,19 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react'
 import Link from 'next/link'
 
-function waitForAuth() {
-  return new Promise<boolean>(resolve => {
-    const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(!!user) })
+function waitForAuth(): Promise<boolean> {
+  // Se Firebase ha già ripristinato l'utente, risponde subito
+  if (auth.currentUser) return Promise.resolve(true)
+  // Altrimenti aspetta fino a 8 secondi (su mobile Firebase è più lento)
+  return new Promise(resolve => {
+    let done = false
+    const unsub = onAuthStateChanged(auth, user => {
+      if (done) return
+      done = true; unsub(); resolve(!!user)
+    })
+    setTimeout(() => {
+      if (!done) { done = true; unsub(); resolve(false) }
+    }, 8000)
   })
 }
 
@@ -155,7 +165,7 @@ export default function DashboardPage() {
     setError(null)
     try {
       const authed = await waitForAuth()
-      if (!authed) { setError('Sessione scaduta. Ricarica la pagina.'); return }
+      if (!authed) { window.location.href = '/login'; return }
       await auth.currentUser?.getIdToken()
       const [list, settingsSnap] = await Promise.all([
         fetchDayAppointments(date),
