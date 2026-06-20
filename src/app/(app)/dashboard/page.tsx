@@ -99,6 +99,7 @@ export default function DashboardPage() {
   const [stats, setStats]             = useState({ total: 0, pending: 0, confirmed: 0 })
   const [notificationSlots, setNotificationSlots] = useState<Array<{ interval: number; type: 'confirmation' | 'reminder' }>>([])
   const [centerName, setCenterName]     = useState('')
+  const [debugInfo, setDebugInfo]       = useState<string | null>(null)
 
   // Refs per deduplicazione allarmi (questa sessione)
   const alarmFiredRef    = useRef<Set<string>>(new Set())
@@ -173,7 +174,11 @@ export default function DashboardPage() {
     try {
       const authed = await waitForAuth()
       if (!authed) { router.replace('/login'); return }
+      const uid = auth.currentUser?.uid ?? 'NO_UID'
       await auth.currentUser?.getIdToken()
+      const from = startOfDay(date).toISOString()
+      const to   = endOfDay(date).toISOString()
+      setDebugInfo(`uid:${uid.slice(-6)} | ${from.slice(0,16)} → ${to.slice(0,16)}`)
       const [list, settingsSnap] = await Promise.all([
         fetchDayAppointments(date),
         getDoc(doc(db, 'settings', 'main')),
@@ -185,6 +190,7 @@ export default function DashboardPage() {
             .map((i: number) => ({ interval: i, type: 'reminder' as const }))))
         setCenterName(d.center_name ?? '')
       }
+      setDebugInfo(prev => `${prev} | found:${list.length}`)
       setAppointments(list)
       setStats({
         total:     list.length,
@@ -538,6 +544,12 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+    {/* ── DEBUG (rimuovere dopo diagnosi) ── */}
+    {debugInfo && (
+      <div className="fixed bottom-16 left-0 right-0 bg-black/80 text-green-400 text-[10px] font-mono px-2 py-1 z-50 break-all">
+        {debugInfo}
+      </div>
+    )}
     </div>
     </>
   )
