@@ -124,8 +124,23 @@ export async function triggerAlarm(
   const vibrate = isNow ? [1000, 200, 1000, 200, 1000, 200, 1000, 200, 1000] : [500, 100, 500, 100, 500, 100, 500]
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
+
+  // Auto-invio SMS al cliente (solo per slot con intervallo, non per "adesso")
+  let autoSentSms = false
+  if (!isNow && mins > 0) {
+    try {
+      const r = await fetch('/api/reminders/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ appointmentId: aptId, type: slotType, intervalMinutes: mins }),
+      })
+      autoSentSms = r.ok
+    } catch { /* ignora */ }
+  }
+
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl },
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms },
   }))
   playAlarm(isNow)
   setAppBadge(1)
@@ -158,8 +173,23 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
     : [500,  100,  500,  100,  500,  100,  500]
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
+
+  // Auto-invio SMS al cliente (solo per slot con intervallo, non per "adesso")
+  let autoSentSms = false
+  if (!isNow && mins > 0) {
+    try {
+      const r = await fetch('/api/reminders/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ appointmentId: apt.id, type: slotType, intervalMinutes: mins }),
+      })
+      autoSentSms = r.ok
+    } catch { /* ignora */ }
+  }
+
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl },
+    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms },
   }))
   playAlarm(isNow)
   setAppBadge(1)

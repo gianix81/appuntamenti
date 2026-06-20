@@ -12,6 +12,7 @@ interface ReminderData {
   intervalMinutes: number
   slotType: 'confirmation' | 'reminder'
   whatsappUrl?: string
+  autoSentSms?: boolean
 }
 
 export function ReminderModal() {
@@ -50,7 +51,9 @@ export function ReminderModal() {
 
 // ── Singola card notifica ─────────────────────────────────────────────────────
 function ReminderCard({ reminder, onDismiss }: { reminder: ReminderData; onDismiss: () => void }) {
-  const [smsSent, setSmsSent]   = useState<'confirmation' | 'reminder' | null>(null)
+  const [smsSent, setSmsSent]   = useState<'confirmation' | 'reminder' | null>(
+    reminder.autoSentSms ? reminder.slotType : null
+  )
   const [sending, setSending]   = useState<'confirmation' | 'reminder' | null>(null)
   const [smsError, setSmsError] = useState<string | null>(null)
 
@@ -125,11 +128,20 @@ function ReminderCard({ reminder, onDismiss }: { reminder: ReminderData; onDismi
 
         {/* SMS: singolo pulsante basato sul tipo configurato */}
         {smsSent ? (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
-            <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-            <span className="text-sm text-green-700 font-medium">
-              SMS {smsSent === 'confirmation' ? 'di conferma' : 'promemoria'} inviato ✓
-            </span>
+          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+              <span className="text-sm text-green-700 font-medium">
+                SMS {smsSent === 'confirmation' ? 'conferma' : 'promemoria'} inviato{reminder.autoSentSms ? ' automaticamente' : ''} ✓
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setSmsSent(null) }}
+              className="text-xs text-green-600 underline ml-2 shrink-0"
+            >
+              Rinvia
+            </button>
           </div>
         ) : (
           <button
