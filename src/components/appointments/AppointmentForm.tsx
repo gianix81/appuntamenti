@@ -3,26 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, addMinutes, parseISO } from 'date-fns'
-import { it } from 'date-fns/locale'
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus } from '@/types/database'
 import { scheduleAlarms, cancelAlarms } from '@/lib/alarmScheduler'
-import { getAlarmSettings } from '@/lib/alarmDB'
-import { generateICS, downloadICS } from '@/lib/icsGenerator'
-import { CalendarPlus, X } from 'lucide-react'
 
 interface Props { existing?: Appointment }
-
-interface SavedInfo {
-  id:           string
-  start_time:   string
-  end_time:     string
-  client_name:  string
-  client_phone: string
-  service_name: string
-  notes:        string | null
-}
 
 export function AppointmentForm({ existing }: Props) {
   const router = useRouter()
@@ -30,7 +16,6 @@ export function AppointmentForm({ existing }: Props) {
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
-  const [savedInfo, setSavedInfo] = useState<SavedInfo | null>(null)
 
   const defaultDate = existing
     ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
@@ -97,7 +82,7 @@ export function AppointmentForm({ existing }: Props) {
         appointmentId = ref.id
       }
 
-      // Load client + service for alarm scheduling and ICS
+      // Schedule in-app alarms (IndexedDB) in background — non bloccante
       const [clientSnap, serviceSnap] = await Promise.all([
         getDoc(doc(db, 'clients',  form.client_id)),
         getDoc(doc(db, 'services', form.service_id)),
@@ -105,34 +90,19 @@ export function AppointmentForm({ existing }: Props) {
       const client  = clientSnap.exists()  ? { id: clientSnap.id,  ...clientSnap.data()  } as Client  : null
       const service = serviceSnap.exists() ? { id: serviceSnap.id, ...serviceSnap.data() } as Service : null
 
-      if (client && service) {
-        const info: SavedInfo = {
-          id:           appointmentId,
-          start_time:   payload.start_time,
-          end_time:     payload.end_time,
-          client_name:  `${client.first_name} ${client.last_name}`,
-          client_phone: client.phone,
-          service_name: service.name,
-          notes:        payload.notes,
-        }
-
-        if (payload.status !== 'cancelled') {
-          await scheduleAlarms({
-            id: appointmentId, start_time: payload.start_time,
-            client:  { first_name: client.first_name, last_name: client.last_name, phone: client.phone },
-            service: { name: service.name },
-            notes:   payload.notes,
-          }).catch(() => {})
-
-          // Show ICS prompt so user can also add to native calendar
-          setSavedInfo(info)
-          setLoading(false)
-          return  // Don't redirect yet — wait for user to dismiss ICS prompt
-        } else {
-          await cancelAlarms(appointmentId).catch(() => {})
-        }
+      if (client && service && payload.status !== 'cancelled') {
+        scheduleAlarms({
+          id: appointmentId, start_time: payload.start_time,
+          client:  { first_name: client.first_name, last_name: client.last_name, phone: client.phone },
+          service: { name: service.name },
+          notes:   payload.notes,
+        }).catch(() => {})
+      } else if (payload.status === 'cancelled') {
+        cancelAlarms(appointmentId).catch(() => {})
       }
 
+      // Il calendario si aggiorna automaticamente via feed webcal
+      // (iscrizione una tantum dalle Impostazioni)
       router.push('/dashboard')
       router.refresh()
     } catch (err) {
@@ -141,66 +111,6 @@ export function AppointmentForm({ existing }: Props) {
     }
   }
 
-  async function handleDownloadICS() {
-    if (!savedInfo) return
-    const settings = await getAlarmSettings()
-    const offsets  = settings?.offsets_minutes ?? [120, 30]
-    const ics = generateICS(savedInfo, { offsets_minutes: offsets })
-    downloadICS(ics, savedInfo.client_name, new Date(savedInfo.start_time))
-  }
-
-  // ── ICS prompt shown after successful save ───────────────────────────────────
-  if (savedInfo) {
-    const dt = new Date(savedInfo.start_time)
-    return (
-      <div className="max-w-lg space-y-4">
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
-          <p className="text-green-800 font-semibold text-sm mb-1">
-            Appuntamento salvato!
-          </p>
-          <p className="text-green-700 text-xs">
-            {savedInfo.client_name} — {savedInfo.service_name}{' '}
-            {format(dt, "d MMMM 'alle' HH:mm", { locale: it })}
-          </p>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-3">
-          <div className="flex items-start gap-3">
-            <CalendarPlus className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-blue-800">
-                Aggiungi sveglie al calendario del telefono
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Le sveglie in-app si attivano quando l&apos;app è aperta. Per ricevere
-                sveglie anche a telefono spento o app chiusa, aggiungi l&apos;appuntamento
-                al calendario nativo: il sistema operativo gestirà le sveglie in autonomia.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleDownloadICS}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
-          >
-            <CalendarPlus className="w-4 h-4" />
-            Scarica file calendario (.ics)
-          </button>
-          <p className="text-xs text-blue-500 text-center">
-            Apri il file → scegli il calendario → le sveglie sono impostate.
-          </p>
-        </div>
-
-        <button
-          onClick={() => { router.push('/dashboard'); router.refresh() }}
-          className="w-full flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700 text-sm py-2 transition-colors"
-        >
-          <X className="w-4 h-4" /> Salta, vai al dashboard
-        </button>
-      </div>
-    )
-  }
-
-  // ── Form ─────────────────────────────────────────────────────────────────────
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
       <div>
