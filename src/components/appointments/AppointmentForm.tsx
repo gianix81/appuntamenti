@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, addMinutes, parseISO } from 'date-fns'
-import { collection, getDocs, doc, addDoc, updateDoc, query, orderBy, where } from 'firebase/firestore'
+import { collection, getDocs, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus } from '@/types/database'
-import { NotificationsPanel } from '@/components/appointments/NotificationsPanel'
 
 interface Props { existing?: Appointment }
 
@@ -37,9 +36,7 @@ export function AppointmentForm({ existing }: Props) {
     ]).then(([cSnap, sSnap]) => {
       setClients(cSnap.docs.map(d => ({ id: d.id, ...d.data() }) as Client))
       setServices(sSnap.docs.map(d => ({ id: d.id, ...d.data() }) as Service).filter(s => s.active))
-    }).catch(err => {
-      setError(`Errore caricamento dati: ${err.message}`)
-    })
+    }).catch(err => setError(`Errore caricamento dati: ${err.message}`))
   }, [])
 
   function set(field: string, value: string) {
@@ -76,10 +73,7 @@ export function AppointmentForm({ existing }: Props) {
       } else {
         await addDoc(collection(db, 'appointments'), {
           ...payload,
-          reminder_sent_at: null,
-          confirmed_at:     null,
-          cancelled_at:     null,
-          created_at:       new Date().toISOString(),
+          created_at: new Date().toISOString(),
         })
       }
       router.push('/dashboard')
@@ -161,16 +155,6 @@ export function AppointmentForm({ existing }: Props) {
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Salva appuntamento'}
         </button>
       </div>
-
-      {existing && (
-        <div className="mt-2 pt-5 border-t border-slate-100">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">Notifiche SMS</h3>
-          <NotificationsPanel
-            appointmentId={existing.id}
-            initialSent={existing.notifications_sent}
-          />
-        </div>
-      )}
     </form>
   )
 }

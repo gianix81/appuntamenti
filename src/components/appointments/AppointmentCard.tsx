@@ -2,19 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { format, isToday } from 'date-fns'
+import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations } from '@/types/database'
 import { AppointmentStatusBadge, ConfirmationStatusBadge } from '@/components/ui/StatusBadge'
-import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2, CalendarPlus } from 'lucide-react'
+import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2 } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface Props {
   appointment: AppointmentWithRelations
-  now?: Date
-  reminderMins?: number
   onDelete?: (id: string) => void
 }
 
@@ -28,82 +26,13 @@ function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 
-function Countdown({ start, now, reminderMins = 30 }: { start: Date; now: Date; reminderMins?: number }) {
-  const ms = start.getTime() - now.getTime()
-  if (ms < -5 * 60_000) return null
-
-  const isNow      = ms <= 0
-  const sec        = Math.max(0, Math.floor(ms / 1000))
-  const hh         = Math.floor(sec / 3600)
-  const mm         = Math.floor((sec % 3600) / 60)
-  const ss         = sec % 60
-  const timeStr    = isNow     ? '⚡ ADESSO!'
-                   : hh > 0   ? `${hh}h ${String(mm).padStart(2, '0')}m ${String(ss).padStart(2, '0')}s`
-                   :             `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
-
-  const isVeryClose = !isNow && ms < 5 * 60_000
-  const isClose     = !isNow && ms < reminderMins * 60_000
-
-  const bg   = isNow ? 'bg-red-500 animate-pulse' : isVeryClose ? 'bg-red-400' : isClose ? 'bg-amber-400' : 'bg-blue-50'
-  const text = isNow || isVeryClose || isClose ? 'text-white' : 'text-blue-600'
-
-  return (
-    <div className={`${bg} rounded-b-2xl px-4 py-2 flex items-center justify-between`}>
-      <span className={`text-xs font-medium ${text} opacity-80`}>⏰ tra</span>
-      <span className={`text-sm font-bold tabular-nums tracking-tight ${text}`}>{timeStr}</span>
-    </div>
-  )
-}
-
-function downloadICS(appointment: AppointmentWithRelations, reminderMins: number) {
-  const start = new Date(appointment.start_time)
-  const end   = new Date(appointment.end_time || appointment.start_time)
-  const clientName  = `${appointment.clients?.first_name ?? ''} ${appointment.clients?.last_name ?? ''}`.trim()
-  const serviceName = appointment.services?.name ?? ''
-  const summary     = `${clientName} - ${serviceName}`
-
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const toUTC = (d: Date) =>
-    `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`
-
-  const uid = `${appointment.id}-${Date.now()}@appuntamenti`
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Appuntamenti App//IT',
-    'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
-    `UID:${uid}`,
-    `DTSTART:${toUTC(start)}`,
-    `DTEND:${toUTC(end)}`,
-    `SUMMARY:${summary}`,
-    `DESCRIPTION:Appuntamento: ${serviceName} (${appointment.services?.duration_minutes ?? 0} min)`,
-    'BEGIN:VALARM',
-    `TRIGGER:-PT${reminderMins}M`,
-    'ACTION:DISPLAY',
-    `DESCRIPTION:Tra ${reminderMins} min: ${summary}`,
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n')
-
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' })
-  const url  = URL.createObjectURL(blob)
-  const a    = Object.assign(document.createElement('a'), { href: url, download: `appuntamento.ics` })
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
-
-export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Props) {
+export function AppointmentCard({ appointment, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
 
-  const isPending     = appointment.confirmation_status === 'pending'
-  const start         = new Date(appointment.start_time)
-  const end           = new Date(appointment.end_time)
-  const showCountdown = !!now && isToday(start) && appointment.status !== 'cancelled'
+  const isPending = appointment.confirmation_status === 'pending'
+  const start     = new Date(appointment.start_time)
+  const end       = new Date(appointment.end_time)
 
   async function handleDelete() {
     setDeleting(true)
@@ -122,7 +51,7 @@ export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Pr
       isPending ? 'border-yellow-200 ring-1 ring-yellow-100' : 'border-slate-100'
     )}>
       <div className="p-4 flex gap-4">
-        {/* Colonna orario */}
+        {/* Orario */}
         <div className="flex flex-col items-center justify-center w-14 shrink-0">
           <span className="text-xl font-bold text-blue-600">{format(start, 'HH:mm')}</span>
           <span className="text-xs text-slate-400">{format(end, 'HH:mm')}</span>
@@ -145,15 +74,7 @@ export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Pr
               </div>
             </div>
 
-            {/* Azioni */}
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => downloadICS(appointment, reminderMins ?? 30)}
-                className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                title={`Aggiungi al calendario (sveglia ${reminderMins ?? 30} min prima)`}
-              >
-                <CalendarPlus className="w-3.5 h-3.5" />
-              </button>
               <Link
                 href={`/appointments/${appointment.id}/edit`}
                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -206,8 +127,7 @@ export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Pr
         </div>
       </div>
 
-      {/* Strip countdown o conferma eliminazione */}
-      {confirmDelete ? (
+      {confirmDelete && (
         <div className="bg-red-50 border-t border-red-100 rounded-b-2xl px-4 py-2.5 flex items-center justify-between gap-3">
           <span className="text-xs text-red-600 font-medium">Eliminare questo appuntamento?</span>
           <div className="flex gap-2 shrink-0">
@@ -226,9 +146,7 @@ export function AppointmentCard({ appointment, now, reminderMins, onDelete }: Pr
             </button>
           </div>
         </div>
-      ) : showCountdown ? (
-        <Countdown start={start} now={now!} reminderMins={reminderMins} />
-      ) : null}
+      )}
     </div>
   )
 }

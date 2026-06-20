@@ -21,14 +21,6 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
   const [loading, setLoading]           = useState(true)
-  const [reminderMins, setReminderMins] = useState(30)
-
-  // Orologio live per il countdown
-  const [now, setNow] = useState(new Date())
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
 
   const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn: 1 }) })
 
@@ -36,19 +28,12 @@ export default function AppointmentsPage() {
     setLoading(true)
     try {
       const wEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
-      const [snap, settingsSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, 'appointments'),
-          where('start_time', '>=', startOfDay(weekStart).toISOString()),
-          where('start_time', '<=', endOfDay(wEnd).toISOString()),
-          orderBy('start_time'),
-        )),
-        getDoc(doc(db, 'settings', 'main')),
-      ])
-
-      if (settingsSnap.exists()) {
-        setReminderMins(settingsSnap.data().reminder_minutes ?? 30)
-      }
+      const snap = await getDocs(query(
+        collection(db, 'appointments'),
+        where('start_time', '>=', startOfDay(weekStart).toISOString()),
+        where('start_time', '<=', endOfDay(wEnd).toISOString()),
+        orderBy('start_time'),
+      ))
 
       const apts = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string })[]
       const clientIds  = [...new Set(apts.map(a => a.client_id))]
@@ -73,10 +58,6 @@ export default function AppointmentsPage() {
   function prevWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n }) }
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }
 
-  function handleDelete(id: string) {
-    setAppointments(prev => prev.filter(a => a.id !== id))
-  }
-
   const dayAppointments = appointments.filter(a => isSameDay(new Date(a.start_time), selectedDate))
 
   return (
@@ -91,7 +72,6 @@ export default function AppointmentsPage() {
         </Link>
       </div>
 
-      {/* Selettore settimana */}
       <div className="bg-white rounded-2xl border border-slate-100 p-3 mb-4">
         <div className="flex items-center justify-between mb-3">
           <button onClick={prevWeek} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
@@ -106,7 +86,7 @@ export default function AppointmentsPage() {
         </div>
         <div className="grid grid-cols-7 gap-1">
           {days.map(day => {
-            const hasAppts  = appointments.some(a => isSameDay(new Date(a.start_time), day))
+            const hasAppts   = appointments.some(a => isSameDay(new Date(a.start_time), day))
             const isSelected = isSameDay(day, selectedDate)
             return (
               <button
@@ -114,7 +94,7 @@ export default function AppointmentsPage() {
                 onClick={() => setSelectedDate(day)}
                 className={clsx(
                   'flex flex-col items-center py-2 rounded-xl transition-colors text-xs relative',
-                  isSelected  ? 'bg-blue-600 text-white'
+                  isSelected   ? 'bg-blue-600 text-white'
                   : isToday(day) ? 'bg-blue-50 text-blue-600'
                   : 'hover:bg-slate-50 text-slate-600',
                 )}
@@ -157,9 +137,7 @@ export default function AppointmentsPage() {
             <AppointmentCard
               key={apt.id}
               appointment={apt}
-              now={isToday(selectedDate) ? now : undefined}
-              reminderMins={reminderMins}
-              onDelete={handleDelete}
+              onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
             />
           ))}
         </div>
