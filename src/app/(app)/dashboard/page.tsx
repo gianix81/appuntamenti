@@ -161,8 +161,6 @@ export default function DashboardPage() {
 
   // ── Allarme sveglia: gira ogni secondo con i dati già caricati ──
   useEffect(() => {
-    if (typeof Notification === 'undefined') return
-    if (Notification.permission !== 'granted') return
     if (!appointments.length) return
 
     for (const apt of appointments) {
@@ -227,6 +225,35 @@ export default function DashboardPage() {
     }
   }
 
+  function testAlarm() {
+    const apt = appointments[0]
+    if (!apt) { alert('Nessun appuntamento oggi per testare'); return }
+    const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+    window.dispatchEvent(new CustomEvent('appointment-reminder', {
+      detail: {
+        appointmentId: apt.id + '_test',
+        clientName: `${apt.clients.first_name} ${apt.clients.last_name}`,
+        serviceName: apt.services.name,
+        time,
+        reminderMinutes: 60,
+        intervalMinutes: 60,
+        slotType: 'reminder' as const,
+        whatsappUrl: apt.clients.phone ? `https://wa.me/${apt.clients.phone.replace(/[^\d]/g, '')}?text=TEST` : undefined,
+        smsUrl: apt.clients.phone ? `sms:${apt.clients.phone}?body=TEST` : undefined,
+      },
+    }))
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      const ctx = new AC()
+      const o = ctx.createOscillator(); const g = ctx.createGain()
+      o.connect(g); g.connect(ctx.destination)
+      o.type = 'square'; o.frequency.value = 880
+      g.gain.setValueAtTime(0.7, ctx.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+      o.start(); o.stop(ctx.currentTime + 0.5)
+    } catch { /* audio bloccato */ }
+  }
+
   const cells = getMonthCells(calMonth)
 
   return (
@@ -243,6 +270,14 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Test allarme */}
+          <button
+            onClick={testAlarm}
+            title="Test allarme"
+            className="p-2.5 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors text-lg leading-none"
+          >
+            🔔
+          </button>
           {/* Campanello */}
           <Link
             href="/settings"

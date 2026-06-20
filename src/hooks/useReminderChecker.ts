@@ -143,21 +143,25 @@ export async function triggerAlarm(
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
 async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = false, slotType: 'confirmation' | 'reminder' = 'reminder') {
-  let client: Record<string, unknown>, service: Record<string, unknown>
+  // Tenta di caricare nome cliente/servizio, ma mostra il popup anche se fallisce
+  let clientName  = `Appuntamento ${apt.id.slice(0, 6)}`
+  let serviceName = ''
+  let phone: string | undefined
   try {
     const [c, s] = await Promise.all([
       getDoc(doc(db, 'clients',  apt.client_id)),
       getDoc(doc(db, 'services', apt.service_id)),
     ])
-    if (!c.exists() || !s.exists()) return
-    client = c.data(); service = s.data()
-  } catch { return }
+    if (c.exists()) {
+      const cd = c.data()
+      clientName = `${cd.first_name} ${cd.last_name}`
+      phone = cd.phone as string | undefined
+    }
+    if (s.exists()) serviceName = String(s.data().name)
+  } catch { /* usa valori di default */ }
 
   const time        = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-  const clientName  = `${client.first_name} ${client.last_name}`
-  const serviceName = String(service.name)
-  const phone       = client.phone as string | undefined
-  const msg         = `Buongiorno ${String(client.first_name)}, la ricordiamo del suo appuntamento per ${serviceName} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
+  const msg         = `Buongiorno, la ricordiamo del suo appuntamento${serviceName ? ` per ${serviceName}` : ''} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
   const whatsappUrl = phone ? buildWhatsAppUrl(phone, msg) : undefined
   const smsUrl      = phone ? buildSmsUrl(phone, msg) : undefined
 
