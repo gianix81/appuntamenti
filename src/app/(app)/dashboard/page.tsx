@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   format, isToday, isSameDay, startOfDay, endOfDay, addMonths, subMonths,
 } from 'date-fns'
@@ -89,6 +90,7 @@ function getMonthCells(month: Date): (Date | null)[] {
 const WEEK_LABELS = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do']
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [date, setDate]               = useState(new Date())
   const [calMonth, setCalMonth]       = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
@@ -169,7 +171,7 @@ export default function DashboardPage() {
     setError(null)
     try {
       const authed = await waitForAuth()
-      if (!authed) { setError('Sessione scaduta. Effettua nuovamente il login.'); return }
+      if (!authed) { router.replace('/login'); return }
       await auth.currentUser?.getIdToken()
       const [list, settingsSnap] = await Promise.all([
         fetchDayAppointments(date),
