@@ -11,7 +11,7 @@ import { auth, db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import {
-  triggerAlarm, wasNotified, markNotified, wasNowNotified, markNowNotified,
+  triggerAlarm, wasIntervalNotified, markIntervalNotified, wasNowNotified, markNowNotified,
 } from '@/hooks/useReminderChecker'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -82,7 +82,7 @@ export default function DashboardPage() {
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState<string | null>(null)
   const [stats, setStats]             = useState({ total: 0, pending: 0, confirmed: 0 })
-  const [reminderMins, setReminderMins] = useState(30)
+  const [reminderIntervals, setReminderIntervals] = useState<number[]>([30])
   const [centerName, setCenterName]     = useState('')
 
   // Refs per deduplicazione allarmi (questa sessione)
@@ -138,8 +138,9 @@ export default function DashboardPage() {
         getDoc(doc(db, 'settings', 'main')),
       ])
       if (settingsSnap.exists()) {
-        setReminderMins(settingsSnap.data().reminder_minutes ?? 30)
-        setCenterName(settingsSnap.data().center_name ?? '')
+        const d = settingsSnap.data()
+        setReminderIntervals(d.reminder_intervals ?? (d.reminder_minutes ? [d.reminder_minutes] : [30]))
+        setCenterName(d.center_name ?? '')
       }
       setAppointments(list)
       setStats({
@@ -162,29 +163,32 @@ export default function DashboardPage() {
     if (Notification.permission !== 'granted') return
     if (!appointments.length) return
 
-    const reminderMs = reminderMins * 60_000
-
     for (const apt of appointments) {
       if (apt.status === 'cancelled') continue
       const msUntil = new Date(apt.start_time).getTime() - now.getTime()
 
-      // Allarme promemoria (N minuti prima)
-      if (!alarmFiredRef.current.has(apt.id)) {
-        if (wasNotified(apt.id)) {
-          alarmFiredRef.current.add(apt.id)
-        } else if (msUntil > 0 && msUntil <= reminderMs) {
-          alarmFiredRef.current.add(apt.id)
-          markNotified(apt.id)
-          triggerAlarm(
-            apt.id,
-            `${apt.clients.first_name} ${apt.clients.last_name}`,
-            apt.services.name,
-            apt.start_time,
-            apt.clients.phone,
-            centerName,
-            false,
-            reminderMins,
-          ).catch(console.error)
+      // Allarme per ogni intervallo configurato
+      for (const interval of reminderIntervals) {
+        const alarmKey   = `${apt.id}_${interval}`
+        const reminderMs = interval * 60_000
+
+        if (!alarmFiredRef.current.has(alarmKey)) {
+          if (wasIntervalNotified(apt.id, interval)) {
+            alarmFiredRef.current.add(alarmKey)
+          } else if (msUntil > 0 && msUntil <= reminderMs) {
+            alarmFiredRef.current.add(alarmKey)
+            markIntervalNotified(apt.id, interval)
+            triggerAlarm(
+              apt.id,
+              `${apt.clients.first_name} ${apt.clients.last_name}`,
+              apt.services.name,
+              apt.start_time,
+              apt.clients.phone,
+              centerName,
+              false,
+              interval,
+            ).catch(console.error)
+          }
         }
       }
 
@@ -209,7 +213,7 @@ export default function DashboardPage() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, appointments, reminderMins, centerName])
+  }, [now, appointments, reminderIntervals, centerName])
 
   function selectDay(day: Date) {
     setDate(day)
@@ -380,7 +384,7 @@ export default function DashboardPage() {
               key={apt.id}
               appointment={apt}
               now={isToday(date) ? now : undefined}
-              reminderMins={reminderMins}
+              reminderMins={Math.min(...reminderIntervals)}
               onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
             />
           ))}

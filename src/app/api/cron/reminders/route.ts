@@ -4,28 +4,46 @@ import { sendPushToAll } from '@/lib/push'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
 
-// Chiamato da Vercel Cron (vercel.json) oppure manualmente
-// Controlla appuntamenti nelle prossime 24 ore senza notifica già inviata
+// Chiamato da Vercel Cron (vercel.json) oppure manualmente.
+// Controlla gli appuntamenti in finestre corrispondenti agli intervalli configurati
+// e invia push notification all'operatore per quelli non ancora notificati.
 export async function GET() {
-  const db  = getAdminDb()
-  const now = new Date()
-  const in24 = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  const db = getAdminDb()
+
+  // Carica impostazioni
+  const settingsSnap = await db.collection('settings').doc('main').get()
+  const settings     = settingsSnap.exists ? settingsSnap.data()! : {}
+  const intervals: number[] = settings.reminder_intervals
+    ?? (settings.reminder_minutes ? [settings.reminder_minutes] : [1440, 120])
+
+  const now        = new Date()
+  const maxInterval = Math.max(...intervals)
+  const windowEnd  = new Date(now.getTime() + maxInterval * 60_000 + 60_000)
 
   const snap = await db.collection('appointments')
     .where('start_time', '>=', now.toISOString())
-    .where('start_time', '<=', in24.toISOString())
+    .where('start_time', '<=', windowEnd.toISOString())
     .where('status', '!=', 'cancelled')
     .get()
 
   if (snap.empty) return NextResponse.json({ sent: 0 })
 
   let sent = 0
-  for (const doc of snap.docs) {
-    const apt = doc.data()
+  for (const docSnap of snap.docs) {
+    const apt      = docSnap.data()
+    const msUntil  = new Date(apt.start_time).getTime() - now.getTime()
+
+    // Controlla se almeno uno degli intervalli è applicabile
+    const applicableInterval = intervals.find(interval => msUntil > 0 && msUntil <= interval * 60_000)
+    if (!applicableInterval) continue
+
+    // Evita duplicati usando push_notified_at (per ora un singolo flag)
     if (apt.push_notified_at) continue
 
-    const clientSnap = await db.collection('clients').doc(apt.client_id).get()
-    const serviceSnap = await db.collection('services').doc(apt.service_id).get()
+    const [clientSnap, serviceSnap] = await Promise.all([
+      db.collection('clients').doc(apt.client_id).get(),
+      db.collection('services').doc(apt.service_id).get(),
+    ])
     if (!clientSnap.exists || !serviceSnap.exists) continue
 
     const client  = clientSnap.data()!
@@ -36,12 +54,13 @@ export async function GET() {
     await sendPushToAll({
       title: `Appuntamento: ${client.first_name} ${client.last_name}`,
       body:  `${service.name} — ${date} alle ${time}`,
-      url:   `/appointments/${doc.id}/edit`,
+      url:   `/appointments/${docSnap.id}/edit`,
     })
 
-    await doc.ref.update({ push_notified_at: now.toISOString() })
+    await docSnap.ref.update({ push_notified_at: now.toISOString() })
     sent++
   }
 
   return NextResponse.json({ sent })
 }
+

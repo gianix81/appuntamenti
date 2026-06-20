@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminAuth } from '@/lib/firebase/admin'
-import { sendAppointmentReminder } from '@/lib/reminders'
+import { sendConfirmationMessage, sendAppointmentReminder } from '@/lib/reminders'
 
 export async function POST(request: NextRequest) {
   const sessionCookie = request.cookies.get('__session')?.value
@@ -12,10 +12,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Sessione non valida' }, { status: 401 })
   }
 
-  const { appointmentId } = await request.json()
-  if (!appointmentId) return NextResponse.json({ error: 'appointmentId mancante' }, { status: 400 })
+  const body = await request.json()
+  const { appointmentId, type = 'reminder', intervalMinutes = 30 } = body
 
-  const result = await sendAppointmentReminder(appointmentId)
+  if (!appointmentId) return NextResponse.json({ error: 'appointmentId mancante' }, { status: 400 })
+  if (type !== 'confirmation' && type !== 'reminder')
+    return NextResponse.json({ error: 'type non valido (usa "confirmation" o "reminder")' }, { status: 400 })
+
+  const result = type === 'confirmation'
+    ? await sendConfirmationMessage(appointmentId)
+    : await sendAppointmentReminder(appointmentId, Number(intervalMinutes))
+
   if (!result.success) return NextResponse.json({ error: result.error }, { status: 400 })
 
   return NextResponse.json({ success: true })

@@ -17,11 +17,24 @@ export default function SettingsPage() {
   const [testSent, setTestSent] = useState(false)
   const [checkResult, setCheckResult] = useState<CheckResult | null>(null)
   const [checking, setChecking] = useState(false)
+  const REMINDER_OPTIONS = [
+    { value: 15,   label: '15 minuti prima' },
+    { value: 30,   label: '30 minuti prima' },
+    { value: 60,   label: '1 ora prima' },
+    { value: 120,  label: '2 ore prima' },
+    { value: 240,  label: '4 ore prima' },
+    { value: 480,  label: '8 ore prima' },
+    { value: 1440, label: '24 ore prima (giorno prima)' },
+    { value: 2880, label: '48 ore prima (2 giorni prima)' },
+  ]
+
   const [form, setForm] = useState({
-    center_name:      '',
-    phone_number:     '',
-    address:          '',
-    reminder_minutes: '30',
+    center_name:          '',
+    phone_number:         '',
+    address:              '',
+    confirmation_enabled: true,
+    reminder_enabled:     true,
+    reminder_intervals:   [1440, 120] as number[],
   })
 
   const { permission, subscribed, subscribe, unsubscribe } = usePushNotifications()
@@ -35,10 +48,12 @@ export default function SettingsPage() {
           const data = snap.data() as Settings
           setSettings(data)
           setForm({
-            center_name:      data.center_name ?? '',
-            phone_number:     data.phone_number ?? '',
-            address:          data.address ?? '',
-            reminder_minutes: data.reminder_minutes?.toString() ?? '30',
+            center_name:          data.center_name ?? '',
+            phone_number:         data.phone_number ?? '',
+            address:              data.address ?? '',
+            confirmation_enabled: data.confirmation_enabled ?? true,
+            reminder_enabled:     data.reminder_enabled ?? true,
+            reminder_intervals:   data.reminder_intervals ?? (data.reminder_minutes ? [data.reminder_minutes] : [1440, 120]),
           })
         }
       } finally {
@@ -51,13 +66,17 @@ export default function SettingsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    const minInterval = form.reminder_intervals.length > 0 ? Math.min(...form.reminder_intervals) : 30
     await setDoc(doc(db, 'settings', 'main'), {
-      center_name:      form.center_name.trim(),
-      phone_number:     form.phone_number.trim() || null,
-      address:          form.address.trim() || null,
-      reminder_minutes: parseInt(form.reminder_minutes),
-      updated_at:       new Date().toISOString(),
-      created_at:       settings?.created_at ?? new Date().toISOString(),
+      center_name:          form.center_name.trim(),
+      phone_number:         form.phone_number.trim() || null,
+      address:              form.address.trim() || null,
+      confirmation_enabled: form.confirmation_enabled,
+      reminder_enabled:     form.reminder_enabled,
+      reminder_intervals:   form.reminder_intervals,
+      reminder_minutes:     minInterval,
+      updated_at:           new Date().toISOString(),
+      created_at:           settings?.created_at ?? new Date().toISOString(),
     })
     setSaving(false)
     setSaved(true)
@@ -138,17 +157,76 @@ export default function SettingsPage() {
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
               placeholder="Via Roma 1, Milano" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Anticipo promemoria</label>
-            <select value={form.reminder_minutes}
-              onChange={e => setForm(p => ({ ...p, reminder_minutes: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
-              <option value="15">15 minuti prima</option>
-              <option value="30">30 minuti prima</option>
-              <option value="60">1 ora prima</option>
-              <option value="120">2 ore prima</option>
-              <option value="1440">24 ore prima</option>
-            </select>
+          {/* Notifiche SMS ai clienti */}
+          <div className="border-t border-slate-100 pt-4 space-y-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Notifiche SMS ai clienti</p>
+
+            {/* Conferma appuntamento */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Conferma appuntamento</p>
+                <p className="text-xs text-slate-400">SMS al cliente quando viene fissato un appuntamento</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, confirmation_enabled: !p.confirmation_enabled }))}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  form.confirmation_enabled ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  form.confirmation_enabled ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {/* Promemoria appuntamento */}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Promemoria appuntamento</p>
+                <p className="text-xs text-slate-400">SMS di promemoria prima dell'appuntamento</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, reminder_enabled: !p.reminder_enabled }))}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  form.reminder_enabled ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${
+                  form.reminder_enabled ? 'translate-x-5' : 'translate-x-0'
+                }`} />
+              </button>
+            </div>
+
+            {/* Quando inviare il promemoria */}
+            {form.reminder_enabled && (
+              <div>
+                <p className="text-sm font-medium text-slate-700 mb-2">Quando inviare il promemoria</p>
+                <div className="space-y-2">
+                  {REMINDER_OPTIONS.map(opt => {
+                    const checked = form.reminder_intervals.includes(opt.value)
+                    return (
+                      <label key={opt.value} className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, opt.value].sort((a, b) => b - a) }))
+                            } else {
+                              setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== opt.value) }))
+                            }
+                          }}
+                          className="w-4 h-4 rounded accent-blue-600"
+                        />
+                        <span className="text-sm text-slate-700">{opt.label}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <button type="submit" disabled={saving}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">

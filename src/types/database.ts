@@ -2,6 +2,7 @@ export type AppointmentStatus = 'scheduled' | 'confirmed' | 'cancelled' | 'compl
 export type ConfirmationStatus = 'pending' | 'confirmed' | 'declined' | 'no_response'
 export type MessageChannel = 'sms' | 'whatsapp'
 export type MessageDirection = 'outbound' | 'inbound'
+export type NotificationType = 'confirmation' | 'reminder'
 
 export interface Client {
   id: string
@@ -33,7 +34,10 @@ export interface Appointment {
   end_time: string
   status: AppointmentStatus
   confirmation_status: ConfirmationStatus
-  reminder_sent_at: string | null
+  // Mappa chiave → ISO timestamp dell'invio
+  // Chiavi: 'confirmation', 'reminder_1440', 'reminder_120', ecc.
+  notifications_sent: Record<string, string> | null
+  reminder_sent_at: string | null  // mantenuto per retrocompatibilità
   confirmed_at: string | null
   cancelled_at: string | null
   notes: string | null
@@ -55,6 +59,8 @@ export interface MessageLog {
   provider_message_id: string | null
   direction: MessageDirection
   status: string | null
+  notification_type?: NotificationType
+  interval_minutes?: number
   received_response: boolean
   created_at: string
 }
@@ -64,7 +70,12 @@ export interface Settings {
   center_name: string
   phone_number: string | null
   address: string | null
-  reminder_minutes: number
+  // SMS di conferma alla creazione dell'appuntamento
+  confirmation_enabled: boolean
+  // SMS di promemoria prima dell'appuntamento
+  reminder_enabled: boolean
+  reminder_intervals: number[]  // minuti prima, es. [1440, 120]
+  reminder_minutes: number      // mantenuto per retrocompatibilità
   created_at: string
   updated_at?: string
 }

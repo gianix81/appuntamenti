@@ -6,6 +6,7 @@ import { format, addMinutes, parseISO } from 'date-fns'
 import { collection, getDocs, doc, addDoc, updateDoc, query, orderBy, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus } from '@/types/database'
+import { NotificationsPanel } from '@/components/appointments/NotificationsPanel'
 
 interface Props { existing?: Appointment }
 
@@ -160,6 +161,16 @@ export function AppointmentForm({ existing }: Props) {
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Salva appuntamento'}
         </button>
       </div>
+
+      {existing && (
+        <div className="mt-2 pt-5 border-t border-slate-100">
+          <h3 className="text-sm font-semibold text-slate-700 mb-3">Notifiche SMS</h3>
+          <NotificationsPanel
+            appointmentId={existing.id}
+            initialSent={existing.notifications_sent}
+          />
+        </div>
+      )}
     </form>
   )
 }
