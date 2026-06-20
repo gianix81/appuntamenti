@@ -358,18 +358,10 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Test allarme */}
+          {/* Campanella: click = test allarme, tasto impostazioni separato */}
           <button
             onClick={testAlarm}
-            title="Test allarme"
-            className="p-2.5 rounded-xl bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors text-lg leading-none"
-          >
-            🔔
-          </button>
-          {/* Campanello con badge */}
-          <Link
-            href="/settings"
-            title={notifPerm === 'granted' ? 'Notifiche attive' : 'Attiva notifiche'}
+            title={notifPerm === 'granted' ? 'Test allarme' : 'Attiva notifiche'}
             className={`relative p-2.5 rounded-xl transition-colors ${
               notifPerm === 'granted'
                 ? 'bg-green-50 text-green-600 hover:bg-green-100'
@@ -382,7 +374,7 @@ export default function DashboardPage() {
                 {activeAlarms.length}
               </span>
             )}
-          </Link>
+          </button>
           <Link
             href="/appointments/new"
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
