@@ -39,25 +39,19 @@ export default function SettingsPage() {
     return { time: String(minutes), unit: 'minuti prima' }
   }
 
-  function getDefaultMessage(key: string): string {
-    if (key === 'confirmation')
+  function getDefaultMessage(type: 'confirmation' | 'reminder'): string {
+    if (type === 'confirmation')
       return 'Ciao {nome}! Abbiamo fissato il tuo appuntamento per {servizio} il {data} alle {ora} presso {centro}. Rispondi SI per confermare o NO per annullare.'
-    const mins = parseInt(key.replace('reminder_', ''))
-    if (isNaN(mins)) return ''
-    if (mins >= 2880) { const d = mins / 1440; return `Ciao {nome}! Ti ricordiamo che tra ${d} giorni alle {ora} hai un appuntamento per {servizio} presso {centro}. Per annullare rispondi NO.` }
-    if (mins >= 1440) return 'Ciao {nome}! Ti ricordiamo che domani alle {ora} hai un appuntamento per {servizio} presso {centro}. Per annullare rispondi NO.'
-    if (mins >= 60)   { const h = mins / 60; return `Ciao {nome}! Tra ${h} ${h === 1 ? 'ora' : 'ore'} hai un appuntamento per {servizio} alle {ora} presso {centro}. Per annullare rispondi NO.` }
-    return `Ciao {nome}! Tra ${mins} minuti hai un appuntamento per {servizio} alle {ora} presso {centro}. Per annullare rispondi NO.`
+    return 'Ciao {nome}! Ti ricordiamo il tuo appuntamento per {servizio} {quando} alle {ora} presso {centro}. Per annullare rispondi NO.'
   }
 
   const [form, setForm] = useState({
     center_name:          '',
     phone_number:         '',
     address:              '',
-    confirmation_enabled: true,
     reminder_enabled:     true,
     reminder_intervals:   [1440, 120] as number[],
-    notification_messages: {} as Record<string, string>,
+    notification_messages: { confirmation: '', reminder: '' },
   })
 
   const { permission, subscribed, subscribe, unsubscribe } = usePushNotifications()
@@ -74,10 +68,12 @@ export default function SettingsPage() {
             center_name:          data.center_name ?? '',
             phone_number:         data.phone_number ?? '',
             address:              data.address ?? '',
-            confirmation_enabled: data.confirmation_enabled ?? true,
             reminder_enabled:     data.reminder_enabled ?? true,
             reminder_intervals:   data.reminder_intervals ?? (data.reminder_minutes ? [data.reminder_minutes] : [1440, 120]),
-            notification_messages: (data.notification_messages as Record<string, string>) ?? {},
+            notification_messages: {
+              confirmation: (data.notification_messages as Record<string, string>)?.confirmation ?? '',
+              reminder:     (data.notification_messages as Record<string, string>)?.reminder ?? '',
+            },
           })
         }
       } finally {
@@ -95,7 +91,7 @@ export default function SettingsPage() {
       center_name:          form.center_name.trim(),
       phone_number:         form.phone_number.trim() || null,
       address:              form.address.trim() || null,
-      confirmation_enabled: form.confirmation_enabled,
+
       reminder_enabled:     form.reminder_enabled,
       reminder_intervals:    form.reminder_intervals,
       reminder_minutes:      minInterval,
@@ -183,171 +179,146 @@ export default function SettingsPage() {
               placeholder="Via Roma 1, Milano" />
           </div>
           {/* Notifiche SMS ai clienti */}
-          <div className="border-t border-slate-100 pt-4 space-y-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Notifiche SMS ai clienti</p>
-
-            {/* ── Card: Conferma appuntamento ── */}
-            <div className="rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3 bg-slate-50">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">✉️ Conferma appuntamento</p>
-                  <p className="text-xs text-slate-400">Inviato subito alla creazione dell&apos;appuntamento</p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onClick={() => setForm(p => ({ ...p, confirmation_enabled: !p.confirmation_enabled }))}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${form.confirmation_enabled ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${form.confirmation_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                  <button type="button" onClick={() => setExpandedCard(prev => prev === 'confirmation' ? null : 'confirmation')}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedCard === 'confirmation' ? 'rotate-180' : ''}`} />
-                  </button>
-                </div>
+          <div className="border-t border-slate-100 pt-4 space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Notifiche SMS ai clienti</p>
+                <p className="text-xs text-slate-400">Invia SMS ai clienti per conferma e promemoria</p>
               </div>
-              {expandedCard === 'confirmation' ? (
-                <div className="px-4 py-3 border-t border-slate-100 bg-white space-y-2">
-                  <textarea rows={4}
-                    value={form.notification_messages['confirmation'] ?? getDefaultMessage('confirmation')}
-                    onChange={e => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, confirmation: e.target.value } }))}
-                    className="w-full text-sm text-slate-700 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                  <p className="text-xs text-slate-400">
-                    Variabili:{' '}
-                    {['{nome}','{servizio}','{data}','{ora}','{centro}'].map(v => (
-                      <code key={v} className="bg-slate-100 text-slate-600 px-1 rounded mr-1">{v}</code>
-                    ))}
-                  </p>
-                  <button type="button"
-                    onClick={() => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, confirmation: getDefaultMessage('confirmation') } }))}
-                    className="text-xs text-blue-500 hover:text-blue-700 hover:underline">↺ Ripristina predefinito</button>
-                </div>
-              ) : (
-                <button type="button" onClick={() => setExpandedCard('confirmation')}
-                  className="w-full px-4 py-2.5 border-t border-slate-100 text-left hover:bg-slate-50 transition-colors group">
-                  <p className="text-xs text-slate-400 group-hover:text-slate-500 truncate">
-                    💬 {(form.notification_messages['confirmation'] ?? getDefaultMessage('confirmation')).slice(0, 90)}
-                  </p>
-                </button>
-              )}
+              <button type="button" onClick={() => setForm(p => ({ ...p, reminder_enabled: !p.reminder_enabled }))}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${form.reminder_enabled ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${form.reminder_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
             </div>
 
-            {/* ── Sezione promemoria ── */}
-            <div>
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">Promemoria appuntamento</p>
-                  <p className="text-xs text-slate-400">SMS di promemoria prima dell&apos;appuntamento</p>
-                </div>
-                <button type="button" onClick={() => setForm(p => ({ ...p, reminder_enabled: !p.reminder_enabled }))}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${form.reminder_enabled ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                  <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform ${form.reminder_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                </button>
-              </div>
-
-              {form.reminder_enabled && (
+            {form.reminder_enabled && (
+              <>
+                {/* Orari di notifica */}
                 <div className="space-y-2">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Orari di notifica</p>
+                    <p className="text-xs text-slate-400 mt-0.5">A questi orari potrai scegliere se inviare la <strong>Conferma</strong> o il <strong>Promemoria</strong> al cliente.</p>
+                  </div>
+
                   {form.reminder_intervals.length === 0 && (
-                    <p className="text-xs text-slate-400 italic py-1">Nessun promemoria configurato.</p>
+                    <p className="text-xs text-slate-400 italic py-1">Nessun orario configurato.</p>
                   )}
 
                   {[...form.reminder_intervals].sort((a, b) => b - a).map(interval => {
-                    const key = `reminder_${interval}`
                     const { time, unit } = intervalToDisplay(interval)
                     return (
-                      <div key={interval} className="rounded-2xl border border-slate-200 overflow-hidden">
-                        {/* Header stile sveglia */}
-                        <div className="flex items-center px-5 py-3 bg-slate-50">
-                          <div className="flex-1 flex items-baseline gap-2">
-                            <span className="text-3xl font-bold text-slate-800 tabular-nums leading-none">{time}</span>
-                            <span className="text-sm text-slate-500">{unit}</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button type="button" onClick={() => setExpandedCard(prev => prev === key ? null : key)}
-                              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
-                              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedCard === key ? 'rotate-180' : ''}`} />
-                            </button>
-                            <button type="button"
-                              onClick={() => setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== interval) }))}
-                              className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                      <div key={interval} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-bold text-slate-800 tabular-nums leading-none">{time}</span>
+                          <span className="text-sm text-slate-500">{unit}</span>
                         </div>
-                        {/* Body: editor o preview */}
-                        {expandedCard === key ? (
-                          <div className="px-4 py-3 border-t border-slate-100 bg-white space-y-2">
-                            <textarea rows={4}
-                              value={form.notification_messages[key] ?? getDefaultMessage(key)}
-                              onChange={e => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, [key]: e.target.value } }))}
-                              className="w-full text-sm text-slate-700 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                            <p className="text-xs text-slate-400">
-                              Variabili:{' '}
-                              {['{nome}','{servizio}','{data}','{ora}','{centro}'].map(v => (
-                                <code key={v} className="bg-slate-100 text-slate-600 px-1 rounded mr-1">{v}</code>
-                              ))}
-                            </p>
-                            <button type="button"
-                              onClick={() => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, [key]: getDefaultMessage(key) } }))}
-                              className="text-xs text-blue-500 hover:text-blue-700 hover:underline">↺ Ripristina predefinito</button>
-                          </div>
-                        ) : (
-                          <button type="button" onClick={() => setExpandedCard(key)}
-                            className="w-full px-4 py-2.5 border-t border-slate-100 text-left hover:bg-slate-50 transition-colors group">
-                            <p className="text-xs text-slate-400 group-hover:text-slate-500 truncate">
-                              💬 {(form.notification_messages[key] ?? getDefaultMessage(key)).slice(0, 90)}
-                            </p>
-                          </button>
-                        )}
+                        <button type="button"
+                          onClick={() => setForm(p => ({ ...p, reminder_intervals: p.reminder_intervals.filter(v => v !== interval) }))}
+                          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     )
                   })}
 
                   {showAddReminder ? (
                     <div className="flex gap-2 items-center">
-                      <select
-                        value={newInterval}
-                        onChange={e => setNewInterval(Number(e.target.value))}
-                        className="flex-1 px-3 py-2.5 rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white"
-                      >
+                      <select value={newInterval} onChange={e => setNewInterval(Number(e.target.value))}
+                        className="flex-1 px-3 py-2.5 rounded-xl border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white">
                         <option value="">Seleziona…</option>
                         {REMINDER_OPTIONS.filter(o => !form.reminder_intervals.includes(o.value)).map(o => (
                           <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        disabled={newInterval === ''}
-                        onClick={() => {
-                          if (newInterval !== '') {
-                            setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, newInterval as number].sort((a, b) => b - a) }))
-                            setNewInterval('')
-                            setShowAddReminder(false)
-                          }
-                        }}
-                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-semibold rounded-xl transition-colors"
-                      >
+                      <button type="button" disabled={newInterval === ''}
+                        onClick={() => { if (newInterval !== '') { setForm(p => ({ ...p, reminder_intervals: [...p.reminder_intervals, newInterval as number].sort((a, b) => b - a) })); setNewInterval(''); setShowAddReminder(false) } }}
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-200 text-white text-sm font-semibold rounded-xl transition-colors">
                         Aggiungi
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => { setShowAddReminder(false); setNewInterval('') }}
-                        className="p-2.5 border border-slate-200 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors"
-                      >
+                      <button type="button" onClick={() => { setShowAddReminder(false); setNewInterval('') }}
+                        className="p-2.5 border border-slate-200 text-slate-400 hover:bg-slate-50 rounded-xl transition-colors">
                         <span className="text-sm">✕</span>
                       </button>
                     </div>
                   ) : REMINDER_OPTIONS.some(o => !form.reminder_intervals.includes(o.value)) ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddReminder(true)}
-                      className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 hover:border-blue-400 text-blue-500 hover:text-blue-700 text-sm font-medium py-3 rounded-2xl transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Aggiungi promemoria
+                    <button type="button" onClick={() => setShowAddReminder(true)}
+                      className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 hover:border-blue-400 text-blue-500 hover:text-blue-700 text-sm font-medium py-3 rounded-2xl transition-colors">
+                      <Plus className="w-4 h-4" /> Aggiungi orario
                     </button>
                   ) : null}
                 </div>
-              )}
-            </div>
+
+                {/* Messaggi */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Messaggi</p>
+
+                  {/* Conferma */}
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">✉️ Conferma appuntamento</p>
+                        <p className="text-xs text-slate-400">Chiede al cliente di confermare la prenotazione</p>
+                      </div>
+                      <button type="button" onClick={() => setExpandedCard(prev => prev === 'confirmation' ? null : 'confirmation')}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedCard === 'confirmation' ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                    {expandedCard === 'confirmation' ? (
+                      <div className="px-4 py-3 border-t border-slate-100 bg-white space-y-2">
+                        <textarea rows={4}
+                          value={form.notification_messages.confirmation || getDefaultMessage('confirmation')}
+                          onChange={e => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, confirmation: e.target.value } }))}
+                          className="w-full text-sm text-slate-700 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                        <p className="text-xs text-slate-400">Variabili:{' '}{['{nome}','{servizio}','{data}','{ora}','{centro}'].map(v => <code key={v} className="bg-slate-100 text-slate-600 px-1 rounded mr-1">{v}</code>)}</p>
+                        <button type="button" onClick={() => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, confirmation: '' } }))}
+                          className="text-xs text-blue-500 hover:text-blue-700 hover:underline">↺ Ripristina predefinito</button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setExpandedCard('confirmation')}
+                        className="w-full px-4 py-2.5 border-t border-slate-100 text-left hover:bg-slate-50 transition-colors group">
+                        <p className="text-xs text-slate-400 group-hover:text-slate-500 truncate">
+                          💬 {(form.notification_messages.confirmation || getDefaultMessage('confirmation')).slice(0, 90)}
+                        </p>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Promemoria */}
+                  <div className="rounded-2xl border border-slate-200 overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 bg-slate-50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">🔔 Promemoria appuntamento</p>
+                        <p className="text-xs text-slate-400">Ricorda al cliente l&apos;appuntamento in arrivo</p>
+                      </div>
+                      <button type="button" onClick={() => setExpandedCard(prev => prev === 'reminder' ? null : 'reminder')}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors">
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedCard === 'reminder' ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                    {expandedCard === 'reminder' ? (
+                      <div className="px-4 py-3 border-t border-slate-100 bg-white space-y-2">
+                        <textarea rows={4}
+                          value={form.notification_messages.reminder || getDefaultMessage('reminder')}
+                          onChange={e => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, reminder: e.target.value } }))}
+                          className="w-full text-sm text-slate-700 border border-slate-200 rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                        <p className="text-xs text-slate-400">Variabili:{' '}{['{nome}','{servizio}','{data}','{ora}','{centro}','{quando}'].map(v => <code key={v} className="bg-slate-100 text-slate-600 px-1 rounded mr-1">{v}</code>)}</p>
+                        <p className="text-xs text-slate-400 mt-1"><code className="bg-slate-100 text-slate-600 px-1 rounded">{'{quando}'}</code> → es. &quot;domani&quot;, &quot;tra 2 ore&quot;, &quot;tra 30 minuti&quot;</p>
+                        <button type="button" onClick={() => setForm(p => ({ ...p, notification_messages: { ...p.notification_messages, reminder: '' } }))}
+                          className="text-xs text-blue-500 hover:text-blue-700 hover:underline">↺ Ripristina predefinito</button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setExpandedCard('reminder')}
+                        className="w-full px-4 py-2.5 border-t border-slate-100 text-left hover:bg-slate-50 transition-colors group">
+                        <p className="text-xs text-slate-400 group-hover:text-slate-500 truncate">
+                          💬 {(form.notification_messages.reminder || getDefaultMessage('reminder')).slice(0, 90)}
+                        </p>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           <button type="submit" disabled={saving}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">

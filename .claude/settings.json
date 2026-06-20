@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:www.makiapp.it)"
+      "WebFetch(domain:www.makiapp.it)",
+      "WebFetch(domain:developer.sumup.com)"
     ]
   }
 }

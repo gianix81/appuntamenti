@@ -17,8 +17,8 @@ function applyTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`)
 }
 
-function buildVars(apt: AppointmentWithRelations, centerName: string): Record<string, string> {
-  return {
+function buildVars(apt: AppointmentWithRelations, centerName: string, intervalMinutes?: number): Record<string, string> {
+  const vars: Record<string, string> = {
     nome:     apt.clients.first_name,
     cognome:  apt.clients.last_name,
     servizio: apt.services.name,
@@ -26,6 +26,13 @@ function buildVars(apt: AppointmentWithRelations, centerName: string): Record<st
     ora:      format(new Date(apt.start_time), 'HH:mm',       { locale: it }),
     centro:   centerName || 'il centro',
   }
+  if (intervalMinutes !== undefined) {
+    if (intervalMinutes >= 2880)      { const d = Math.round(intervalMinutes / 1440); vars.quando = `tra ${d} ${d === 1 ? 'giorno' : 'giorni'}` }
+    else if (intervalMinutes >= 1440) { vars.quando = 'domani' }
+    else if (intervalMinutes >= 60)   { const h = Math.round(intervalMinutes / 60); vars.quando = `tra ${h} ${h === 1 ? 'ora' : 'ore'}` }
+    else                               { vars.quando = `tra ${intervalMinutes} minuti` }
+  }
+  return vars
 }
 
 // ── Messaggi SMS (con supporto template personalizzato) ──────────────────────
@@ -39,17 +46,10 @@ function buildConfirmationMessage(apt: AppointmentWithRelations, centerName: str
 }
 
 function buildReminderMessage(apt: AppointmentWithRelations, centerName: string, intervalMinutes: number, template?: string): string {
-  const vars = buildVars(apt, centerName)
+  const vars = buildVars(apt, centerName, intervalMinutes)
   if (template) return applyTemplate(template, vars)
-
-  let when: string
-  if (intervalMinutes >= 2880)      { const d = Math.round(intervalMinutes / 1440); when = `tra ${d} giorni` }
-  else if (intervalMinutes >= 1440) { when = 'domani' }
-  else if (intervalMinutes >= 60)   { const h = Math.round(intervalMinutes / 60); when = `tra ${h} ${h === 1 ? 'ora' : 'ore'}` }
-  else                               { when = `tra ${intervalMinutes} minuti` }
-
   return applyTemplate(
-    `Ciao {nome}! Ti ricordiamo il tuo appuntamento per {servizio} ${when} alle {ora} presso {centro}. Per annullare rispondi NO.`,
+    'Ciao {nome}! Ti ricordiamo il tuo appuntamento per {servizio} {quando} alle {ora} presso {centro}. Per annullare rispondi NO.',
     vars
   )
 }
@@ -84,8 +84,8 @@ async function resolveAppointmentWithRelations(appointmentId: string) {
   const centerName = settingsSnap.exists
     ? (settingsSnap.data() as { center_name: string }).center_name
     : 'il centro estetico'
-  const notificationMessages: Record<string, string> = settingsSnap.exists
-    ? ((settingsSnap.data() as { notification_messages?: Record<string, string> }).notification_messages ?? {})
+  const notificationMessages: { confirmation?: string; reminder?: string } = settingsSnap.exists
+    ? ((settingsSnap.data() as { notification_messages?: { confirmation?: string; reminder?: string } }).notification_messages ?? {})
     : {}
 
   return { appointment, aptData, centerName, notificationMessages, db }
@@ -101,7 +101,7 @@ export async function sendConfirmationMessage(appointmentId: string): Promise<{ 
 
   if (aptData.notifications_sent?.[key]) return { success: false, error: 'Conferma già inviata' }
 
-  const messageBody = buildConfirmationMessage(appointment, centerName, notificationMessages[key])
+  const messageBody = buildConfirmationMessage(appointment, centerName, notificationMessages.confirmation || undefined)
 
   let messageSid: string
   try {
@@ -147,7 +147,7 @@ export async function sendAppointmentReminder(
     return { success: false, error: 'Promemoria già inviato per questo intervallo' }
   }
 
-  const messageBody = buildReminderMessage(appointment, centerName, intervalMinutes, notificationMessages[key])
+  const messageBody = buildReminderMessage(appointment, centerName, intervalMinutes, notificationMessages.reminder || undefined)
 
   let messageSid: string
   try {
