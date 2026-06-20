@@ -12,40 +12,45 @@ export function notificationKey(type: NotificationType, intervalMinutes?: number
   return `reminder_${intervalMinutes}`
 }
 
-// ── Messaggi SMS ─────────────────────────────────────────────────────────────
-function buildConfirmationMessage(apt: AppointmentWithRelations, centerName: string): string {
-  const name    = apt.clients.first_name
-  const time    = format(new Date(apt.start_time), 'HH:mm', { locale: it })
-  const date    = format(new Date(apt.start_time), 'EEEE d MMMM', { locale: it })
-  const service = apt.services.name
-  return (
-    `Ciao ${name}! Abbiamo fissato il tuo appuntamento per ${service} ` +
-    `${date} alle ${time}` +
-    (centerName ? ` presso ${centerName}` : '') +
-    `. Rispondi SI per confermare oppure NO per annullare.`
+// ── Template e variabili ─────────────────────────────────────────────────────
+function applyTemplate(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? `{${key}}`)
+}
+
+function buildVars(apt: AppointmentWithRelations, centerName: string): Record<string, string> {
+  return {
+    nome:     apt.clients.first_name,
+    cognome:  apt.clients.last_name,
+    servizio: apt.services.name,
+    data:     format(new Date(apt.start_time), 'EEEE d MMMM', { locale: it }),
+    ora:      format(new Date(apt.start_time), 'HH:mm',       { locale: it }),
+    centro:   centerName || 'il centro',
+  }
+}
+
+// ── Messaggi SMS (con supporto template personalizzato) ──────────────────────
+function buildConfirmationMessage(apt: AppointmentWithRelations, centerName: string, template?: string): string {
+  const vars = buildVars(apt, centerName)
+  if (template) return applyTemplate(template, vars)
+  return applyTemplate(
+    'Ciao {nome}! Abbiamo fissato il tuo appuntamento per {servizio} il {data} alle {ora} presso {centro}. Rispondi SI per confermare o NO per annullare.',
+    vars
   )
 }
 
-function buildReminderMessage(apt: AppointmentWithRelations, centerName: string, intervalMinutes: number): string {
-  const name    = apt.clients.first_name
-  const time    = format(new Date(apt.start_time), 'HH:mm', { locale: it })
-  const service = apt.services.name
+function buildReminderMessage(apt: AppointmentWithRelations, centerName: string, intervalMinutes: number, template?: string): string {
+  const vars = buildVars(apt, centerName)
+  if (template) return applyTemplate(template, vars)
 
   let when: string
-  if (intervalMinutes >= 1440) {
-    when = 'domani'
-  } else if (intervalMinutes >= 60) {
-    const hours = Math.round(intervalMinutes / 60)
-    when = `tra ${hours} ${hours === 1 ? 'ora' : 'ore'}`
-  } else {
-    when = `tra ${intervalMinutes} minuti`
-  }
+  if (intervalMinutes >= 2880)      { const d = Math.round(intervalMinutes / 1440); when = `tra ${d} giorni` }
+  else if (intervalMinutes >= 1440) { when = 'domani' }
+  else if (intervalMinutes >= 60)   { const h = Math.round(intervalMinutes / 60); when = `tra ${h} ${h === 1 ? 'ora' : 'ore'}` }
+  else                               { when = `tra ${intervalMinutes} minuti` }
 
-  return (
-    `Ciao ${name}, ti ricordiamo il tuo appuntamento per ${service} ` +
-    `${when} alle ${time}` +
-    (centerName ? ` presso ${centerName}` : '') +
-    `. Per annullare rispondi NO.`
+  return applyTemplate(
+    `Ciao {nome}! Ti ricordiamo il tuo appuntamento per {servizio} ${when} alle {ora} presso {centro}. Per annullare rispondi NO.`,
+    vars
   )
 }
 
@@ -79,8 +84,11 @@ async function resolveAppointmentWithRelations(appointmentId: string) {
   const centerName = settingsSnap.exists
     ? (settingsSnap.data() as { center_name: string }).center_name
     : 'il centro estetico'
+  const notificationMessages: Record<string, string> = settingsSnap.exists
+    ? ((settingsSnap.data() as { notification_messages?: Record<string, string> }).notification_messages ?? {})
+    : {}
 
-  return { appointment, aptData, centerName, db }
+  return { appointment, aptData, centerName, notificationMessages, db }
 }
 
 // ── Invia SMS di conferma appuntamento ───────────────────────────────────────
@@ -88,12 +96,12 @@ export async function sendConfirmationMessage(appointmentId: string): Promise<{ 
   const resolved = await resolveAppointmentWithRelations(appointmentId)
   if ('error' in resolved) return { success: false, error: resolved.error }
 
-  const { appointment, aptData, centerName, db } = resolved
+  const { appointment, aptData, centerName, notificationMessages, db } = resolved
   const key = notificationKey('confirmation')
 
   if (aptData.notifications_sent?.[key]) return { success: false, error: 'Conferma già inviata' }
 
-  const messageBody = buildConfirmationMessage(appointment, centerName)
+  const messageBody = buildConfirmationMessage(appointment, centerName, notificationMessages[key])
 
   let messageSid: string
   try {
@@ -132,14 +140,14 @@ export async function sendAppointmentReminder(
   const resolved = await resolveAppointmentWithRelations(appointmentId)
   if ('error' in resolved) return { success: false, error: resolved.error }
 
-  const { appointment, aptData, centerName, db } = resolved
+  const { appointment, aptData, centerName, notificationMessages, db } = resolved
   const key = notificationKey('reminder', intervalMinutes)
 
   if (aptData.notifications_sent?.[key]) {
     return { success: false, error: 'Promemoria già inviato per questo intervallo' }
   }
 
-  const messageBody = buildReminderMessage(appointment, centerName, intervalMinutes)
+  const messageBody = buildReminderMessage(appointment, centerName, intervalMinutes, notificationMessages[key])
 
   let messageSid: string
   try {

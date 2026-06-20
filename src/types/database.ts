@@ -76,6 +76,8 @@ export interface Settings {
   reminder_enabled: boolean
   reminder_intervals: number[]  // minuti prima, es. [1440, 120]
   reminder_minutes: number      // mantenuto per retrocompatibilità
+  // Template messaggi SMS: chiavi 'confirmation', 'reminder_1440', ecc.
+  notification_messages?: Record<string, string>
   created_at: string
   updated_at?: string
 }
