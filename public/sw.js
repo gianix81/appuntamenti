@@ -23,6 +23,14 @@ self.addEventListener('fetch', event => {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/')) return
 
+  // Le pagine HTML (navigate) non vanno mai in cache: devono sempre essere fresche
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+    )
+    return
+  }
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
