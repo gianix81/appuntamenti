@@ -17,18 +17,25 @@ export function AppointmentForm({ existing }: Props) {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
 
-  const defaultDate = existing
-    ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
-    : format(new Date(), "yyyy-MM-dd'T'HH:mm")
-
   const [form, setForm] = useState({
     client_id:           existing?.client_id ?? '',
     service_id:          existing?.service_id ?? '',
-    start_time:          defaultDate,
+    start_time:          '',   // set in useEffect to avoid SSR/client timezone mismatch
     status:              (existing?.status ?? 'scheduled') as AppointmentStatus,
     confirmation_status: (existing?.confirmation_status ?? 'pending') as ConfirmationStatus,
     notes:               existing?.notes ?? '',
   })
+
+  // Set start_time on client only — avoids hydration mismatch (server=UTC, client=IT)
+  useEffect(() => {
+    setForm(prev => ({
+      ...prev,
+      start_time: existing
+        ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
+        : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     Promise.all([
