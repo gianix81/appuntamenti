@@ -118,9 +118,10 @@ export default function DashboardPage() {
   const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([])
   function dismissAlarm(key: string) { setActiveAlarms(p => p.filter(a => a.key !== key)) }
 
-  // Orologio live
-  const [now, setNow] = useState(new Date())
+  // Orologio live — null server-side per evitare hydration mismatch (server=UTC, client=IT)
+  const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
+    setNow(new Date())
     const t = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
@@ -203,7 +204,7 @@ export default function DashboardPage() {
 
   // ── Allarme sveglia: gira ogni secondo con i dati già caricati ──
   useEffect(() => {
-    if (!appointments.length || !isToday(date)) return
+    if (!now || !appointments.length || !isToday(date)) return
 
     for (const apt of appointments) {
       if (apt.status === 'cancelled') continue
@@ -402,17 +403,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Orologio ── */}
+      {/* ── Orologio ── now=null sul server (SSR) per evitare hydration mismatch UTC vs IT */}
       <div className="bg-blue-950 rounded-2xl px-6 py-5 flex items-center justify-center gap-1 select-none">
-        <span className="text-5xl font-bold text-white tabular-nums tracking-tight">
-          {format(now, 'HH')}
+        <span suppressHydrationWarning className="text-5xl font-bold text-white tabular-nums tracking-tight">
+          {now ? format(now, 'HH') : '--'}
         </span>
         <span className="text-4xl font-light text-blue-400 pb-0.5">:</span>
-        <span className="text-5xl font-bold text-white tabular-nums tracking-tight">
-          {format(now, 'mm')}
+        <span suppressHydrationWarning className="text-5xl font-bold text-white tabular-nums tracking-tight">
+          {now ? format(now, 'mm') : '--'}
         </span>
-        <span className="text-2xl font-light text-blue-400 pb-0.5 ml-1">
-          :{format(now, 'ss')}
+        <span suppressHydrationWarning className="text-2xl font-light text-blue-400 pb-0.5 ml-1">
+          :{now ? format(now, 'ss') : '--'}
         </span>
       </div>
 
@@ -530,7 +531,7 @@ export default function DashboardPage() {
             <AppointmentCard
               key={apt.id}
               appointment={apt}
-              now={isToday(date) ? now : undefined}
+              now={isToday(date) && now ? now : undefined}
               reminderMins={notificationSlots.length > 0 ? Math.min(...notificationSlots.map(s => s.interval)) : 30}
               onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
             />
