@@ -121,7 +121,7 @@ export async function triggerAlarm(
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, whatsappUrl },
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, whatsappUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)
@@ -155,7 +155,7 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
 
   await showSwNotification(title, body, tag, whatsappUrl, vibrate)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, whatsappUrl },
+    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, whatsappUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)

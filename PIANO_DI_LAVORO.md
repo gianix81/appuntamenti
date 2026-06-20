@@ -1,623 +1,986 @@
 # Piano di Lavoro — Estetista App
-## Integrazione Funzionalità Avanzate (ispirate a Maki App)
-**Data redazione:** 20 Giugno 2026  
+## Da singola professionista a grande azienda — piano scalabile
+**Data redazione:** 20 Giugno 2026
 **Stack:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + Firebase + Twilio + Web Push
 
 ---
 
-## Stato Attuale dell'App
+## Principio Guida: Complessità Progressiva
 
-### Già Implementato
-- Dashboard con calendario mini e vista giornaliera appuntamenti
-- Orologio live con conto alla rovescia e allarme sonoro
-- Gestione Appuntamenti (CRUD completo)
-- Gestione Clienti (CRUD base)
-- Gestione Servizi (CRUD completo)
-- Pagina Impostazioni (nome centro, promemoria, intervalli)
-- Sistema Promemoria SMS + WhatsApp via Twilio
-- Web Push Notifications (browser)
-- Autenticazione Firebase
-- Notifiche push multiple con intervalli configurabili
+L'app deve sembrare **semplice a chi è semplice** e **potente a chi è grande**.
+Una singola estetista non deve mai vedere funzionalità che non la riguardano.
+Un centro con 10 operatori deve avere tutto lo strumento professionale di cui ha bisogno.
 
-### Mancante (da implementare)
-Vedi le 10 fasi seguenti.
+Il meccanismo che governa tutto è il **Profilo Business** — configurato al primo accesso e modificabile in qualsiasi momento. In base al profilo, l'interfaccia si adatta: menu, sezioni, terminologia e funzionalità cambiano in modo progressivo e silenzioso.
 
 ---
 
-## Indice delle Fasi
+## I Quattro Livelli di Business
 
-| # | Funzionalità | Priorità | Stima giorni |
-|---|---|---|---|
-| 1 | Gestione Staff | 🔴 Alta | 3–4 |
-| 2 | CRM Avanzato (VIP + Inattivi + Scheda) | 🔴 Alta | 3–4 |
-| 3 | Pacchetti, Card Prepagate, Gift Card | 🔴 Alta | 5–6 |
-| 4 | Fidelity — Raccolta Punti | 🟡 Media | 2–3 |
-| 5 | SumUp — Integrazione Pagamenti | 🔴 Alta | 2–3 |
-| 6 | Marketing Automation Avanzato | 🟡 Media | 4–5 |
-| 7 | Statistiche & Report Avanzati | 🟡 Media | 4–5 |
-| 8 | Magazzino Prodotti | 🟢 Bassa | 3–4 |
-| 9 | Agenda Settimanale + Drag & Drop + Lista d'Attesa | 🟡 Media | 4–5 |
-| 10 | Scontrino Digitale PDF | 🟢 Bassa | 3–4 |
+### LIVELLO 1 — Solo Professional
+*Una sola persona. Lavora da sola, magari a domicilio o in uno studio monoposto.*
 
-**Totale stimato: 35–45 giorni lavorativi (1 sviluppatore)**
+- Nessuna gestione staff (lei È lo staff)
+- Agenda personale senza colonne operatori
+- Clienti, servizi, appuntamenti
+- Promemoria WhatsApp/SMS automatici
+- Pacchetti e card prepagate
+- Fidelity punti base
+- Statistiche personali semplici
+- Scontrino PDF
+
+**Terminologia:** "i miei appuntamenti", "i miei clienti", "la mia agenda"
+
+---
+
+### LIVELLO 2 — Piccolo Salone
+*Da 2 a 4 operatori. Un titolare + qualche collaboratrice.*
+
+- Tutto il Livello 1
+- Gestione staff (aggiunta operatori con orari)
+- Agenda a colonne per operatore
+- Assegnazione appuntamento a operatore
+- Statistiche base per operatore
+- Provvigioni semplici
+
+**Terminologia:** "lo staff", "gli operatori", "le collaboratrici"
+
+---
+
+### LIVELLO 3 — Centro Estetico / Salone Strutturato
+*Da 5 a 15 operatori. Struttura organizzata con responsabile.*
+
+- Tutto il Livello 2
+- Ruoli e permessi (titolare / operatore / reception)
+- Marketing automation completo con segmentazione
+- Campagne WhatsApp/SMS
+- Magazzino prodotti
+- Report avanzati con confronto periodi
+- Gift card e buoni automatici
+- Lista d'attesa con notifica automatica
+- SumUp pagamenti integrati
+- Scontrino digitale + ADE
+
+**Terminologia:** "il centro", "lo staff", "la reception"
+
+---
+
+### LIVELLO 4 — Catena / Franchising
+*Più sedi. Gestione centralizzata.*
+
+- Tutto il Livello 3
+- Multi-sede: dashboard unificata
+- Report aggregati per sede
+- Trasferimento clienti tra sedi
+- Gestione operatori per sede
+- KPI centralizzati per titolare
+
+**Terminologia:** "le sedi", "il network", "la sede centrale"
+
+---
+
+## Configurazione Iniziale — Wizard di Onboarding
+
+Al primo accesso, invece di buttare l'utente in un'app vuota, un wizard in 4 schermate raccoglie le informazioni necessarie per configurare il profilo corretto.
+
+### Schermata 1 — Chi sei?
+```
+Benvenuta! Come lavori?
+
+  ○  Da sola / Libera professionista
+  ○  Ho un piccolo salone (2–4 persone)
+  ○  Ho un centro strutturato (5+ persone)
+  ○  Ho più sedi
+```
+Questa risposta imposta `business_level: 1 | 2 | 3 | 4` in `settings/main`.
+
+### Schermata 2 — Il tuo centro
+- Nome del centro (o nome e cognome se livello 1)
+- Indirizzo
+- Telefono
+- Logo (opzionale, caricare immagine)
+
+### Schermata 3 — Il tuo settore
+```
+Di cosa ti occupi principalmente?
+
+  ☑  Estetica / Trattamenti viso e corpo
+  ☑  Nails / Unghie
+  ☑  Massaggi
+  ☑  Parrucchiera / Hair styling
+  ☑  Trucco / Make-up
+  ☑  Altro
+```
+Imposta `specialties[]` in settings — usato per adattare le categorie di default dei servizi.
+
+### Schermata 4 — Come vuoi iniziare?
+```
+  ○  Inserisco i miei dati da zero
+  ○  Ho già un gestionale: importa i miei clienti (CSV)
+  ○  Fammi fare un giro guidato prima
+```
+
+Al completamento del wizard: la sidebar, i menu e le funzionalità visibili corrispondono esattamente al livello scelto.
+
+---
+
+## Meccanismo di Scaling — Come Funziona
+
+### Settings documento `settings/main` in Firestore
+```typescript
+{
+  business_level: 1 | 2 | 3 | 4,
+  specialties: string[],
+  // ... tutti gli altri campi esistenti ...
+}
+```
+
+### Hook `useBusinessLevel()`
+```typescript
+// src/hooks/useBusinessLevel.ts
+export function useBusinessLevel() {
+  const level = useSettings().business_level ?? 1
+  return {
+    level,
+    isSolo:       level === 1,
+    isSmall:      level <= 2,
+    isMedium:     level <= 3,
+    isChain:      level === 4,
+    hasStaff:     level >= 2,
+    hasMarketing: level >= 3,
+    hasWarehouse: level >= 3,
+    hasMultiSite: level === 4,
+  }
+}
+```
+
+### Utilizzo nei componenti
+```typescript
+// La voce "Staff" nel menu appare solo dal livello 2 in su
+const { hasStaff, hasMarketing } = useBusinessLevel()
+
+// Nel Sidebar:
+{hasStaff && <NavItem href="/staff" icon={Users} label="Staff" />}
+{hasMarketing && <NavItem href="/marketing" icon={Megaphone} label="Campagne" />}
+```
+
+### Upgrade silenzioso
+In settings: sezione "Fai crescere il tuo business" — se l'utente è al livello 1, una card discreta dice:
+> "Hai assunto una collaboratrice? Attiva la gestione staff →"
+
+Un click cambia `business_level` a 2 e le nuove funzionalità appaiono nel menu.
+Nessuna migrazione dati, nessun dato perso. È solo un cambio di visibilità.
+
+---
+
+## Impatto del Livello su Ogni Funzionalità
+
+| Funzionalità | Lv 1 Solo | Lv 2 Piccolo | Lv 3 Centro | Lv 4 Catena |
+|---|:---:|:---:|:---:|:---:|
+| Agenda giornaliera | ✅ | ✅ | ✅ | ✅ |
+| Agenda settimanale | ✅ | ✅ | ✅ | ✅ |
+| Drag & Drop appuntamenti | ✅ | ✅ | ✅ | ✅ |
+| Clienti + CRM base | ✅ | ✅ | ✅ | ✅ |
+| Promemoria SMS/WhatsApp | ✅ | ✅ | ✅ | ✅ |
+| Pacchetti + Card prepagate | ✅ | ✅ | ✅ | ✅ |
+| Gift Card | ✅ | ✅ | ✅ | ✅ |
+| Fidelity punti | ✅ | ✅ | ✅ | ✅ |
+| SumUp pagamenti | ✅ | ✅ | ✅ | ✅ |
+| Scontrino PDF | ✅ | ✅ | ✅ | ✅ |
+| Statistiche personali | ✅ | ✅ | ✅ | ✅ |
+| **Gestione Staff** | ❌ | ✅ | ✅ | ✅ |
+| **Agenda a colonne operatori** | ❌ | ✅ | ✅ | ✅ |
+| **Provvigioni** | ❌ | ✅ | ✅ | ✅ |
+| **Ruoli e permessi** | ❌ | ❌ | ✅ | ✅ |
+| **Marketing automation** | ⚡ base | ⚡ base | ✅ | ✅ |
+| **Segmentazione avanzata** | ❌ | ❌ | ✅ | ✅ |
+| **Magazzino prodotti** | ❌ | ⚡ opz | ✅ | ✅ |
+| **Report per operatore** | ❌ | ✅ | ✅ | ✅ |
+| **Lista d'attesa** | ✅ | ✅ | ✅ | ✅ |
+| **Multi-sede** | ❌ | ❌ | ❌ | ✅ |
+| **Dashboard centralizzata** | ❌ | ❌ | ❌ | ✅ |
+
+*✅ = incluso | ⚡ = versione semplificata | ❌ = nascosto*
 
 ---
 
 ---
 
-# FASE 1 — Gestione Staff
+# FASE 1 — Wizard Onboarding + Profilo Business
 
 ## Idea
-Consentire la gestione di più operatori/collaboratori del centro. Ogni appuntamento viene assegnato a un operatore specifico. Il sistema gestisce disponibilità, orari, turni, ferie e provvigioni. Il dashboard mostra colonne separate per operatore quando ce ne è più di uno.
+Prima di implementare qualsiasi altra funzionalità, costruire il sistema di profilo business e il wizard iniziale. Questo è il fondamento che rende tutto il resto scalabile.
 
-## Perché è prioritaria
-Senza gli operatori non è possibile costruire correttamente le statistiche per persona, la vista settimanale a colonne, né filtrare la disponibilità per slot. Blocca le fasi 7 e 9.
+## Cosa si Costruisce
+- Wizard onboarding a 4 step (primo accesso)
+- Hook `useBusinessLevel()`
+- Adattamento Sidebar in base al livello
+- Sezione "Fai crescere il business" in Settings per upgrade del livello
+- Adattamento terminologia in base al livello
+
+## Struttura Dati
+
+### `settings/main` — aggiungere
+```typescript
+{
+  business_level: 1 | 2 | 3 | 4,         // default 1
+  specialties: string[],
+  onboarding_completed: boolean,
+  center_name: string,
+  logo_url: string | null,
+  address: string | null,
+  // ... campi già esistenti ...
+}
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/onboarding/page.tsx` — wizard a 4 step
+- `src/app/onboarding/layout.tsx` — layout senza sidebar
+- `src/components/onboarding/StepWhoAreYou.tsx`
+- `src/components/onboarding/StepYourCenter.tsx`
+- `src/components/onboarding/StepSpecialties.tsx`
+- `src/components/onboarding/StepHowToStart.tsx`
+- `src/hooks/useBusinessLevel.ts` — hook centrale
+- `src/hooks/useSettings.ts` — hook per leggere settings da Firestore
+
+### Modificati
+- `src/app/(app)/layout.tsx` — se `onboarding_completed = false` → redirect a `/onboarding`
+- `src/components/layout/Sidebar.tsx` — voci condizionali in base a `useBusinessLevel()`
+- `src/components/layout/MobileNav.tsx` — stessa logica
+- `src/app/(app)/settings/page.tsx` — sezione "Profilo business" con livello attuale + upgrade
+
+## Step di Sviluppo Dettagliati
+
+### Step 1.1 — Hook useSettings
+```typescript
+// src/hooks/useSettings.ts
+// Legge doc 'settings/main' da Firestore con onSnapshot (real-time)
+// Fornisce settings a tutti i componenti senza re-fetch
+// Espone anche funzione update() per modificare settings
+```
+
+### Step 1.2 — Hook useBusinessLevel
+```typescript
+// src/hooks/useBusinessLevel.ts
+export function useBusinessLevel() {
+  const { settings } = useSettings()
+  const level = settings?.business_level ?? 1
+  return {
+    level,
+    isSolo: level === 1,
+    hasStaff: level >= 2,
+    hasRoles: level >= 3,
+    hasMarketing: level >= 3,
+    hasWarehouse: level >= 3,
+    hasMultiSite: level === 4,
+    // Terminologia adattiva
+    staffLabel: level === 1 ? 'Io' : level <= 2 ? 'Collaboratrici' : 'Staff',
+    centerLabel: level === 1 ? 'Il mio studio' : 'Il centro',
+  }
+}
+```
+
+### Step 1.3 — Wizard Onboarding
+- Layout senza sidebar (pagina bianca pulita con progress bar in cima)
+- Step 1: grandi card selezionabili per livello business
+- Step 2: form dati centro (nome, indirizzo, telefono, logo upload)
+- Step 3: checkbox specialità
+- Step 4: scelta start mode
+- Al completamento: salva tutto su Firestore + `onboarding_completed = true` + redirect a dashboard
+
+### Step 1.4 — Sidebar Adattiva
+```typescript
+// In Sidebar.tsx:
+const { hasStaff, hasMarketing, hasWarehouse, hasMultiSite } = useBusinessLevel()
+
+const navItems = [
+  { href: '/dashboard', icon: Home, label: 'Dashboard', always: true },
+  { href: '/appointments', icon: Calendar, label: 'Appuntamenti', always: true },
+  { href: '/clients', icon: Users, label: 'Clienti', always: true },
+  { href: '/services', icon: Scissors, label: 'Servizi', always: true },
+  { href: '/packages', icon: Package, label: 'Pacchetti', always: true },
+  { href: '/staff', icon: UserCheck, label: 'Staff', show: hasStaff },
+  { href: '/marketing', icon: Megaphone, label: 'Campagne', show: hasMarketing },
+  { href: '/warehouse', icon: Box, label: 'Magazzino', show: hasWarehouse },
+  { href: '/stats', icon: BarChart2, label: 'Statistiche', always: true },
+  { href: '/payments', icon: CreditCard, label: 'Pagamenti', always: true },
+  { href: '/receipts', icon: FileText, label: 'Scontrini', always: true },
+  { href: '/sites', icon: Building, label: 'Sedi', show: hasMultiSite },
+  { href: '/settings', icon: Settings, label: 'Impostazioni', always: true },
+]
+```
+
+### Step 1.5 — Upgrade in Settings
+```
+Sezione: "Fai crescere il tuo business"
+
+[Livello attuale: Solo Professional ●]
+
+Hai assunto una collaboratrice?
+→ [Attiva gestione Staff]     (upgrade a Lv 2)
+
+Hai bisogno di campagne marketing avanzate?
+→ [Attiva Marketing & CRM]    (upgrade a Lv 3)
+
+Hai più sedi?
+→ [Attiva Multi-sede]         (upgrade a Lv 4)
+```
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Primo accesso → onboarding | Wizard mostrato prima della dashboard |
+| Scelta "Da sola" | Sidebar senza Staff, Marketing, Magazzino |
+| Scelta "Piccolo salone" | Sidebar con Staff, senza Marketing/Magazzino |
+| Upgrade a Lv 2 da settings | Voce Staff appare nel menu senza ricarica pagina |
+| Onboarding completato | Dashboard mostrata direttamente ai login successivi |
 
 ---
+
+---
+
+# FASE 2 — Agenda Avanzata (con scaling per livello)
+
+## Idea
+L'agenda è il cuore dell'app per tutti i livelli. Il comportamento cambia in base al livello: per una professionista sola è il suo calendario personale; per un centro è una griglia multi-operatore. La stessa pagina, la stessa URL, UI che si adatta.
+
+## Comportamento per Livello
+
+### Livello 1 — Solo
+- Vista giornaliera: lista appuntamenti del giorno (già presente)
+- Vista settimanale: 7 colonne per i 7 giorni, solo i suoi appuntamenti
+- Drag & drop tra giorni e orari
+- Nessuna colonna "operatore" — non serve
+- "Nuovo appuntamento" non chiede l'operatore
+
+### Livello 2–4 — Con Staff
+- Vista giornaliera: N colonne, una per operatore
+- Vista settimanale: può scegliere tra "per giorno" o "per operatore"
+- "Nuovo appuntamento" include il campo operatore con filtro disponibilità
+- Header colonna: avatar colorato con iniziali + nome operatore
+- Slot vuoti visibili per identificare buchi nella giornata
+
+## Struttura Dati — Firestore
+
+Nessuna nuova collection. Modifiche ad `appointments`:
+```typescript
+// Aggiungere:
+staff_id: string | null   // null per livello 1 (sempre la titolare)
+```
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/components/agenda/WeeklyView.tsx` — vista settimanale responsiva
+- `src/components/agenda/DayColumnView.tsx` — colonne per operatore (lv 2+)
+- `src/components/agenda/TimeGrid.tsx` — griglia oraria con slot da 15 min
+- `src/components/agenda/DraggableCard.tsx` — card appuntamento draggabile
+- `src/components/agenda/DroppableSlot.tsx` — slot target per drop
+- `src/components/agenda/CurrentTimeLine.tsx` — linea rossa ora corrente
+- `src/components/agenda/ViewToggle.tsx` — bottoni Giorno / Settimana / Lista
+- `src/app/(app)/appointments/print/page.tsx` — stampa agenda giornaliera
+
+### Modificati
+- `src/app/(app)/dashboard/page.tsx` — integra `ViewToggle` + `WeeklyView`
+- `src/components/appointments/AppointmentForm.tsx` — campo staff_id condizionale
+- `package.json` — aggiungere `@hello-pangea/dnd`
+
+## Step di Sviluppo Dettagliati
+
+### Step 2.1 — Vista Settimanale Base
+- `WeeklyView.tsx`: riceve array di `AppointmentWithRelations[]`
+- Griglia: 7 colonne (lun–dom), righe orarie ogni 15 min (es. 07:00–21:00)
+- Ogni appuntamento: box colorato che inizia all'orario giusto e ha altezza proporzionale alla durata
+- Responsive: su mobile mostra solo il giorno selezionato
+- Navigazione: frecce prev/next settimana, click su giorno → vista giornaliera
+
+### Step 2.2 — Vista a Colonne Operatori (lv 2+)
+- Se `hasStaff = true` e ci sono 2+ operatori attivi:
+  - Vista giornaliera mostra N colonne (una per operatore) invece della lista
+  - Header colonna: cerchio colorato con iniziali + nome
+  - Appuntamenti filtrati per operatore e posizionati nella colonna corretta
+  - Colonna "Non assegnato" per appuntamenti con `staff_id = null`
+
+### Step 2.3 — Drag & Drop
+```bash
+npm install @hello-pangea/dnd
+```
+- Ogni `DraggableCard` ha `draggableId = appointment.id`
+- Ogni `DroppableSlot` ha `droppableId = "YYYY-MM-DD_HH:mm_staff_id"` (o solo data+ora per lv 1)
+- `onDragEnd`:
+  1. Parsa il `droppableId` di destinazione
+  2. Calcola nuovo `start_time` e `end_time`
+  3. Se destinazione già occupata → snap back + toast errore
+  4. Altrimenti: update ottimistico UI + write Firestore
+  5. Modale conferma opzionale (configurabile in settings)
+
+### Step 2.4 — Vista Lista
+- Tabella semplice: data | ora | cliente | servizio | operatore | stato
+- Ordinata per data/ora crescente
+- Filtri: per periodo, per operatore, per stato
+- Utile per export e revisione veloce
+
+### Step 2.5 — Stampa Agenda
+- `/appointments/print?date=YYYY-MM-DD`
+- CSS `@media print` nasconde tutto tranne la griglia
+- Header: data + nome centro
+- Per lv 1: lista verticale oraria
+- Per lv 2+: colonne operatori su carta A4 orizzontale
+
+## Test
+
+| Scenario (Lv 1) | Verifica |
+|---|---|
+| Aprire agenda settimanale | 7 colonne giornaliere, appuntamenti posizionati |
+| Trascinare appuntamento | Orario aggiornato in Firestore |
+| Nessun campo "Operatore" nel form | Non compare per lv 1 |
+
+| Scenario (Lv 2+) | Verifica |
+|---|---|
+| Vista giornaliera con 3 operatori | 3 colonne colorate |
+| Trascinare appuntamento tra colonne operatori | Cambia `staff_id` su Firestore |
+| Appuntamento non assegnato | Compare nella colonna "Non assegnato" |
+
+---
+
+---
+
+# FASE 3 — Gestione Staff (solo Livello 2+)
+
+## Idea
+Gli operatori sono un concetto che esiste solo dal livello 2 in su. Per il livello 1 questa sezione non esiste. Quando una professionista sola assume una collaboratrice, fa upgrade a lv 2 in settings e la sezione Staff appare.
+
+## Il Livello 1 Non Vede Nulla
+- Nessuna voce Staff nel menu
+- Nel form appuntamento: nessun campo operatore
+- Nelle stats: nessuna colonna "per operatore"
+- Internamente: tutti gli appuntamenti hanno `staff_id = null`
 
 ## Struttura Dati — Firestore
 
 ### Collection: `staff`
-```
+```typescript
 {
   id: string,
-  name: string,                        // "Maria Rossi"
-  role: string,                        // "Estetista" | "Parrucchiera" | "Nail Artist"
-  color: string,                       // hex colore per distinguerla in agenda "#3B82F6"
+  name: string,
+  role: string,                        // "Estetista" | "Nail Artist" | "Reception"
+  color: string,                       // "#3B82F6" — colore in agenda
+  initials: string,                    // "MR" — calcolato da nome
   phone: string | null,
   email: string | null,
   active: boolean,
-  commission_pct: number,              // % provvigione (es. 30)
-  schedule: {                          // orari settimanali
-    mon: [{ from: "09:00", to: "13:00" }, { from: "14:00", to: "18:00" }],
-    tue: [...],
-    wed: [...],
-    thu: [...],
-    fri: [...],
-    sat: [...],
-    sun: []
+  is_owner: boolean,                   // true per la titolare (non eliminabile)
+  permission_level: 'owner' | 'operator' | 'reception',
+  commission_pct: number,              // % provvigione su servizi
+  schedule: {
+    mon: Array<{ from: string, to: string }>,
+    tue: Array<{ from: string, to: string }>,
+    wed: Array<{ from: string, to: string }>,
+    thu: Array<{ from: string, to: string }>,
+    fri: Array<{ from: string, to: string }>,
+    sat: Array<{ from: string, to: string }>,
+    sun: Array<{ from: string, to: string }>,
   },
-  days_off: string[],                  // date ISO di ferie/assenze ["2026-08-10"]
+  days_off: string[],                  // date ISO ferie/permessi
   created_at: string,
   updated_at: string
 }
 ```
 
-### Modifica: `appointments`
-Aggiungere campo `staff_id: string | null` — se null = "qualsiasi operatore disponibile"
+## Logica Speciale — La Titolare Come Staff
+
+Al completamento del wizard (fase 1), se `business_level >= 2`:
+- Creare automaticamente un documento `staff` con `is_owner = true`, `name = center_name` (o il nome della titolare)
+- Questo staff non è eliminabile
+- Al livello 1 non viene creato nessun documento staff
+
+Quando si fa upgrade da lv 1 a lv 2:
+- Creare il documento staff "titolare" con `is_owner = true`
+- Tutti gli appuntamenti precedenti con `staff_id = null` rimangono null (mostrati come "Non assegnato")
+- Un banner in dashboard chiede: "Vuoi assegnare i tuoi appuntamenti passati a te?"
+
+## File da Creare / Modificare
+
+### Nuovi
+- `src/app/(app)/staff/page.tsx`
+- `src/app/(app)/staff/new/page.tsx`
+- `src/app/(app)/staff/[id]/edit/page.tsx`
+- `src/components/staff/StaffForm.tsx`
+- `src/components/staff/WeekScheduleEditor.tsx`
+- `src/components/staff/StaffAvatar.tsx` — cerchio colorato con iniziali
+- `src/components/staff/StaffCard.tsx`
+- `src/hooks/useStaff.ts` — hook lista staff attivi
+
+### Modificati
+- `src/components/appointments/AppointmentForm.tsx` — campo operatore condizionale a `hasStaff`
+- `src/app/(app)/dashboard/page.tsx` — colonne operatori condizionali
+- `src/components/layout/Sidebar.tsx` — voce Staff condizionale
+
+## Step di Sviluppo
+
+### Step 3.1 — CRUD Staff
+- Lista staff con: avatar colorato, nome, ruolo, badge attivo/inattivo
+- Form: nome, ruolo (select: Estetista/Nail Artist/Parrucchiera/Reception/Altro), colore picker, telefono, email, % provvigione
+- `WeekScheduleEditor`: 7 righe (giorni settimana), ogni riga ha toggle attivo + uno o due slot orari
+
+### Step 3.2 — Disponibilità
+- Funzione `isStaffAvailable(staffId, startTime, durationMinutes)`:
+  1. Controlla `staff.schedule[dayOfWeek]` — è in orario?
+  2. Controlla `staff.days_off` — è in ferie?
+  3. Controlla appuntamenti Firestore per quello staff in quella finestra temporale
+  4. Restituisce `{ available: boolean, reason?: string }`
+- Usata nel form appuntamento per filtrare la lista operatori
+
+### Step 3.3 — Gestione Ferie/Permessi
+- In pagina edit staff: sezione "Assenze" con mini calendario
+- Click su un giorno: aggiunge/rimuove da `days_off`
+- Range di giorni: click inizio + click fine → seleziona intervallo
+- Badge contatore giorni di ferie nell'anno
+
+### Step 3.4 — Permessi (solo lv 3+)
+- `permission_level`:
+  - `owner`: vede tutto, modifica tutto
+  - `operator`: vede solo i propri appuntamenti e clienti, non vede statistiche generali né contabilità
+  - `reception`: vede tutto ma non può modificare impostazioni o staff
+- Ogni operatore ha una propria credenziale di accesso (email + password Firebase sub-account)
+
+## Test
+
+| Scenario | Verifica |
+|---|---|
+| Livello 1: nessuna voce Staff | Staff non appare nel menu |
+| Upgrade a Lv 2 | Voce Staff appare + banner "Crea il tuo profilo staff" |
+| Creare 2 operatori | Compaiono come colonne in agenda |
+| Operatore in ferie: prenotare per quel giorno | Non compare nel dropdown operatori |
+| Cancellare operatore owner | Pulsante eliminazione disabilitato |
 
 ---
 
-## Modifiche a `src/types/database.ts`
+---
+
+# FASE 4 — CRM Avanzato
+
+## Idea
+L'anagrafica clienti è presente a tutti i livelli, ma si arricchisce a seconda del contesto. Per una professionista sola: scheda semplice con storico e promemoria. Per un centro grande: segmentazione, VIP list, campagne.
+
+## Differenze per Livello
+
+| Funzione CRM | Lv 1 | Lv 2 | Lv 3–4 |
+|---|:---:|:---:|:---:|
+| Lista clienti + ricerca | ✅ | ✅ | ✅ |
+| Scheda con storico visite | ✅ | ✅ | ✅ |
+| Data di nascita | ✅ | ✅ | ✅ |
+| Ultima visita + spesa totale | ✅ | ✅ | ✅ |
+| Note private | ✅ | ✅ | ✅ |
+| Badge VIP | ✅ | ✅ | ✅ |
+| Tab "Clienti Inattivi" | ✅ | ✅ | ✅ |
+| Operatore preferito | ❌ | ✅ | ✅ |
+| Segmentazione per campagne | ❌ | ❌ | ✅ |
+| Importazione CSV | ✅ | ✅ | ✅ |
+
+## Struttura Dati — Modifiche a `clients`
 
 ```typescript
-export interface StaffScheduleSlot {
-  from: string   // "09:00"
-  to: string     // "18:00"
-}
-
-export interface Staff {
-  id: string
-  name: string
-  role: string
-  color: string
-  phone: string | null
-  email: string | null
-  active: boolean
-  commission_pct: number
-  schedule: Record<string, StaffScheduleSlot[]>
-  days_off: string[]
-  created_at: string
-  updated_at: string
-}
-
-// Aggiungere in Appointment:
-// staff_id: string | null
-```
-
----
-
-## File da Creare / Modificare
-
-### Nuovi
-- `src/app/(app)/staff/page.tsx` — lista operatori con card colorate
-- `src/app/(app)/staff/new/page.tsx` — form creazione
-- `src/app/(app)/staff/[id]/edit/page.tsx` — form modifica + gestione ferie
-- `src/components/staff/StaffForm.tsx` — form condiviso con editor orari settimanali
-- `src/components/staff/StaffCard.tsx` — card operatore con avatar colorato, ruolo, stato attivo
-- `src/components/staff/WeekScheduleEditor.tsx` — editor grafico orari per giorno
-
-### Modificati
-- `src/types/database.ts` — aggiungere tipo `Staff`, campo `staff_id` in `Appointment`
-- `src/components/appointments/AppointmentForm.tsx` — aggiungere dropdown "Operatore" con filtro disponibilità
-- `src/app/(app)/dashboard/page.tsx` — aggiungere colonne per operatore in vista giornaliera
-- `src/app/(app)/layout.tsx` / `src/components/layout/Sidebar.tsx` — aggiungere voce "Staff" nel menu
-
----
-
-## Step di Sviluppo Dettagliati
-
-### Step 1.1 — Types e Firestore
-- Aggiungere `Staff` in `database.ts`
-- Aggiungere `staff_id: string | null` a `Appointment` e `AppointmentWithRelations`
-- Creare regola Firestore per la collection `staff`
-
-### Step 1.2 — CRUD Staff
-- Creare `StaffForm.tsx` con campi: nome, ruolo, colore (color picker), telefono, email, % provvigione
-- `WeekScheduleEditor.tsx`: griglia con 7 giorni, per ognuno toggle attivo/inattivo + up a 2 slot orari add/remove
-- Pagina lista `/staff`: card per ogni operatore con nome, ruolo, colore, badge "Attivo/Inattivo"
-- Pagine new/edit con form completo
-
-### Step 1.3 — Integrazione in Appuntamenti
-- In `AppointmentForm.tsx`: aggiungere select "Operatore"
-- Quando si seleziona data+ora+durata servizio, filtrare la lista operatori per mostrare solo quelli disponibili in quell'orario
-- Logica disponibilità: controllare `staff.schedule` del giorno della settimana + `days_off` + appuntamenti già presenti in Firestore per quell'operatore in quell'ora
-
-### Step 1.4 — Dashboard a Colonne
-- Se ci sono 2+ operatori attivi, la vista giornaliera mostra una colonna per operatore
-- Ogni colonna ha header colorato con nome operatore
-- Appuntamenti mostrati nella colonna dell'operatore assegnato
-
-### Step 1.5 — Gestione Ferie/Assenze
-- Nella pagina edit dello staff: sezione "Ferie e Assenze" con mini calendario
-- Click su un giorno → aggiunge/rimuove dalla lista `days_off`
-- Quando si prenota un appuntamento, giorni off non sono selezionabili per quell'operatore
-
----
-
-## Test
-
-| Scenario | Verifica |
-|---|---|
-| Creare 2 operatori con orari diversi | Entrambi compaiono nel dropdown appuntamenti |
-| Prenotare slot fuori orario di un operatore | Operatore non disponibile → non compare nel dropdown |
-| Segnare ferie per un operatore | Il giorno di ferie non è selezionabile per quell'operatore |
-| Dashboard con 2 operatori | Vista a 2 colonne con colori distinti |
-| Creare appuntamento senza operatore (staff_id null) | Appuntamento visibile in colonna "Qualsiasi" |
-
----
-
----
-
-# FASE 2 — CRM Avanzato
-
-## Idea
-Arricchire l'anagrafica clienti con: storico completo visite e acquisti, data ultima visita calcolata automaticamente, scontrino medio, badge VIP per i migliori clienti, lista clienti "a rischio" (non tornano da X giorni). Aggiungere campo data di nascita per le automazioni della fase 6.
-
-## Perché è prioritaria
-Il CRM avanzato sblocca le campagne marketing (fase 6), le statistiche (fase 7) e il sistema punti (fase 4). Senza `last_visit_at` e `total_spent` niente funziona.
-
----
-
-## Struttura Dati — Firestore
-
-### Modifiche a `clients`
-Aggiungere campi:
-```
 {
-  // ... campi esistenti ...
-  birthday: string | null,             // "1985-03-15" (solo data, niente ora)
+  // Campi esistenti...
+
+  // Nuovi campi:
+  birthday: string | null,             // "1985-03-15"
   gender: 'F' | 'M' | 'other' | null,
-  last_visit_at: string | null,        // ISO timestamp ultima visita completata
-  total_spent: number,                 // € totale speso (storico)
-  visit_count: number,                 // numero visite totali
-  avg_ticket: number,                  // media scontrino (total_spent / visit_count)
-  preferred_service_id: string | null, // servizio più prenotato
-  loyalty_points: number,              // punti fedeltà (usati in fase 4)
-  is_vip: boolean,                     // calcolato automaticamente
-  gdpr_consent: boolean,               // consenso marketing
-  gdpr_consent_at: string | null
+  gdpr_consent: boolean,
+  gdpr_consent_at: string | null,
+  notes_private: string | null,        // note visibili solo alla titolare
+  preferred_staff_id: string | null,   // lv 2+
+
+  // Campi calcolati (aggiornati automaticamente):
+  last_visit_at: string | null,
+  total_spent: number,
+  visit_count: number,
+  avg_ticket: number,
+  preferred_service_id: string | null,
+  is_vip: boolean,
+  loyalty_points: number,
 }
 ```
-
-### Collection: `client_history` (opzionale, per storico dettagliato)
-```
-{
-  id: string,
-  client_id: string,
-  appointment_id: string,
-  service_name: string,
-  staff_name: string,
-  price: number,
-  date: string,
-  notes: string | null
-}
-```
-
----
 
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/clients/[id]/page.tsx` — scheda cliente dettagliata (readonly)
-- `src/components/clients/ClientStats.tsx` — widget con statistiche cliente (spesa totale, visite, media)
-- `src/components/clients/ClientHistory.tsx` — lista storico appuntamenti del cliente
-- `src/components/clients/VipBadge.tsx` — badge corona VIP
-- `src/app/api/clients/recalculate/route.ts` — API ricalcolo statistiche da storico
+- `src/app/(app)/clients/[id]/page.tsx` — scheda cliente completa
+- `src/components/clients/ClientHeader.tsx` — nome, contatti, birthday, badge VIP
+- `src/components/clients/ClientStats.tsx` — card statistiche (spesa, visite, media)
+- `src/components/clients/ClientHistory.tsx` — storico appuntamenti
+- `src/components/clients/LoyaltyWidget.tsx` — punti fedeltà con barra progresso
+- `src/components/clients/ClientActivePackages.tsx` — pacchetti attivi con sessioni rimanenti
+- `src/app/api/clients/recalculate/route.ts` — ricalcolo statistiche
+- `src/app/api/clients/import/route.ts` — importazione CSV
 
 ### Modificati
-- `src/types/database.ts` — campi aggiuntivi su `Client`
-- `src/components/clients/ClientForm.tsx` — aggiungere: data nascita, genere, consenso GDPR
-- `src/app/(app)/clients/page.tsx` — tab "Tutti" / "VIP" / "Inattivi" + filtro/ricerca
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — al cambio stato in `completed`: triggera ricalcolo cliente
+- `src/components/clients/ClientForm.tsx` — aggiungere: birthday, gender, gdpr_consent, notes_private, preferred_staff (lv 2+)
+- `src/app/(app)/clients/page.tsx` — tab Tutti / VIP / Inattivi + importa CSV
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 4.1 — Aggiornamento Form e Scheda Cliente
+- Form: aggiungere i nuovi campi. `preferred_staff_id` visibile solo se `hasStaff`
+- Scheda `/clients/[id]`:
+  - Header: nome grande, telefono cliccabile, email, badge VIP, birthday (con conto giorni al compleanno)
+  - Grid statistiche: spesa totale / visite / media / ultima visita
+  - Tab "Appuntamenti": lista storica + futuri
+  - Tab "Prodotti & Servizi": cosa ha acquistato di più
+  - Tab "Pacchetti": card prepagate e pacchetti attivi
+  - Tab "Messaggi": log SMS/WhatsApp inviati a questa cliente
 
-### Step 2.1 — Aggiornamento Form Cliente
-- Aggiungere in `ClientForm.tsx`: campo `birthday` (date picker), `gender` (radio: F/M/Altro), `gdpr_consent` (checkbox con data)
-- Aggiornare `Client` in `database.ts`
-- Creare migration: ricalcola `last_visit_at`, `total_spent`, `visit_count` per tutti i clienti esistenti tramite API route
+### Step 4.2 — Ricalcolo Automatico Statistiche
+- Trigger: ogni volta che `appointment.status` cambia a `completed`
+- `POST /api/clients/recalculate?client_id=xxx`:
+  1. Query Firestore: tutti gli appuntamenti `completed` di quel cliente
+  2. Calcola: `total_spent`, `visit_count`, `avg_ticket`, `last_visit_at`, `preferred_service_id`
+  3. Calcola `is_vip`: se `total_spent > settings.vip_threshold` (default 500€)
+  4. Aggiorna documento cliente
 
-### Step 2.2 — API Ricalcolo Stats
-- `POST /api/clients/recalculate?client_id=xxx` — legge tutti gli appuntamenti `completed` del cliente → calcola statistiche → aggiorna documento Firestore
-- Chiamata automatica ogni volta che un appuntamento passa a `completed`
-- Endpoint `POST /api/clients/recalculate-all` per ricalcolo bulk (da usare una tantum)
+### Step 4.3 — Lista Clienti con Tab
+- Tab **Tutti**: ricerca per nome/telefono, ordinamento per ultima visita
+- Tab **VIP**: solo `is_vip = true`, ordinate per `total_spent` desc
+- Tab **Inattivi**: `last_visit_at < oggi - settings.inactive_days` (default 60 gg)
+  - Per ogni cliente inattivo: badge "Assente da X giorni"
+  - Bottone rapido: "Invia richiamo WhatsApp" → apre modal con template precompilato
 
-### Step 2.3 — Scheda Cliente
-- Pagina `/clients/[id]` con:
-  - Header: nome, telefono, email, birthday, badge VIP
-  - Card statistiche: totale speso, numero visite, media scontrino, ultima visita
-  - Barra progresso prossima ricompensa (punti fedeltà)
-  - Tab "Storico Appuntamenti": lista servizi con data, operatore, importo
-  - Tab "Pacchetti Attivi": carta con sessioni rimanenti
-  - Tab "Messaggi Inviati": log WhatsApp/SMS ricevuti
+### Step 4.4 — Importazione CSV
+- Pagina `/clients/import` (o modal)
+- Upload file CSV
+- Preview prime 5 righe con mapping colonne → campi app
+- Importazione: crea/aggiorna clienti (deduplicazione per telefono)
+- Report finale: "Importati 45 clienti, aggiornati 12, saltati 3 (errori)"
 
-### Step 2.4 — Lista Clienti Avanzata
-- Tab **Tutti**: lista con ricerca per nome/telefono
-- Tab **VIP**: clienti con `is_vip = true` (top 20% per spesa o soglia configurabile)
-- Tab **Inattivi**: clienti con `last_visit_at < oggi - X giorni` (X configurabile in settings)
-- Bottone "Invia Campagna" su tab Inattivi → apre modal invio rapido WhatsApp
-
-### Step 2.5 — Calcolo VIP Automatico
-- Dopo ogni ricalcolo statistiche: se `total_spent > soglia_vip` → `is_vip = true`
-- Soglia VIP configurabile nelle impostazioni (default: 500€)
-- Badge corona dorata visibile nella lista clienti e nella scheda
-
----
+### Step 4.5 — VIP Threshold Configurabile
+- In Settings: campo "Soglia cliente VIP (€)" — default 500
+- Ricalcolo VIP automatico quando la soglia cambia
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Completare 5 appuntamenti per un cliente | `total_spent`, `visit_count`, `last_visit_at` aggiornati |
-| Cliente con spesa > soglia VIP | Badge VIP appare in lista e scheda |
-| Cliente non viene da 60+ giorni | Compare in tab "Inattivi" |
-| Modificare birthday di un cliente | Campo salvato correttamente |
-| Aprire scheda cliente | Tutti i tab mostrano dati corretti |
+| Aggiungere birthday a cliente | Campo salvato, tab mostra "Compleanno tra X giorni" |
+| Completare 3 appuntamenti per cliente | `total_spent`, `visit_count`, `last_visit_at` aggiornati |
+| Cliente spende 600€ (soglia 500) | `is_vip = true`, badge corona visibile |
+| Tab Inattivi con soglia 30 gg | Solo clienti non venuti da 30+ giorni |
+| Importare CSV con 50 clienti | 50 documenti creati su Firestore |
+| Lv 1: nessun campo "Operatore preferito" | Campo non mostrato nel form |
 
 ---
 
 ---
 
-# FASE 3 — Pacchetti, Card Prepagate, Gift Card
+# FASE 5 — Pacchetti, Card Prepagate, Gift Card
 
 ## Idea
-Tre strumenti di pre-pagamento e fidelizzazione:
-1. **Pacchetti**: bundle di N sessioni dello stesso servizio a prezzo scontato, con scaler automatico
-2. **Card Prepagate**: credito prepagato in euro, scalabile ad ogni visita
-3. **Gift Card**: voucher regalo con importo fisso, opzionalmente con sblocco al compleanno
+Tutti i livelli hanno questi strumenti. La complessità di configurazione e gestione scala con il livello ma la funzionalità è disponibile a chiunque — anche una singola estetista può vendere pacchetti e gift card.
 
-## Perché è prioritaria
-Aumenta direttamente gli incassi anticipati e la fidelizzazione. Integra con SumUp (fase 5) per il pagamento e con Fidelity (fase 4) per i punti.
+## Comportamento per Livello
 
----
+| Aspetto | Lv 1 Solo | Lv 2–4 |
+|---|---|---|
+| Crea pacchetti | ✅ | ✅ |
+| Assegna pacchetti a clienti | ✅ | ✅ |
+| Scalo sessioni | ✅ | ✅ |
+| Pagamento in acconto | ✅ | ✅ |
+| Card prepagate | ✅ | ✅ |
+| Gift card | ✅ | ✅ |
+| Assegna pacchetto a operatore specifico | ❌ | ✅ |
 
 ## Struttura Dati — Firestore
 
-### Collection: `packages` (template pacchetti, configurati dal gestore)
-```
+### Collection: `packages` (template)
+```typescript
 {
   id: string,
   name: string,                        // "5 Trattamenti Viso"
-  service_id: string,                  // servizio incluso
-  sessions_count: number,              // numero sessioni (es. 5)
-  price: number,                       // prezzo scontato totale
-  original_price: number,              // prezzo pieno (sessions_count * prezzo_servizio)
-  discount_pct: number,                // % sconto calcolata
-  valid_days: number | null,           // giorni di validità (null = no scadenza)
   description: string | null,
+  service_id: string,
+  sessions_count: number,
+  price: number,                       // prezzo scontato totale
+  original_price: number,              // calcolato: prezzo_servizio * sessions
+  discount_pct: number,                // calcolato
+  valid_days: number | null,           // null = nessuna scadenza
   active: boolean,
   created_at: string
 }
 ```
 
-### Collection: `client_packages` (pacchetti acquistati dal cliente)
-```
+### Collection: `client_packages`
+```typescript
 {
   id: string,
   client_id: string,
   package_id: string,
-  package_name: string,                // snapshot nome al momento dell'acquisto
-  service_id: string,
+  package_snapshot: {                  // copia al momento della vendita (prezzi possono cambiare)
+    name: string,
+    service_id: string,
+    service_name: string,
+    sessions_count: number,
+    price: number
+  },
   sessions_total: number,
   sessions_used: number,
-  sessions_remaining: number,          // calcolato: total - used
+  sessions_remaining: number,          // denormalizzato per query veloci
   price_paid: number,
-  paid: boolean,
-  paid_amount: number,                 // acconto versato
-  balance_due: number,                 // saldo ancora da pagare
-  payment_method: string | null,       // 'cash' | 'card' | 'sumup'
-  sumup_payment_id: string | null,
-  expires_at: string | null,           // ISO date scadenza
-  status: 'active' | 'exhausted' | 'expired',
+  deposit_paid: number,                // acconto versato
+  balance_due: number,                 // saldo rimanente
+  payment_method: 'cash' | 'card' | 'sumup' | null,
+  payment_id: string | null,           // ID SumUp se pagato con carta
+  expires_at: string | null,
+  status: 'active' | 'exhausted' | 'expired' | 'cancelled',
+  sold_by_staff_id: string | null,     // lv 2+
   created_at: string,
   updated_at: string
 }
 ```
 
-### Collection: `prepaid_cards` (credito prepagato)
-```
+### Collection: `prepaid_cards`
+```typescript
 {
   id: string,
   client_id: string,
-  name: string,                        // "Card Benessere Maria"
-  initial_balance: number,             // credito iniziale caricato
-  balance: number,                     // credito residuo attuale
-  transactions: [
-    {
-      date: string,
-      type: 'load' | 'use',
-      amount: number,
-      appointment_id: string | null,
-      note: string | null
-    }
-  ],
-  barcode: string,                     // codice univoco (UUID corto)
+  name: string,
+  initial_balance: number,
+  balance: number,
+  barcode: string,                     // codice univoco stampabile
   active: boolean,
+  transactions: Array<{
+    id: string,
+    date: string,
+    type: 'load' | 'use',
+    amount: number,
+    appointment_id: string | null,
+    note: string | null
+  }>,
   created_at: string,
   updated_at: string
 }
 ```
 
 ### Collection: `gift_cards`
-```
+```typescript
 {
   id: string,
-  code: string,                        // codice univoco alfanumerico es. "MAKI-A3X9"
-  amount: number,                      // valore totale
-  balance: number,                     // saldo residuo
+  code: string,                        // "GIFT-A3X9K2"
+  amount: number,
+  balance: number,
   buyer_client_id: string | null,
   recipient_name: string,
-  recipient_email: string | null,
   recipient_phone: string | null,
   is_birthday_gift: boolean,
-  unlock_date: string | null,          // ISO date: mezzanotte del compleanno
-  is_unlocked: boolean,                // true se unlock_date è passata o non è birthday gift
-  used_at: string | null,
-  expired_at: string | null,
-  expires_at: string | null,           // scadenza gift card
+  unlock_at: string | null,            // ISO datetime mezzanotte del compleanno
+  is_unlocked: boolean,
+  expires_at: string | null,
+  status: 'locked' | 'active' | 'exhausted' | 'expired',
+  usage_history: Array<{
+    date: string,
+    amount_used: number,
+    appointment_id: string
+  }>,
   created_at: string
 }
 ```
 
----
-
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/packages/page.tsx` — lista template pacchetti
-- `src/app/(app)/packages/new/page.tsx` — crea nuovo template pacchetto
+- `src/app/(app)/packages/page.tsx`
+- `src/app/(app)/packages/new/page.tsx`
 - `src/app/(app)/packages/[id]/edit/page.tsx`
-- `src/app/(app)/clients/[id]/packages/page.tsx` — pacchetti attivi di un cliente
 - `src/components/packages/PackageForm.tsx`
-- `src/components/packages/ClientPackageCard.tsx` — card con progress bar sessioni
-- `src/app/(app)/prepaid-cards/page.tsx` — lista card prepagate
+- `src/components/packages/PackageCard.tsx` — card con nome, sessioni, prezzo, sconto%
+- `src/components/packages/ClientPackageProgress.tsx` — progress bar sessioni usate/rimanenti
+- `src/app/(app)/prepaid-cards/page.tsx`
 - `src/app/(app)/prepaid-cards/new/page.tsx`
 - `src/components/prepaid-cards/PrepaidCardForm.tsx`
-- `src/components/prepaid-cards/PrepaidCardDetail.tsx` — storico transazioni + saldo
-- `src/app/(app)/gift-cards/page.tsx` — lista gift card
+- `src/components/prepaid-cards/BalanceDisplay.tsx` — saldo grande con storico
+- `src/app/(app)/gift-cards/page.tsx`
 - `src/app/(app)/gift-cards/new/page.tsx`
 - `src/components/gift-cards/GiftCardForm.tsx`
-- `src/app/api/cron/gift-cards-unlock/route.ts` — cron job: sblocca gift card al compleanno
-- `src/lib/barcode.ts` — generazione codici univoci
+- `src/components/gift-cards/GiftCardBadge.tsx` — mostra stato (bloccata / attiva / scaduta)
+- `src/app/api/cron/gift-cards/route.ts` — sblocco gift card a mezzanotte
+- `src/lib/coupon.ts` — generazione codici univoci
 
 ### Modificati
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — sezione checkout con opzione "Paga con Pacchetto / Card / Gift Card"
-- `src/components/layout/Sidebar.tsx` — voci menu: Pacchetti, Card Prepagate, Gift Card
-- `src/types/database.ts` — aggiungere tutti i nuovi tipi
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — checkout con selezione metodo pagamento
+- `src/app/(app)/clients/[id]/page.tsx` — tab "Pacchetti Attivi"
+- `src/components/layout/Sidebar.tsx` — voce Pacchetti
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 5.1 — CRUD Template Pacchetti
+- Form: nome, seleziona servizio → mostra prezzo unitario → inserisci N sessioni → calcola prezzo pieno → inserisci prezzo scontato → mostra sconto % calcolato
+- Toggle valido_giorni: "Nessuna scadenza" / "Valido X giorni dall'acquisto"
+- Lista: card per ogni pacchetto con sconto % in evidenza, badge "Attivo/Inattivo"
 
-### Step 3.1 — Template Pacchetti (CRUD)
-- Pagina `/packages` con lista template: nome, servizio, sessioni, prezzo, sconto %
-- Form: seleziona servizio (dropdown), inserisci numero sessioni, prezzo scontato → calcola automaticamente `discount_pct`
-- Toggle attivo/inattivo
-- Badge "X sessioni • Y€ • sconto Z%"
+### Step 5.2 — Vendita Pacchetto al Cliente
+- Da scheda cliente: bottone "Vendi Pacchetto" → drawer/modal con:
+  1. Seleziona template pacchetto
+  2. Prezzo proposto (modificabile per sconti extra)
+  3. Pagamento immediato o in acconto: slider o due campi (acconto + saldo)
+  4. Metodo pagamento: Contanti / SumUp / Carta
+  5. Note opzionali
+- Al salvataggio: crea `client_packages` + eventuale pagamento SumUp
 
-### Step 3.2 — Vendita Pacchetto a Cliente
-- Dalla scheda cliente (fase 2) o da `/clients/[id]/packages/new`:
-  - Seleziona template pacchetto
-  - Imposta importo acconto (se pagamento parziale)
-  - Sceglie metodo pagamento (contanti / carta / SumUp)
-  - Genera `client_packages` con `sessions_used = 0`
-  - Genera scontrino (fase 10) opzionalmente
+### Step 5.3 — Scalo Sessioni nel Checkout
+- Nel form chiusura appuntamento, sezione pagamento:
+  - Se il cliente ha `client_packages` attivi con `service_id` compatibile → mostrare opzione
+  - "Usa pacchetto: [nome] — Rimanenti: X/Y sessioni"
+  - Al click: `sessions_used++`, `sessions_remaining--`, aggiorna su Firestore
+  - Se `sessions_remaining = 0` → `status = 'exhausted'` + toast "Pacchetto esaurito!"
+  - Se `expires_at < today` → `status = 'expired'` + messaggio errore con offerta rinnovo
 
-### Step 3.3 — Scalo Sessioni
-- Nel form chiusura appuntamento: se il cliente ha pacchetti attivi compatibili con il servizio → mostrare opzione "Usa sessione da pacchetto [nome]"
-- Al click: incrementa `sessions_used` → aggiorna `sessions_remaining`
-- Se `sessions_remaining = 0` → aggiorna `status = 'exhausted'`
-- Toast con conferma: "Sessione scalata. Rimanenti: X"
+### Step 5.4 — Card Prepagate
+- Form: cliente, nome card, importo iniziale
+- Genera barcode alfanumerico (8 caratteri)
+- Pagina dettaglio: saldo grande, lista movimenti, bottone "Ricarica" e "Usa"
+- Nel checkout: campo "Codice card" → cerca + mostra saldo + importo da scalare
 
-### Step 3.4 — Card Prepagate
-- Form: seleziona cliente, inserisci importo iniziale, genera barcode (UUID corto)
-- Pagina dettaglio: saldo attuale + lista transazioni con tipo (carico/uso), data, importo
-- Ricarica: bottone "Ricarica" → aggiunge importo al saldo + transaction di tipo `load`
-- Uso: nel checkout appuntamento → "Paga con Card Prepagata" → inserisci/scansiona barcode → scala importo
+### Step 5.5 — Gift Card con Sblocco Compleanno
+- Form: destinatario nome+telefono, importo, scadenza, flag "Regalo di compleanno"
+- Se compleanno: date picker → calcola `unlock_at = mezzanotte del giorno nell'anno corrente o prossimo`
+- Genera codice `GIFT-XXXXXX`
+- Invio automatico WhatsApp al destinatario con codice (se telefono fornito)
+- Cron giornaliero 00:01: trova gift card con `unlock_at <= now` e `is_unlocked = false` → sblocca + invia WhatsApp "Il tuo regalo di compleanno è pronto!"
 
-### Step 3.5 — Gift Card
-- Form: destinatario nome, email/telefono, importo, scadenza, flag "Regalo di compleanno"
-- Se "Regalo di compleanno": seleziona data nascita → `unlock_date = mezzanotte del giorno`
-- Genera codice univoco (`GIFT-` + 8 char casuali uppercase)
-- Invio automatico via WhatsApp/Email al destinatario con il codice
-- Cron job giornaliero: trova gift card con `unlock_date <= oggi` e `is_unlocked = false` → sblocca
-
-### Step 3.6 — Checkout Integrato
-- Nella schermata chiusura appuntamento, sezione "Pagamento":
-  ```
-  [ ] Contanti
-  [ ] Carta (SumUp)
-  [ ] Pacchetto (mostra pacchetti attivi compatibili)
-  [ ] Card Prepagata (inserisci codice)
-  [ ] Gift Card (inserisci codice)
-  ```
-- Possibilità di pagamento misto (es. 30€ gift card + 20€ contanti)
-
----
+### Step 5.6 — Checkout Multi-Metodo
+```
+Sezione "Pagamento" nella chiusura appuntamento:
+┌──────────────────────────────────┐
+│ Totale da pagare: 80,00 €        │
+│                                  │
+│ [ ] Contanti         _____ €     │
+│ [ ] SumUp (carta)    _____ €     │
+│ [ ] Pacchetto         (scala)    │
+│ [ ] Card prepagata   _____ €     │
+│ [ ] Gift card        _____ €     │
+│ [ ] Punti fedeltà    _____ pt    │
+│                                  │
+│ Rimanente: 0,00 €   [Conferma]   │
+└──────────────────────────────────┘
+```
+- Validazione: la somma dei metodi deve coprire il totale
+- "Rimanente" si aggiorna live mentre si compilano i campi
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Creare template "5 Massaggi 200€" (prezzo pieno 250€) | Sconto 20% calcolato automaticamente |
-| Vendere pacchetto a cliente con acconto 100€ | `paid_amount=100`, `balance_due=100` |
-| Scalare 3 sessioni tramite appuntamenti | `sessions_used=3`, `sessions_remaining=2` |
-| Scalare quinta sessione | `status=exhausted`, messaggio "Pacchetto esaurito" |
-| Creare gift card compleanno per data futura | `is_unlocked=false` fino alla data |
-| Cron notturno il giorno del compleanno | `is_unlocked=true` |
-| Checkout con card prepagata saldo insufficiente | Errore "Saldo insufficiente, mancano X€" |
+| Creare pacchetto "5 massaggi, prezzo 200€" | Sconto 20% calcolato (full price 250€) |
+| Vendere con acconto 100€ | `deposit_paid=100`, `balance_due=100` |
+| Scalare 5a sessione | `status='exhausted'`, messaggio di avviso |
+| Pacchetto scaduto | Messaggio errore + rinnovo proposto |
+| Gift card con compleanno 25 dic | `is_unlocked=false` fino a Natale, poi WhatsApp automatico |
+| Checkout misto: 50€ cash + 30€ card | Entrambi i pagamenti registrati |
 
 ---
 
 ---
 
-# FASE 4 — Fidelity / Raccolta Punti
+# FASE 6 — Fidelity / Raccolta Punti
 
 ## Idea
-Ogni euro speso accumula punti. Il cliente può riscattare punti raggiunti la soglia configurata per ottenere uno sconto. I punti sono visibili nella scheda cliente. Messaggi automatici al raggiungimento delle soglie.
-
----
+Sistema punti disponibile a tutti i livelli. Per la professionista sola: strumento semplice di fidelizzazione. Per il centro grande: integrato con le campagne marketing.
 
 ## Struttura Dati — Firestore
 
-### Modifica `clients`
-Campo già previsto in fase 2: `loyalty_points: number`
+### Aggiungere in `settings/main`
+```typescript
+loyalty_enabled: boolean,
+points_per_euro: number,              // default 1
+reward_threshold: number,             // default 100 punti
+reward_value_eur: number,             // default 5€
+welcome_bonus: number,                // punti regalo alla prima visita
+birthday_bonus: number,               // punti regalo il giorno del compleanno
+```
 
 ### Collection: `loyalty_transactions`
-```
+```typescript
 {
   id: string,
   client_id: string,
-  type: 'earn' | 'redeem' | 'expire' | 'bonus',
+  type: 'earn' | 'redeem' | 'bonus_welcome' | 'bonus_birthday' | 'expire' | 'manual',
   points: number,                      // positivo o negativo
   balance_after: number,
   ref_appointment_id: string | null,
-  ref_campaign_id: string | null,
   note: string | null,
   created_at: string
 }
 ```
 
-### Settings — aggiungere in `settings/main`
-```
-loyalty_enabled: boolean,
-points_per_euro: number,               // es. 1 punto per € speso
-reward_threshold: number,              // es. 100 punti per ottenere la ricompensa
-reward_value: number,                  // es. 5€ di sconto
-welcome_bonus_points: number,          // punti regalati al primo accesso
-birthday_bonus_points: number,         // punti bonus il giorno del compleanno
-```
-
----
-
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/fidelity/page.tsx` — classifica clienti per punti + configurazione programma
-- `src/components/fidelity/LoyaltyWidget.tsx` — card con punti, barra progresso, prossima ricompensa
-- `src/lib/loyalty.ts` — funzioni: `earnPoints()`, `redeemPoints()`, `getBalance()`
-- `src/app/api/loyalty/earn/route.ts`
-- `src/app/api/loyalty/redeem/route.ts`
+- `src/lib/loyalty.ts` — `earnPoints()`, `redeemPoints()`, `addBonus()`
+- `src/components/fidelity/LoyaltyWidget.tsx` — punti + barra progresso
+- `src/components/fidelity/LoyaltyHistory.tsx` — lista movimenti punti
+- `src/app/(app)/settings/fidelity/page.tsx` — configurazione programma
 
 ### Modificati
-- `src/app/(app)/settings/page.tsx` — sezione "Programma Fedeltà" con toggle e configurazione
-- `src/app/(app)/clients/[id]/page.tsx` (fase 2) — aggiungere `LoyaltyWidget`
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — al completamento: chiama `earnPoints()`
+- `src/app/(app)/settings/page.tsx` — link sezione fidelity
+- `src/app/(app)/clients/[id]/page.tsx` — aggiungere `LoyaltyWidget`
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — accumulo punti al completamento + opzione riscatto
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 6.1 — Configurazione
+- Settings → Fidelity: toggle on/off, punti per euro (slider 1–10), soglia ricompensa, valore ricompensa
+- Bonus: welcome bonus (punti alla prima visita), birthday bonus (punti il giorno del compleanno)
+- Preview: "Con queste impostazioni, un cliente che spende 200€ accumula 200 punti e ottiene 10€ di sconto"
 
-### Step 4.1 — Configurazione
-- In Settings: sezione "Programma Fedeltà" con:
-  - Toggle on/off
-  - Punti per euro (slider 1–10)
-  - Soglia ricompensa (input numerico)
-  - Valore ricompensa in € (input numerico)
-  - Bonus benvenuto, bonus compleanno
+### Step 6.2 — Accumulo Automatico
+- In `appointments/[id]/edit`: quando lo stato passa a `completed` e il pagamento viene confermato
+- Chiama `lib/loyalty.ts: earnPoints(clientId, amountPaid)`:
+  1. `points = Math.floor(amount * settings.points_per_euro)`
+  2. Aggiorna `clients.loyalty_points += points`
+  3. Crea `loyalty_transactions` con `type = 'earn'`
+  4. Toast: "Maria ha guadagnato +25 punti! Totale: 125 punti"
 
-### Step 4.2 — Accumulo Punti
-- `lib/loyalty.ts: earnPoints(clientId, amountSpent)`:
-  - Legge configurazione da Firestore
-  - Calcola `points = Math.floor(amount * points_per_euro)`
-  - Aggiorna `clients.loyalty_points += points`
-  - Crea `loyalty_transactions` con `type = 'earn'`
-- Chiamata al termine di ogni appuntamento completato
+### Step 6.3 — Riscatto
+- Nel checkout: se `loyalty_points >= reward_threshold` → card "Riscatta punti"
+  - Mostra: "Hai 120 punti → sconto di 5€"
+  - Checkbox "Usa punti" → applica sconto, chiama `redeemPoints()`
 
-### Step 4.3 — Riscatto
-- Nel checkout appuntamento: se `loyalty_points >= reward_threshold` → mostrare "Usa punti per sconto di X€"
-- `lib/loyalty.ts: redeemPoints(clientId, points)`:
-  - Decrementa `clients.loyalty_points`
-  - Crea `loyalty_transactions` con `type = 'redeem'`
-  - Applica sconto al totale
+### Step 6.4 — Bonus Automatici
+- Cron giornaliero:
+  - Birthday: clienti con `birthday = oggi` → aggiungi `birthday_bonus` punti
+  - Welcome: primo appuntamento `completed` → aggiungi `welcome_bonus` punti
 
-### Step 4.4 — Widget Fedeltà
-- Nella scheda cliente: card "Punti Fedeltà"
-  - Numero punti attuali in grande
-  - Barra progresso verso soglia (es. "85/100 punti")
-  - "Ti mancano 15 punti per ottenere 5€ di sconto"
-  - Storico movimenti: data, tipo, punti, note
-
-### Step 4.5 — Bonus Automatici
-- Cron giornaliero: clienti con birthday = oggi → aggiungi `birthday_bonus_points`
-- Nuovi clienti (first_visit): aggiungi `welcome_bonus_points` al primo appuntamento completato
-
----
+### Step 6.5 — Widget Cliente
+- `LoyaltyWidget`: punti in grande (es. "85 pt"), barra progresso verso 100, "Mancano 15 punti per 5€ di sconto"
+- Se livello >= reward_threshold: "Hai uno sconto da riscattare!" con bottone
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Appuntamento da 50€ con 1pt/€ | `loyalty_points += 50` |
-| Cliente con 100 punti soglia 100 | Opzione "Usa punti" visibile nel checkout |
-| Riscatto punti | `loyalty_points` si azzera, sconto applicato |
-| Compleanno cliente | `birthday_bonus_points` aggiunti automaticamente |
-| Disattivare fidelity in settings | Opzione nascosta ovunque |
+| Appuntamento da 60€, 1pt/€ | `loyalty_points += 60` |
+| Riscatto a 100 punti, valore 5€ | Sconto applicato, punti azzerati |
+| Birthday cron | `birthday_bonus` punti aggiunti il giorno corretto |
+| Fidelity disabilitata in settings | Nessun punto accumulato, widget nascosto |
 
 ---
 
 ---
 
-# FASE 5 — SumUp Integrazione Pagamenti
+# FASE 7 — SumUp Pagamenti
 
 ## Idea
-Integrare SumUp per accettare pagamenti con carta direttamente dall'app. Flusso principale: **Payment Link** (nessun hardware richiesto) — si genera un link di checkout, il cliente o il gestore completa il pagamento da browser. Flusso secondario (opzionale): terminale fisico SumUp Air.
-
-## Valutazione SumUp
-
-| Aspetto | Dettaglio |
-|---|---|
-| Commissione | 1,69% per transazione (nessun canone mensile) |
-| SDK | `@sumup/sdk` — Node.js ufficiale |
-| Auth | API Key `sup_sk_...` + OAuth per merchant |
-| Checkout link | Crea un URL di pagamento da inviare al cliente |
-| Terminale | API sessione per terminale fisico (SumUp Air ~39€) |
-| Webhook | Notifiche asincrone pagamento completato/fallito |
-| Sandbox | Ambiente di test disponibile |
-| Rimborsi | API rimborso transazione disponibile |
+Disponibile a tutti i livelli. Una singola estetista beneficia tanto quanto un grande centro. Nessun canone fisso, solo 1,69% per transazione.
 
 ## Prerequisiti
-1. Aprire account SumUp su `sumup.com`
-2. Sezione "Sviluppatori" → generare API Key sandbox (`sup_sk_test_...`)
-3. Configurare `WEBHOOK_URL` nel pannello SumUp = `https://tuodominio.com/api/sumup/webhook`
-4. Aggiungere variabili ambiente
+1. Aprire account SumUp: `sumup.com`
+2. Sezione "Sviluppatori" → generare API Key sandbox `sup_sk_test_...`
+3. Configurare webhook URL nel pannello SumUp
+4. Variabili ambiente in `.env.local`
 
----
-
-## Variabili Ambiente da Aggiungere in `.env.local`
+## Variabili Ambiente
 ```
 SUMUP_API_KEY=sup_sk_...
 SUMUP_MERCHANT_CODE=M...
@@ -625,384 +988,444 @@ SUMUP_WEBHOOK_SECRET=...
 NEXT_PUBLIC_APP_URL=https://tuodominio.com
 ```
 
----
-
 ## Struttura Dati — Firestore
 
 ### Collection: `payments`
-```
+```typescript
 {
   id: string,
   sumup_checkout_id: string,
   sumup_transaction_id: string | null,
-  appointment_id: string | null,
-  client_package_id: string | null,
-  gift_card_id: string | null,
   amount: number,
   currency: 'EUR',
   description: string,
   status: 'pending' | 'paid' | 'failed' | 'refunded',
   payment_url: string,
+  ref_type: 'appointment' | 'package' | 'gift_card' | 'prepaid_card' | 'other',
+  ref_id: string | null,
+  client_id: string | null,
   paid_at: string | null,
   refunded_at: string | null,
-  webhook_received_at: string | null,
+  refund_amount: number | null,
   created_at: string
 }
 ```
 
-### Modifica `appointments`
-Aggiungere: `payment_id: string | null`, `payment_status: string | null`, `payment_method: string | null`
-
----
+### Modifiche ad `appointments`
+```typescript
+payment_id: string | null
+payment_method: 'cash' | 'card' | 'sumup' | 'package' | 'prepaid_card' | 'gift_card' | 'mixed' | null
+payment_status: 'unpaid' | 'partial' | 'paid' | null
+amount_paid: number
+```
 
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/lib/sumup.ts` — wrapper SumUp SDK con funzioni: `createCheckout()`, `getTransaction()`, `refundTransaction()`
-- `src/app/api/sumup/checkout/route.ts` — POST: crea checkout SumUp, salva su Firestore, restituisce URL
-- `src/app/api/sumup/webhook/route.ts` — POST: riceve notifica SumUp, verifica firma, aggiorna stato pagamento
-- `src/app/api/sumup/transactions/route.ts` — GET: storico transazioni
-- `src/app/api/sumup/refund/route.ts` — POST: rimborso transazione
-- `src/app/(app)/payments/page.tsx` — storico pagamenti con stato e importi
-- `src/components/payments/SumUpCheckoutButton.tsx` — bottone "Paga con Carta" che apre modal/tab checkout
-- `src/components/payments/PaymentStatusBadge.tsx` — badge stato pagamento (in attesa / pagato / rimborsato)
+- `src/lib/sumup.ts` — wrapper SDK con `createCheckout()`, `getTransaction()`, `refund()`
+- `src/app/api/sumup/checkout/route.ts` — crea checkout
+- `src/app/api/sumup/webhook/route.ts` — riceve notifiche SumUp
+- `src/app/api/sumup/refund/route.ts` — rimborso
+- `src/app/api/sumup/status/route.ts` — polling stato pagamento
+- `src/app/(app)/appointments/[id]/payment-result/page.tsx` — pagina esito pagamento
+- `src/app/(app)/payments/page.tsx` — storico pagamenti
+- `src/components/payments/SumUpButton.tsx` — bottone "Paga con carta"
+- `src/components/payments/PaymentStatusBadge.tsx`
 
 ### Modificati
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — sezione pagamento con bottone SumUp
-- `src/types/database.ts` — aggiungere tipo `Payment`, campi su `Appointment`
-- `package.json` — aggiungere `@sumup/sdk`
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — sezione pagamento
+- `src/types/database.ts` — tipo `Payment`
+- `package.json` — `@sumup/sdk`
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
-
-### Step 5.1 — Installazione e Configurazione
+### Step 7.1 — Installazione
 ```bash
 npm install @sumup/sdk
 ```
-- Creare `src/lib/sumup.ts`:
+
+### Step 7.2 — lib/sumup.ts
 ```typescript
-import { SumUp } from '@sumup/sdk'
-export const sumup = new SumUp({ apiKey: process.env.SUMUP_API_KEY! })
+import SumUp from '@sumup/sdk'
+
+const client = new SumUp({ apiKey: process.env.SUMUP_API_KEY! })
+
+export async function createCheckout(params: {
+  amount: number
+  description: string
+  checkoutRef: string
+  returnUrl: string
+}) {
+  return client.checkouts.create({
+    amount: params.amount,
+    currency: 'EUR',
+    checkout_reference: params.checkoutRef,
+    merchant_code: process.env.SUMUP_MERCHANT_CODE!,
+    description: params.description,
+    return_url: params.returnUrl,
+  })
+}
+
+export async function refundTransaction(transactionId: string, amount: number) {
+  return client.transactions.refund(transactionId, { amount })
+}
 ```
 
-### Step 5.2 — API Route Checkout
-`POST /api/sumup/checkout`
+### Step 7.3 — API Checkout
 ```typescript
-// Body: { amount, description, appointment_id?, return_url }
-// 1. Crea checkout su SumUp
-const checkout = await sumup.checkouts.create({
-  checkout_reference: `APT-${appointmentId}-${Date.now()}`,
-  amount,
-  currency: 'EUR',
-  merchant_code: process.env.SUMUP_MERCHANT_CODE!,
-  description,
-  return_url: `${process.env.NEXT_PUBLIC_APP_URL}/appointments/${appointmentId}/payment-result`,
-})
-// 2. Salva su Firestore collection `payments`
-// 3. Restituisce { checkout_id, payment_url }
+// POST /api/sumup/checkout
+// Body: { amount, description, ref_type, ref_id, client_id }
+// 1. Genera checkoutRef univoco: `${ref_type}-${ref_id}-${timestamp}`
+// 2. Crea checkout SumUp
+// 3. Salva su Firestore collection 'payments' con status 'pending'
+// 4. Restituisce { payment_url, payment_id }
 ```
 
-### Step 5.3 — Webhook
-`POST /api/sumup/webhook`
-- Verifica firma HMAC con `SUMUP_WEBHOOK_SECRET`
-- In base a `event_type`:
-  - `CHECKOUT_COMPLETED` → aggiorna `payments.status = 'paid'`, aggiorna `appointments.payment_status = 'paid'`
-  - `CHECKOUT_FAILED` → aggiorna `status = 'failed'`
-- Logga evento su Firestore collection `webhook_logs`
+### Step 7.4 — Webhook
+```typescript
+// POST /api/sumup/webhook
+// 1. Verifica firma HMAC: X-Payload-Signature header
+// 2. Switch event_type:
+//    'CHECKOUT_COMPLETED' → aggiorna payment.status = 'paid'
+//                        → aggiorna appointment.payment_status = 'paid'
+//                        → triggera generazione scontrino (fase 10)
+//    'CHECKOUT_FAILED'    → aggiorna payment.status = 'failed'
+// 3. Sempre rispondere 200 subito (SumUp riprova se riceve errore)
+```
 
-### Step 5.4 — UI Checkout
-- In pagina modifica appuntamento, sezione "Pagamento":
-  - Se non ancora pagato: bottone "Paga con Carta (SumUp)"
-  - Click → POST `/api/sumup/checkout` → ottieni `payment_url`
-  - Apri `payment_url` in nuova tab o modal iframe
-  - Pagina `payment-result`: legge stato da Firestore e mostra esito
-- Se già pagato: badge verde "Pagato — X€ il [data]"
+### Step 7.5 — UI Pagamento
+- In pagina appuntamento: sezione "Pagamento"
+  - Se non pagato: importo da pagare + bottone "Paga con Carta"
+  - Click → POST checkout → apre `payment_url` in nuova tab
+  - Polling ogni 3 sec su `/api/sumup/status?payment_id=xxx` mentre la tab è aperta
+  - Quando `status = 'paid'`: badge verde "Pagato ✓" + confetti animazione
+- Se già pagato: badge stato + data + importo + bottone "Rimborsa"
 
-### Step 5.5 — Storico Pagamenti
-- Pagina `/payments`:
-  - Lista tutti i pagamenti con: data, cliente, importo, stato, link appuntamento
-  - Filtri: per data, per stato (pending/paid/failed/refunded)
-  - Bottone "Rimborsa" su ogni pagamento `paid` → modale conferma → POST `/api/sumup/refund`
-  - Totale incassato nel periodo selezionato
-
-### Step 5.6 — Terminale Fisico (Fase Opzionale)
-- Se il gestore ha SumUp Air collegato:
-  - In checkout: opzione "Terminale fisico" invece di link
-  - `POST /api/sumup/terminal-session` → crea sessione di checkout sul terminale
-  - Il terminale si attiva e mostra l'importo
-  - Webhook di conferma al completamento
-
----
+### Step 7.6 — Storico Pagamenti
+- Tabella con: data, cliente, descrizione, importo, metodo, stato
+- Filtri: periodo, stato, metodo
+- Totale periodo in cima
+- Bottone rimborso su ogni pagamento paid
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Creare checkout per appuntamento 80€ | URL payment generato e salvato su Firestore |
-| Completare pagamento in sandbox | Webhook ricevuto, stato aggiornato a `paid` |
-| Aprire pagina appuntamento dopo pagamento | Badge "Pagato 80€" visibile |
-| Richiedere rimborso | `status = refunded`, importo registrato |
-| Webhook con firma errata | 401 restituito, log errore |
+| Creare checkout 80€ in sandbox | URL generato, salvato su Firestore |
+| Completare pagamento sandbox | Webhook ricevuto, stato → paid |
+| Aprire appuntamento dopo pagamento | Badge "Pagato 80€" visibile |
+| Rimborso parziale 30€ | `refund_amount=30`, stato → partial_refund |
+| Firma webhook errata | 401, nessun aggiornamento Firestore |
 
 ---
 
 ---
 
-# FASE 6 — Marketing Automation Avanzato
+# FASE 8 — Marketing Automation
 
 ## Idea
-Sistema di campagne automatizzate con segmentazione clienti. Trigger basati su eventi (compleanno, inattività, post-trattamento, benvenuto) o invio manuale a liste filtrate. Canali: WhatsApp, SMS, Push Notification.
+Per il livello 1 (solo): automazioni semplici preconfigurate (compleanno, richiamo, post-trattamento). Per il livello 3+: campagne avanzate con segmentazione e filtri personalizzati. Il livello 2 sta nel mezzo: automazioni base + invio manuale a lista clienti.
 
----
+## Differenze per Livello
+
+| Funzione | Lv 1 | Lv 2 | Lv 3–4 |
+|---|:---:|:---:|:---:|
+| WhatsApp compleanno automatico | ✅ | ✅ | ✅ |
+| WhatsApp post-trattamento | ✅ | ✅ | ✅ |
+| Richiamo clienti inattivi | ✅ | ✅ | ✅ |
+| Richiesta recensione | ✅ | ✅ | ✅ |
+| Invio manuale a lista | ❌ | ✅ | ✅ |
+| Segmentazione avanzata | ❌ | ❌ | ✅ |
+| Campagne programmate | ❌ | ❌ | ✅ |
+| Report campagne | ❌ | ✅ | ✅ |
+| Coupon allegati | ✅ | ✅ | ✅ |
 
 ## Struttura Dati — Firestore
 
-### Collection: `marketing_campaigns`
+### Collection: `automations` (per tutti i livelli)
+```typescript
+// Automazioni sempre attive, configurabili on/off
+{
+  type: 'birthday' | 'inactive' | 'post_treatment' | 'review_request' | 'welcome',
+  enabled: boolean,
+  channel: 'whatsapp' | 'sms' | 'push',
+  message_template: string,           // testo con {{variabili}}
+  delay_hours: number | null,         // per post_treatment
+  inactive_days: number | null,       // per inactive
+  coupon_enabled: boolean,
+  coupon_discount_pct: number | null,
+  coupon_valid_days: number | null,
+}
 ```
+Questi vivono in `settings/main` come oggetto `automations: {}` — non serve collection separata.
+
+### Collection: `campaigns` (solo lv 2+)
+```typescript
 {
   id: string,
-  name: string,                        // "Richiamo clienti estate 2026"
-  trigger_type: 'birthday' | 'inactive' | 'post_treatment' | 'welcome' | 'review_request' | 'manual',
-  status: 'active' | 'paused' | 'draft' | 'completed',
-  channel: 'whatsapp' | 'sms' | 'push' | 'all',
-  message_template: string,            // testo con variabili {{nome}}, {{servizio}}, {{data}}
+  name: string,
+  trigger: 'manual' | 'scheduled',
+  scheduled_at: string | null,
+  channel: 'whatsapp' | 'sms' | 'push',
+  message_template: string,
   filters: {
     gender: 'F' | 'M' | 'all',
     age_from: number | null,
     age_to: number | null,
-    inactive_days: number | null,       // per trigger 'inactive'
-    service_id: string | null,          // clienti che fanno quel servizio
-    has_loyalty_points_min: number | null
+    inactive_days_min: number | null,
+    service_id: string | null,
+    has_active_package: boolean | null,
   },
-  delay_hours: number | null,          // per post_treatment: ore dopo appuntamento
-  coupon_attached: boolean,
   coupon_discount_pct: number | null,
   coupon_valid_days: number | null,
+  status: 'draft' | 'sent' | 'scheduled' | 'cancelled',
   sent_count: number,
-  open_count: number,                  // solo push
-  last_run_at: string | null,
+  failed_count: number,
   created_at: string,
-  updated_at: string
+  sent_at: string | null,
 }
 ```
 
 ### Collection: `campaign_sends`
-```
+```typescript
 {
   id: string,
-  campaign_id: string,
+  campaign_id: string | null,         // null per automazioni
+  automation_type: string | null,
   client_id: string,
   channel: string,
-  message_sent: string,                // testo effettivamente inviato
-  status: 'sent' | 'failed' | 'delivered',
+  message_sent: string,
   coupon_code: string | null,
-  sent_at: string
+  status: 'sent' | 'delivered' | 'failed',
+  sent_at: string,
 }
 ```
 
----
-
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/marketing/page.tsx` — lista campagne con stats (inviate, aperte)
-- `src/app/(app)/marketing/new/page.tsx` — wizard creazione campagna
-- `src/app/(app)/marketing/[id]/page.tsx` — dettaglio campagna + report invii
-- `src/components/marketing/CampaignForm.tsx` — form con step: trigger → filtri → messaggio → preview
-- `src/components/marketing/MessageTemplateEditor.tsx` — editor testo con variabili suggerite
-- `src/components/marketing/AudiencePreview.tsx` — mostra quanti clienti verranno raggiunti dai filtri
-- `src/app/api/cron/marketing/route.ts` — cron giornaliero che esegue campagne automatiche
-- `src/app/api/marketing/send-manual/route.ts` — invio manuale campagna
+- `src/app/(app)/marketing/page.tsx` — lista campagne (lv 2+) + sezione automazioni (tutti)
+- `src/app/(app)/marketing/new/page.tsx` — crea campagna
+- `src/app/(app)/marketing/[id]/page.tsx` — dettaglio campagna con report
+- `src/components/marketing/AutomationToggleCard.tsx` — card on/off per ogni automazione
+- `src/components/marketing/CampaignForm.tsx` — wizard campagna (lv 3+)
+- `src/components/marketing/AudienceEstimate.tsx` — "Raggiungerai circa X clienti"
+- `src/components/marketing/MessageTemplateEditor.tsx` — editor con variabili
+- `src/app/api/cron/automations/route.ts` — esegue automazioni giornaliere
 - `src/lib/marketing.ts` — logica segmentazione + invio
 
 ### Modificati
-- `src/app/(app)/clients/page.tsx` — bottone "Invia campagna" su lista Inattivi
-- `src/lib/twilio.ts` — aggiungere funzione `sendCampaignMessage()`
-- `src/app/(app)/settings/page.tsx` — link recensione Google configurabile
+- `src/app/(app)/settings/page.tsx` — sezione "Automazioni" (link a /marketing)
+- `src/lib/twilio.ts` — funzione `sendMarketingMessage()`
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 8.1 — Automazioni Base (tutti i livelli)
+- Sezione "Automazioni" in `/marketing` (o direttamente in settings per lv 1):
+  - Card per ogni automazione con toggle on/off
+  - Click sulla card: espande il form (template messaggio, canale, configurazioni)
+- Cron `GET /api/cron/automations` — eseguito ogni giorno alle 09:30:
 
-### Step 6.1 — Struttura Campagne
-- Creare CRUD completo campagne su Firestore
-- Pagina lista con: nome, trigger, stato, ultimo invio, n° inviati
-- Toggle on/off per ogni campagna
+  **Birthday:**
+  ```
+  1. Cerca clienti con birthday.month=oggi.month AND birthday.day=oggi.day
+  2. Per ognuno: controlla se già inviato quest'anno (cerca in campaign_sends)
+  3. Se no: sostituisci variabili nel template → invia → salva send
+  4. Se coupon abilitato: genera codice → includi nel messaggio
+  ```
 
-### Step 6.2 — Editor Campagna (Wizard)
-**Step A — Trigger**: seleziona tipo (compleanno / inattivi / post-trattamento / benvenuto / richiesta recensione / manuale)  
-**Step B — Filtri**: genere, età min/max, giorni inattività, servizio specifico  
-**Step C — Canale**: WhatsApp / SMS / Push (o combinazioni)  
-**Step D — Messaggio**: editor con variabili disponibili:
-  - `{{nome}}` — nome cliente
-  - `{{servizio}}` — ultimo/prossimo servizio
-  - `{{data_appuntamento}}` — data prossimo appuntamento
-  - `{{punti}}` — punti fedeltà
-  - `{{codice_coupon}}` — coupon generato automaticamente
-**Step E — Preview**: esempio messaggio con dati cliente fittizi + stima audience
+  **Inactive:**
+  ```
+  1. Cerca clienti con last_visit_at < oggi - inactive_days
+  2. Per ognuno: controlla se già inviato negli ultimi 30 giorni
+  3. Se no: invia richiamo
+  ```
 
-### Step 6.3 — Cron Marketing
-`GET /api/cron/marketing` — eseguito ogni giorno alle 10:00:
-1. **Birthday**: trova clienti con `birthday = oggi` + campagne `trigger_type = 'birthday'` attive → invia
-2. **Inactive**: trova clienti con `last_visit_at < oggi - inactive_days` + campagne `trigger_type = 'inactive'` attive → invia (una volta sola, non ri-invia se già inviato negli ultimi 30 giorni)
-3. **Welcome**: clienti con `visit_count = 1` e `created_at = oggi - 1 giorno` → messaggio benvenuto
+  **Post-Treatment:**
+  ```
+  Eseguito ogni ora:
+  1. Cerca appuntamenti completed negli ultimi delay_hours
+  2. Per ognuno: controlla se post-treatment message già inviato
+  3. Se no: invia
+  ```
 
-### Step 6.4 — Post-Trattamento e Richiesta Recensione
-- Trigger basato sull'evento appuntamento `completed`:
-  - Schedula invio a `completed_at + delay_hours`
-  - Cron ogni ora: trova appuntamenti completati nelle ultime ore che necessitano invio → invia
-- Template richiesta recensione: include link Google My Business configurato in settings
+  **Review Request:**
+  ```
+  Eseguito ogni ora:
+  1. Cerca appuntamenti completed 48h fa
+  2. Invia con link Google My Business (configurato in settings)
+  ```
 
-### Step 6.5 — Coupon Allegati
-- Se la campagna ha `coupon_attached = true`: genera codice univoco `CAMP-XXXX` per ogni cliente
-- Salva codice in `campaign_sends.coupon_code`
-- Al checkout appuntamento: campo "Codice sconto" → verifica su `campaign_sends` → applica sconto
+### Step 8.2 — Template Messaggi
+- Variabili disponibili: `{{nome}}`, `{{cognome}}`, `{{servizio}}`, `{{data_prossima}}`, `{{punti}}`, `{{coupon}}`
+- Editor: textarea con bottoni variabili cliccabili (inserisce il placeholder)
+- Preview live: sostituisce variabili con dati di esempio
+- Contatore caratteri (utile per SMS: max 160 char)
 
-### Step 6.6 — Report Campagna
-- Pagina dettaglio campagna:
-  - Totale inviati
-  - Lista destinatari con stato (inviato/fallito) e timestamp
-  - Grafico a barre invii per giorno
+### Step 8.3 — Campagne Manuali (lv 2+)
+- Pagina `/marketing`: tab "Campagne" + tab "Automazioni"
+- Crea campagna: nome, canale, messaggio, (lv 3: filtri), anteprima audience → "Invia ora" o "Schedula"
+- Lv 2: nessun filtro, invia a tutti i clienti con gdpr_consent=true
+- Lv 3+: filtri completi (genere, età, inattività, servizio, pacchetto)
 
----
+### Step 8.4 — Segmentazione Avanzata (lv 3+)
+- `AudienceEstimate`: aggiornato in tempo reale mentre si configurano i filtri
+- Testo: "Con questi filtri raggiungerai circa 28 clienti"
+- Query Firestore costruita dinamicamente dai filtri
+
+### Step 8.5 — Report Campagna
+- Pagina `/marketing/[id]`: totale inviati, falliti, lista destinatari con stato e timestamp
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Campagna compleanno attiva | Al cron del giorno del compleanno → WhatsApp inviato |
-| Campagna inattivi >45 giorni | Solo clienti non venuti da 45+ giorni ricevono il messaggio |
-| Invio manuale a lista "Donne > 40 anni" | Solo clientele con filtri corretti |
-| Coupon allegato a campagna | Codice generato e applicabile al checkout |
-| Template con variabili | `{{nome}}` sostituito con nome reale del cliente |
+| Automazione birthday abilitata | Al cron di oggi (se c'è un cliente nato oggi) → WhatsApp inviato |
+| Automazione inattivi 45 gg | Solo clienti non venuti da 45+ gg |
+| Disabilita automazione | Cron salta quella tipologia |
+| Lv 1: nessuna voce Campagne | Tab "Campagne" nascosta |
+| Lv 2: campagna senza filtri | Invia a tutti i clienti con consenso |
+| Lv 3: campagna con filtro "Donne > 35 anni" | Solo clientele corrispondenti |
 
 ---
 
 ---
 
-# FASE 7 — Statistiche & Report Avanzati
+# FASE 9 — Statistiche & Report
 
 ## Idea
-Dashboard analytics completa consultabile per qualsiasi periodo. Metriche principali: ricavi, servizi più richiesti, performance staff, clienti a rischio abbandono, confronto periodi. Export CSV per contabilità esterna.
+Le statistiche scalano con il livello: semplici e personali per lv 1, multi-operatore e avanzate per lv 3+. L'export CSV è disponibile a tutti.
 
----
+## Differenze per Livello
+
+| Report | Lv 1 | Lv 2 | Lv 3–4 |
+|---|:---:|:---:|:---:|
+| Ricavi per periodo | ✅ | ✅ | ✅ |
+| Appuntamenti per periodo | ✅ | ✅ | ✅ |
+| Servizi più richiesti | ✅ | ✅ | ✅ |
+| Scontrino medio | ✅ | ✅ | ✅ |
+| Clienti nuovi / inattivi | ✅ | ✅ | ✅ |
+| Confronto periodi | ✅ | ✅ | ✅ |
+| Export CSV | ✅ | ✅ | ✅ |
+| Performance per operatore | ❌ | ✅ | ✅ |
+| Provvigioni staff | ❌ | ✅ | ✅ |
+| Report prodotti (magazzino) | ❌ | ❌ | ✅ |
+| Report campagne marketing | ❌ | ✅ | ✅ |
+| Multi-sede | ❌ | ❌ | ❌ | ✅ |
 
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/stats/page.tsx` — dashboard statistiche principale
-- `src/components/stats/RevenueChart.tsx` — grafico ricavi per giorno/settimana/mese
-- `src/components/stats/TopServicesChart.tsx` — grafico a barre servizi più eseguiti
-- `src/components/stats/StaffPerformanceTable.tsx` — tabella performance per operatore
-- `src/components/stats/ClientsAtRiskList.tsx` — lista clienti che non tornano + bottone campagna
-- `src/components/stats/PeriodComparison.tsx` — confronto periodo vs periodo precedente
-- `src/app/api/stats/summary/route.ts` — API aggregazione dati periodo
+- `src/app/(app)/stats/page.tsx` — dashboard statistiche
+- `src/components/stats/PeriodSelector.tsx` — picker periodo (oggi/settimana/mese/anno/custom)
+- `src/components/stats/KpiCards.tsx` — 4 card metriche principali con trend
+- `src/components/stats/RevenueChart.tsx` — grafico lineare ricavi
+- `src/components/stats/TopServicesBar.tsx` — barre orizzontali top servizi
+- `src/components/stats/ClientsReport.tsx` — nuovi, inattivi, VIP
+- `src/components/stats/StaffTable.tsx` — performance staff (lv 2+)
+- `src/components/stats/CommissionsTable.tsx` — provvigioni (lv 2+)
+- `src/app/api/stats/summary/route.ts` — aggregazione dati periodo
 - `src/lib/stats.ts` — funzioni calcolo metriche
 
 ### Modificati
-- `src/components/layout/Sidebar.tsx` — voce "Statistiche"
+- `src/components/layout/Sidebar.tsx` — voce Statistiche
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 9.1 — Selezione Periodo
+- Bottoni rapidi: Oggi / Questa settimana / Questo mese / Quest'anno
+- Date picker custom: data da + data a
+- Toggle "Confronta con periodo precedente"
+- Il periodo selezionato si propaga a tutti i widget tramite context
 
-### Step 7.1 — Selezione Periodo
-- Header pagina stats con:
-  - Bottoni rapidi: Oggi / Settimana / Mese / Anno
-  - Date picker custom: data inizio + data fine
-  - Toggle "Confronta con periodo precedente" (mostra seconda colonna/barra)
+### Step 9.2 — KPI Cards
+Quattro card in testa:
+- **Ricavo**: totale € nel periodo + variazione % vs precedente (↑ verde, ↓ rosso)
+- **Appuntamenti**: numero + variazione %
+- **Nuovi clienti**: numero + variazione %
+- **Scontrino medio**: € + variazione %
 
-### Step 7.2 — Metriche Principali (card in testa)
-- **Ricavo Totale** nel periodo + variazione % vs precedente (verde/rosso)
-- **N° Appuntamenti** nel periodo + variazione %
-- **Nuovi Clienti** nel periodo + variazione %
-- **Scontrino Medio** (ricavo / appuntamenti) + variazione %
-- **Tasso Conferma** (confermati / totali) %
+### Step 9.3 — Grafico Ricavi
+- Linea giornaliera del ricavo (data sull'asse X, importo sull'Y)
+- Se confronto attivo: due linee sovrapposte con colori distinti
+- Tooltip al hover: data + importo + variazione vs stesso giorno periodo precedente
 
-### Step 7.3 — Grafici
-- `RevenueChart`: linea giornaliera dei ricavi. Se confronto attivo: due linee sovrapposta
-- `TopServicesChart`: barre orizzontali, ordinate per: (A) esecuzioni, (B) ricavo. Toggle A/B
-- Grafico a ciambella: split ricavo per categoria servizi
+### Step 9.4 — Top Servizi
+- Barre orizzontali ordinabili per: esecuzioni / ricavo generato
+- Ogni barra: nome servizio, valore, % sul totale
+- Limite a top 10, link "Vedi tutti"
 
-### Step 7.4 — Performance Staff
-- Tabella: operatore | n° appuntamenti | ricavo generato | scontrino medio | % sul totale
-- Provvigioni calcolate: `ricavo * commission_pct / 100`
-- Ordinabile per colonna
+### Step 9.5 — Performance Staff (lv 2+)
+- Tabella: operatore | n° appuntamenti | ricavo | scontrino medio | % sul totale | provvigione
+- Totale in fondo
+- Export CSV con tutti i dati
 
-### Step 7.5 — Report Clienti
-- **Passaggi**: clienti che hanno visitato almeno una volta nel periodo
-- **Nuovi**: clienti con `created_at` nel periodo
-- **Inattivi**: clienti con `last_visit_at < inizio_periodo - 60 giorni` (a rischio)
-- Per ogni inattivo: nome, ultima visita, telefono, bottone "Invia Richiamo"
-- **Top 10 Clienti**: ordinati per spesa nel periodo
+### Step 9.6 — Clienti nel Periodo
+- **Nuovi**: clienti con primo appuntamento nel periodo
+- **Abituali**: clienti con 2+ visite nel periodo
+- **Inattivi**: clienti con ultima visita prima del periodo + non ancora ricontattati
+- Per inattivi: bottone "Invia richiamo" → lancia automazione manuale
 
-### Step 7.6 — Prodotti & Magazzino (collegamento fase 8)
-- Lista prodotti più venduti nel periodo con quantità e ricavo
-- Collegamento a dashboard magazzino per vedere giacenza attuale
-
-### Step 7.7 — Export
-- Bottone "Scarica CSV" su ogni sezione:
-  - Appuntamenti del periodo (data, cliente, servizio, operatore, importo, stato)
-  - Movimenti cassa (data, tipo, importo, metodo)
-  - Report staff (operatore, appuntamenti, ricavo, provvigioni)
-
----
+### Step 9.7 — Export
+- Bottone "Scarica CSV" su: appuntamenti, clienti, staff performance, provvigioni
+- CSV con intestazione colonne, separatore `;`, encoding UTF-8 (compatibile Excel italiano)
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Inserire 15 appuntamenti in 30 giorni | Ricavo totale e media corrispondono |
-| Confronto mese corrente vs precedente | Variazioni % corrette |
-| Filtrare per staff singolo | Solo appuntamenti di quell'operatore |
-| Export CSV appuntamenti | File con tutte le colonne e righe corrette |
-| Lista inattivi | Solo clienti non tornati nel periodo configurato |
+| 20 appuntamenti in 30 gg | Ricavo e media corrispondono alla somma manuale |
+| Confronto mese vs precedente | Variazioni % calcolate correttamente |
+| Lv 1: nessuna sezione Staff | Tabella staff non appare |
+| Export CSV appuntamenti | File corretto con tutte le colonne |
 
 ---
 
 ---
 
-# FASE 8 — Magazzino Prodotti
+# FASE 10 — Magazzino Prodotti (Livello 3+)
 
 ## Idea
-Tracciamento completo delle giacenze prodotti: carico da fornitore, scarico per vendita diretta o uso in cabina, alert sottoscorta, storico movimenti per operatore, confronto prezzi acquisto.
+Il magazzino è per centri strutturati. Una singola estetista a domicilio non ne ha bisogno. Dal livello 2 diventa opzionale (attivabile da settings). Dal livello 3 è incluso di default.
 
----
+## Comportamento per Livello
+
+- **Lv 1**: nascosto completamente
+- **Lv 2**: disponibile come opzione — in settings: "Gestisci prodotti" toggle
+- **Lv 3–4**: incluso di default nel menu
 
 ## Struttura Dati — Firestore
 
 ### Collection: `products`
-```
+```typescript
 {
   id: string,
   name: string,
   brand: string | null,
   barcode: string | null,
-  category: string,                    // "Colorazione" | "Trattamenti" | "Vendita"
+  category: string,
   supplier: string | null,
-  buy_price: number,                   // prezzo acquisto attuale
-  last_buy_price: number | null,       // prezzo acquisto precedente (per confronto)
-  avg_buy_price: number,               // media prezzi acquisto
-  sell_price: number | null,           // prezzo vendita (se vendibile)
-  stock_qty: number,                   // giacenza attuale
-  min_stock: number,                   // soglia sottoscorta
-  unit: string,                        // "pz" | "ml" | "kg"
+  buy_price: number,
+  last_buy_price: number | null,
+  avg_buy_price: number,
+  sell_price: number | null,
+  stock_qty: number,
+  min_stock: number,
+  unit: 'pz' | 'ml' | 'g' | 'l' | 'kg',
   active: boolean,
-  image_url: string | null,
   created_at: string,
   updated_at: string
 }
 ```
 
 ### Collection: `stock_movements`
-```
+```typescript
 {
   id: string,
   product_id: string,
-  product_name: string,                // snapshot
-  type: 'load' | 'sale' | 'use_cabin' | 'adjustment' | 'waste',
-  qty: number,                         // positivo (carico) o negativo (scarico)
+  product_name: string,
+  type: 'load' | 'sale' | 'cabin_use' | 'adjustment' | 'waste',
+  qty: number,                         // positivo = carico, negativo = scarico
   qty_before: number,
   qty_after: number,
   unit_price: number | null,
@@ -1016,339 +1439,231 @@ Tracciamento completo delle giacenze prodotti: carico da fornitore, scarico per 
 }
 ```
 
----
-
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/app/(app)/warehouse/page.tsx` — lista prodotti con filtri e alert sottoscorta
-- `src/app/(app)/warehouse/new/page.tsx` — aggiungi prodotto
-- `src/app/(app)/warehouse/[id]/page.tsx` — dettaglio prodotto + storico movimenti
+- `src/app/(app)/warehouse/page.tsx` — lista prodotti
+- `src/app/(app)/warehouse/new/page.tsx`
+- `src/app/(app)/warehouse/[id]/page.tsx` — scheda prodotto + storico
 - `src/app/(app)/warehouse/[id]/edit/page.tsx`
-- `src/app/(app)/warehouse/load/page.tsx` — carico merce (ricevimento fornitore)
+- `src/app/(app)/warehouse/load/page.tsx` — carico merce
 - `src/components/warehouse/ProductForm.tsx`
-- `src/components/warehouse/StockMovementList.tsx`
-- `src/components/warehouse/LowStockAlert.tsx` — banner alert sottoscorta
-- `src/components/warehouse/StockBadge.tsx` — badge rosso/giallo/verde giacenza
-- `src/app/api/warehouse/movement/route.ts` — registra movimento
-- `src/app/api/warehouse/alerts/route.ts` — lista prodotti in sottoscorta
+- `src/components/warehouse/StockBadge.tsx` — verde/giallo/rosso in base a soglia
+- `src/components/warehouse/MovementList.tsx`
+- `src/components/warehouse/LowStockBanner.tsx`
+- `src/app/api/warehouse/movement/route.ts`
 
 ### Modificati
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — sezione "Prodotti usati" con scarico cabina
-- `src/components/layout/Sidebar.tsx` — voce "Magazzino"
-- `src/app/(app)/stats/page.tsx` — sezione prodotti più venduti
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — sezione prodotti usati in cabina + venduti (lv 2+)
+- `src/components/layout/Sidebar.tsx` — voce Magazzino condizionale
+- `src/app/(app)/stats/page.tsx` — sezione prodotti più venduti (lv 3+)
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 10.1 — CRUD Prodotti
+- Form: nome, brand, barcode, categoria (select custom), fornitore, prezzo acquisto, prezzo vendita, giacenza iniziale, soglia minima, unità
+- Lista: badge colorato giacenza, filtri per categoria/fornitore/"solo sottoscorta"
 
-### Step 8.1 — CRUD Prodotti
-- Form: nome, brand, barcode, categoria (select + add custom), fornitore, prezzo acquisto, prezzo vendita, giacenza iniziale, giacenza minima, unità misura
-- Lista con: immagine placeholder, nome, brand, giacenza con badge colore (verde ≥ min, giallo ≤ min*2, rosso ≤ min), prezzo
-- Filtri: categoria, fornitore, "Solo sottoscorta"
+### Step 10.2 — Carico Merce
+- `/warehouse/load`: seleziona prodotti → inserisci quantità + prezzo acquisto → salva
+- Aggiorna `stock_qty += qty`, aggiorna `avg_buy_price`, crea `stock_movements` tipo `load`
 
-### Step 8.2 — Carico Merce
-- Pagina `/warehouse/load`:
-  - Seleziona prodotti + quantità ricevuta + prezzo acquisto (aggiorna avg_buy_price)
-  - Campo opzionale: numero fattura fornitore
-  - Al salvataggio: crea movimento `type = 'load'` per ogni prodotto, aggiorna `stock_qty`
+### Step 10.3 — Scarico
+- **Vendita al cliente**: nel checkout appuntamento → sezione "Prodotti venduti" → aggiunge al totale scontrino
+- **Uso in cabina**: stessa UI, tipo `cabin_use`, non aumenta il totale scontrino
 
-### Step 8.3 — Scarico
-- **Vendita** (checkout appuntamento o vendita diretta):
-  - Sezione "Prodotti venduti" nella schermata chiusura: aggiunge righe prodotto + quantità
-  - Genera movimento `type = 'sale'`
-  - Aggiunge importo al totale scontrino
-- **Uso in cabina** (prodotti consumati durante il trattamento):
-  - Sezione "Prodotti usati in trattamento": stessa UI ma movimento `type = 'use_cabin'`
-  - Non aggiunge costo allo scontrino cliente
+### Step 10.4 — Alert Sottoscorta
+- Banner giallo in cima alla pagina magazzino se `stock_qty <= min_stock` per qualche prodotto
+- Notifica push alla riapertura dell'app (una volta al giorno al massimo)
 
-### Step 8.4 — Alert Sottoscorta
-- Banner giallo/rosso in cima alla pagina magazzino se ci sono prodotti in sottoscorta
-- Notifica push all'apertura dell'app se ci sono nuovi alert
-- Lista "Da Ordinare" con quantità suggerita (es. doppio del `min_stock`)
-
-### Step 8.5 — Dettaglio Prodotto
-- Scheda prodotto con: info generali, grafico giacenza nel tempo, storico movimenti
-- Confronto prezzi acquisto: `last_buy_price` vs `buy_price` → variazione %
-- Chi ha usato/venduto il prodotto (filtro per staff)
-
----
+### Step 10.5 — Scheda Prodotto
+- Storico movimenti con: data, tipo, quantità, chi l'ha fatto, prezzo
+- Confronto prezzi acquisto: `last_buy_price` vs `buy_price`
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Caricare 10 pz prodotto | `stock_qty = 10`, movimento `load` creato |
-| Scaricare 3 pz come vendita | `stock_qty = 7`, movimento `sale` |
-| Scaricare 2 pz in cabina | `stock_qty = 5`, movimento `use_cabin` |
-| Impostare `min_stock = 6` | Alert sottoscorta visibile con qty = 5 |
-| Secondo carico a prezzo diverso | `avg_buy_price` aggiornato correttamente |
+| Lv 1: magazzino nascosto | Voce non compare in sidebar |
+| Caricare 10 pz | `stock_qty = 10`, movimento `load` creato |
+| Scarico vendita 3 pz | `stock_qty = 7`, aggiunto al totale scontrino |
+| Soglia minima = 8 | Alert sottoscorta visibile con qty 7 |
 
 ---
 
 ---
 
-# FASE 9 — Agenda Settimanale + Drag & Drop + Lista d'Attesa
+# FASE 11 — Scontrino Digitale PDF
 
 ## Idea
-Potenziare la visualizzazione dell'agenda con: vista settimanale a colonne (una per operatore), spostamento appuntamenti via drag & drop, vista "cartacea" stampabile, lista d'attesa con notifica automatica quando si libera uno slot.
-
----
-
-## Dipendenze
-- Fase 1 (Staff) — obbligatoria per vista a colonne operatori
-- `@hello-pangea/dnd` per drag & drop (fork mantenuto di react-beautiful-dnd)
-
----
-
-## Struttura Dati — Firestore
-
-### Collection: `waitlist`
-```
-{
-  id: string,
-  client_id: string,
-  service_id: string,
-  staff_id: string | null,             // operatore preferito (null = qualsiasi)
-  preferred_date: string | null,       // data preferita (null = prima disponibile)
-  preferred_time_from: string | null,  // "09:00"
-  preferred_time_to: string | null,    // "12:00"
-  status: 'waiting' | 'notified' | 'booked' | 'cancelled',
-  notified_at: string | null,
-  notification_channel: 'whatsapp' | 'sms' | 'push',
-  note: string | null,
-  created_at: string
-}
-```
-
----
-
-## File da Creare / Modificare
-
-### Nuovi
-- `src/components/agenda/WeeklyCalendar.tsx` — griglia settimanale con time slots
-- `src/components/agenda/DayColumn.tsx` — colonna singola giornata/operatore
-- `src/components/agenda/TimeSlot.tsx` — slot orario con drop target
-- `src/components/agenda/DraggableAppointmentCard.tsx` — card draggabile
-- `src/components/agenda/CurrentTimeIndicator.tsx` — linea rossa orario corrente
-- `src/app/(app)/appointments/print/page.tsx` — vista stampa ottimizzata
-- `src/app/(app)/waitlist/page.tsx` — gestione lista d'attesa
-- `src/components/waitlist/WaitlistForm.tsx`
-- `src/app/api/waitlist/notify/route.ts` — notifica cliente in lista d'attesa
-- `src/app/api/cron/waitlist/route.ts` — cron che controlla slot liberi
-
-### Modificati
-- `src/app/(app)/dashboard/page.tsx` — aggiungere toggle Giorno / Settimana / Lista
-- `src/app/(app)/appointments/page.tsx` — integra vista settimanale
-
----
-
-## Step di Sviluppo Dettagliati
-
-### Step 9.1 — Toggle Viste
-- Header con 3 bottoni: "Giorno" | "Settimana" | "Lista"
-- Vista Lista: elenco appuntamenti futuro ordinato per data + ora (tabella)
-- Stato della vista persistito in localStorage
-
-### Step 9.2 — Vista Settimanale
-- Griglia: asse X = 7 giorni settimana, asse Y = slot orari (es. 08:00–20:00, step 15 min)
-- Se staff attivi > 1: colonne duplicate per operatore (es. 3 staff × 7 giorni = 21 colonne, oppure una settimana per operatore con tab)
-- Ogni appuntamento: box colorato che occupa gli slot corrispondenti alla durata
-- Navigazione settimana: frecce prev/next, bottone "Oggi"
-- Linea rossa orario corrente (solo giorno corrente visibile)
-
-### Step 9.3 — Drag & Drop
-- Installare: `npm install @hello-pangea/dnd`
-- Ogni card appuntamento è un `Draggable`
-- Ogni slot orario è un `Droppable`
-- Al drop: calcolare nuovo `start_time` e `end_time` dallo slot di destinazione
-- Modale conferma: "Sposta appuntamento di Mario Rossi a Martedì 14:00?"
-- Se confermato: aggiorna Firestore, aggiorna UI ottimisticamente
-
-### Step 9.4 — Vista Stampa
-- Pagina `/appointments/print?date=YYYY-MM-DD`:
-  - CSS `@media print`: nasconde nav/sidebar, mostra solo agenda
-  - Layout a colonne (una per operatore) o lista se un solo operatore
-  - Header con data e nome centro
-  - Bottone "Stampa" nella UI normale che apre questa pagina
-
-### Step 9.5 — Lista d'Attesa
-- Pagina `/waitlist`: lista richieste con stato (in attesa / notificato / prenotato)
-- Form: cerca cliente → seleziona servizio → data preferita (opzionale) → fascia oraria preferita → operatore preferito → canale notifica
-- Cron ogni ora: per ogni richiesta `status = 'waiting'`, controlla se esiste uno slot libero compatibile:
-  - Se trovato: invia WhatsApp/SMS/Push con il link di prenotazione → aggiorna `status = 'notified'`
-- Dashboard: badge con numero richieste in attesa
-
----
-
-## Test
-
-| Scenario | Verifica |
-|---|---|
-| Passare a vista settimanale | Tutti gli appuntamenti della settimana visibili |
-| Trascinare appuntamento di 2 ore | Occupa 2 slot, salvato su Firestore con nuovi orari |
-| Drop su slot già occupato | Impedito (feedback visivo rosso) |
-| Aprire vista stampa | Layout pulito senza elementi UI, stampabile |
-| Cancellare appuntamento con cliente in lista d'attesa | Notifica automatica inviata |
-
----
-
----
-
-# FASE 10 — Scontrino Digitale PDF
-
-## Idea
-Generare documento PDF con riepilogo servizi e prodotti al termine di ogni appuntamento. Invio automatico via WhatsApp al cliente. Storico scontrini consultabile. Annullamento con nota di credito. Integrazione opzionale con Agenzia delle Entrate (trasmissione telematica corrispettivi).
-
----
-
-## Dipendenze
-- `@react-pdf/renderer` — generazione PDF lato server
-- Firebase Storage — archiviazione PDF
-- Fase 5 (SumUp) — metodo di pagamento da includere nello scontrino
-- Fase 8 (Magazzino) — prodotti venduti da includere nello scontrino
-
----
+Disponibile a tutti i livelli. Una singola estetista ha bisogno dello scontrino tanto quanto un centro grande. PDF generato, inviato via WhatsApp, archiviato.
 
 ## Struttura Dati — Firestore
 
 ### Collection: `receipts`
-```
+```typescript
 {
   id: string,
-  receipt_number: string,              // progressivo "2026-0042"
+  receipt_number: string,              // "2026-0001" (progressivo annuale)
   appointment_id: string | null,
   client_id: string | null,
   client_name: string,                 // snapshot
-  client_fiscal_code: string | null,
-  items: [
-    {
-      type: 'service' | 'product' | 'package' | 'discount',
-      description: string,
-      qty: number,
-      unit_price: number,
-      total: number,
-      vat_pct: number                  // es. 22
-    }
-  ],
+  items: Array<{
+    type: 'service' | 'product' | 'package' | 'discount' | 'loyalty',
+    description: string,
+    qty: number,
+    unit_price: number,
+    total: number,
+    vat_pct: number
+  }>,
   subtotal: number,
   discount_total: number,
   vat_total: number,
   total: number,
-  payment_method: 'cash' | 'card' | 'sumup' | 'prepaid_card' | 'gift_card' | 'package' | 'mixed',
-  payment_details: Record<string, number>,  // es. { cash: 30, sumup: 50 }
-  sumup_transaction_id: string | null,
-  pdf_url: string | null,              // link Firebase Storage
-  sent_via: string[],                  // ['whatsapp', 'sms']
+  payment_breakdown: Record<string, number>,  // { cash: 30, sumup: 50 }
+  pdf_url: string | null,
+  sent_via: string[],
   sent_at: string | null,
   status: 'issued' | 'cancelled',
-  cancellation_reason: string | null,
   cancelled_at: string | null,
-  credit_note_id: string | null,       // se annullato, riferimento alla nota di credito
-  ade_transmitted: boolean,            // trasmesso Agenzia delle Entrate
-  ade_transmitted_at: string | null,
+  cancellation_reason: string | null,
+  credit_note_id: string | null,
   created_at: string
 }
 ```
 
----
+### Dati Fiscali in `settings/main`
+```typescript
+fiscal_name: string,                   // "Maria Rossi" o "Centro Bellezza Srl"
+fiscal_vat: string,                    // P.IVA o C.F.
+fiscal_address: string,
+fiscal_city: string,
+fiscal_zip: string,
+logo_url: string | null,
+default_vat_pct: number,              // 22
+receipt_counter: number,              // progressivo scontrini (incrementato ad ogni emissione)
+```
 
 ## File da Creare / Modificare
 
 ### Nuovi
-- `src/lib/pdf/receipt-template.tsx` — template React PDF per scontrino
-- `src/lib/pdf/generate-receipt.ts` — funzione: genera PDF, carica su Firebase Storage, restituisce URL
-- `src/app/api/receipts/create/route.ts` — crea scontrino (genera PDF + salva su Firestore)
-- `src/app/api/receipts/send/route.ts` — invia PDF via WhatsApp/SMS
-- `src/app/api/receipts/cancel/route.ts` — annulla scontrino e genera nota di credito
-- `src/app/(app)/receipts/page.tsx` — storico scontrini
-- `src/app/(app)/receipts/[id]/page.tsx` — dettaglio scontrino con download PDF
-- `src/components/receipts/ReceiptPreview.tsx` — anteprima scontrino prima dell'invio
-- `src/components/receipts/ReceiptList.tsx`
+- `src/lib/pdf/ReceiptDocument.tsx` — template PDF con react-pdf/renderer
+- `src/lib/pdf/generateReceiptPDF.ts` — genera buffer PDF + upload Firebase Storage
+- `src/app/api/receipts/create/route.ts`
+- `src/app/api/receipts/send/route.ts`
+- `src/app/api/receipts/cancel/route.ts`
+- `src/app/(app)/receipts/page.tsx`
+- `src/app/(app)/receipts/[id]/page.tsx`
+- `src/components/receipts/ReceiptPreview.tsx`
+- `src/components/receipts/ReceiptStatusBadge.tsx`
 
 ### Modificati
-- `src/app/(app)/appointments/[id]/edit/page.tsx` — bottone "Emetti Scontrino" nella sezione pagamento
-- `src/app/(app)/settings/page.tsx` — dati fiscali centro (partita IVA, indirizzo, nome azienda) per il PDF
+- `src/app/(app)/settings/page.tsx` — sezione "Dati Fiscali"
+- `src/app/(app)/appointments/[id]/edit/page.tsx` — bottone "Emetti Scontrino"
+- `package.json` — `@react-pdf/renderer`
 
----
+## Step di Sviluppo
 
-## Step di Sviluppo Dettagliati
+### Step 11.1 — Dati Fiscali in Settings
+- Sezione "Dati per lo Scontrino": ragione sociale, P.IVA, indirizzo completo, upload logo, aliquota IVA default
 
-### Step 10.1 — Settings Fiscali
-- In pagina settings: sezione "Dati Fiscali":
-  - Ragione sociale / Nome centro
-  - Partita IVA / Codice Fiscale
-  - Indirizzo completo
-  - Logo (upload immagine)
-  - Aliquota IVA default (es. 22%)
+### Step 11.2 — Template PDF
+Layout A5 o A6, verticale:
+```
+┌─────────────────────────────┐
+│  [LOGO]   Centro Bellezza   │
+│           Via Roma 1, FR    │
+│           P.IVA 01234567890 │
+├─────────────────────────────┤
+│  N. 2026-0001  20/06/2026   │
+│  Cliente: Maria Rossi       │
+├─────────────────────────────┤
+│  Trattamento viso  1  60€   │
+│  Siero vitamina C  1  25€   │
+│  Sconto fedeltà        -5€  │
+├─────────────────────────────┤
+│  IVA 22%           17,60€   │
+│  TOTALE            80,00€   │
+├─────────────────────────────┤
+│  Pagamento: Carta SumUp     │
+│  Grazie per la visita!      │
+└─────────────────────────────┘
+```
 
-### Step 10.2 — Template PDF
-- `src/lib/pdf/receipt-template.tsx` con `@react-pdf/renderer`:
-  ```
-  ┌─────────────────────────────┐
-  │  [LOGO]   Nome Centro       │
-  │  Via Roma 1 — Frosinone     │
-  │  P.IVA 01234567890          │
-  ├─────────────────────────────┤
-  │  SCONTRINO N. 2026-0042     │
-  │  Data: 20/06/2026           │
-  │  Cliente: Maria Rossi       │
-  ├─────────────────────────────┤
-  │  Servizio        1  50,00€  │
-  │  Prodotto        2  18,00€  │
-  │  Sconto 10%          -6,80€ │
-  ├─────────────────────────────┤
-  │  IVA 22%            11,19€  │
-  │  TOTALE             61,20€  │
-  ├─────────────────────────────┤
-  │  Pagamento: Carta SumUp     │
-  └─────────────────────────────┘
-  ```
+### Step 11.3 — Generazione e Storage
+1. `renderToBuffer(<ReceiptDocument />)` con `@react-pdf/renderer`
+2. Upload su Firebase Storage: `receipts/2026/2026-0001.pdf`
+3. Generate URL firmato (validità 30 giorni — rinnovabile)
+4. Salva URL in `receipts.pdf_url`
+5. Incrementa `settings.receipt_counter`
 
-### Step 10.3 — Generazione e Archiviazione
-- `lib/pdf/generate-receipt.ts`:
-  1. Renderizza template con dati reali
-  2. Converte in Buffer PDF
-  3. Carica su Firebase Storage: `receipts/2026/06/2026-0042.pdf`
-  4. Genera URL pubblico firmato (30 giorni)
-  5. Salva URL su `receipts.pdf_url`
+### Step 11.4 — Invio WhatsApp
+- Twilio: messagio + media URL (il PDF su Storage)
+- Template: "Ciao {{nome}}, ecco il tuo scontrino per la visita di oggi. 💅"
+- Aggiorna `receipts.sent_via` e `receipts.sent_at`
 
-### Step 10.4 — Invio WhatsApp
-- `POST /api/receipts/send`:
-  - Usa Twilio: invia messaggio WhatsApp con testo + allegato PDF URL
-  - Template: "Ciao {{nome}}, ecco il tuo scontrino per il trattamento di oggi. [link PDF]"
-  - Aggiorna `receipt.sent_via` e `sent_at`
+### Step 11.5 — Storico
+- Lista con: numero, data, cliente, totale, stato, metodi pagamento
+- Filtri: periodo, stato, cliente
+- Totale e IVA del periodo (utile per la liquidazione mensile)
+- Download PDF per ogni riga
 
-### Step 10.5 — Storico Scontrini
-- Pagina `/receipts`:
-  - Lista scontrini con: numero, data, cliente, totale, stato (emesso/annullato), metodo pagamento
-  - Filtri: per periodo, per cliente, per stato
-  - Totale periodo (somma)
-  - Bottone download PDF per ognuno
-  - Totale IVA per periodo (utile per dichiarazione)
-
-### Step 10.6 — Annullamento
-- Bottone "Annulla Scontrino" → modale con motivo obbligatorio
-- Genera nuova `receipt` con `type = 'credit_note'` importo negativo (nota di credito)
-- Collega i due documenti tramite `credit_note_id`
-
-### Step 10.7 — ADE (Opzionale, Avanzato)
-- Integrazione con provider di trasmissione telematica (es. Fatture in Cloud, Fiscozen)
-- API call dopo ogni emissione scontrino → trasmette corrispettivo a ADE
-- Campo `ade_transmitted` aggiornato a `true` al successo
-- Badge "✓ Trasmesso ADE" nello storico
-
----
+### Step 11.6 — Annullamento
+- Bottone "Annulla" → modal con motivo obbligatorio
+- Genera nota di credito (nuovo receipt con importi negativi)
+- Link tra i due documenti
 
 ## Test
 
 | Scenario | Verifica |
 |---|---|
-| Completare appuntamento con 2 servizi + 1 prodotto | PDF generato con righe corrette |
-| Apertura PDF | Layout corrisponde al template, logo visibile |
-| Invio WhatsApp | Cliente riceve messaggio con link PDF funzionante |
-| Annullare scontrino | Nota di credito generata, scontrino mostra "Annullato" |
-| Export storico CSV | File con tutti i campi, importi corretti |
+| Emettere scontrino per appuntamento 80€ | PDF generato con dati corretti |
+| PDF aperto | Logo, dati centro, righe, totali, metodo pagamento visibili |
+| Invio WhatsApp | Cliente riceve link PDF funzionante |
+| Annullo + motivo | Nota di credito creata, originale mostra "Annullato" |
+| Storico: filtro mese | Solo scontrini del mese selezionato |
+
+---
+
+---
+
+# FASE 12 — Multi-sede (solo Livello 4)
+
+## Idea
+Per chi ha più punti vendita. Dashboard centralizzata per il titolare. Ogni sede ha il suo staff, la sua agenda, i suoi clienti. I clienti possono prenotare in qualsiasi sede.
+
+## Struttura Dati — Firestore
+
+### Collection: `sites`
+```typescript
+{
+  id: string,
+  name: string,
+  address: string,
+  city: string,
+  phone: string,
+  active: boolean,
+  manager_staff_id: string | null,
+  color: string,
+  created_at: string
+}
+```
+
+### Modifica a tutti i documenti principali
+Aggiungere `site_id: string` su: `appointments`, `staff`, `clients` (clienti condivisi tra sedi ma con visite per sede), `receipts`, `payments`
+
+## Comportamento
+- Titolare (lv 4): vede tutto in dashboard centralizzata + può filtrare per sede
+- Manager sede: vede solo la sua sede
+- Clienti: condivisi globalmente (lo stesso cliente può visitare più sedi)
+- Report: aggregati globali + breakdown per sede
+
+## File da Creare
+- `src/app/(app)/sites/page.tsx` — lista sedi
+- `src/app/(app)/sites/new/page.tsx`
+- `src/app/(app)/sites/[id]/page.tsx` — dashboard singola sede
+- `src/components/sites/SiteSelector.tsx` — dropdown selezione sede attiva (nella topbar)
+- `src/hooks/useActiveSite.ts` — sede attiva dell'utente corrente
 
 ---
 
@@ -1357,71 +1672,100 @@ Generare documento PDF con riepilogo servizi e prodotti al termine di ogni appun
 # Dipendenze tra Fasi
 
 ```
-FASE 1 (Staff)
-    └──> FASE 2 (CRM) — scheda cliente mostra staff preferito
-    └──> FASE 7 (Stats) — performance per operatore
-    └──> FASE 9 (Agenda) — colonne per operatore
+FASE 1 (Onboarding + Business Level)
+    └──> TUTTE le altre fasi dipendono da questa
 
-FASE 2 (CRM)
-    └──> FASE 4 (Fidelity) — punti fedeltà nella scheda
-    └──> FASE 6 (Marketing) — segmentazione su dati CRM
-    └──> FASE 7 (Stats) — lista inattivi, top clienti
+FASE 2 (Agenda Avanzata)
+    └──> FASE 3 (Staff) per colonne operatori
 
-FASE 3 (Pacchetti/Card)
-    └──> FASE 5 (SumUp) — pagamento pacchetti con carta
-    └──> FASE 10 (Scontrino) — scontrino per vendita pacchetto
+FASE 3 (Staff)
+    └──> FASE 9 (Stats) per performance operatori
+    └──> FASE 2 (Agenda) per colonne
 
-FASE 4 (Fidelity)
-    └──> FASE 6 (Marketing) — filtro "clienti con X punti"
+FASE 4 (CRM)
+    └──> FASE 6 (Fidelity) per punti nella scheda
+    └──> FASE 8 (Marketing) per segmentazione
+    └──> FASE 9 (Stats) per inattivi e top clienti
 
-FASE 5 (SumUp)
-    └──> FASE 7 (Stats) — ricavi da SumUp nel report
-    └──> FASE 10 (Scontrino) — metodo pagamento sullo scontrino
+FASE 5 (Pacchetti)
+    └──> FASE 7 (SumUp) per pagamento pacchetti
+    └──> FASE 11 (Scontrino) per scontrino vendita
 
-FASE 6 (Marketing)
-    └──> dipende da FASE 2 (dati CRM per segmentazione)
+FASE 6 (Fidelity)
+    └──> FASE 8 (Marketing) per filtro punti nelle campagne
 
-FASE 7 (Stats)
-    └──> dipende da FASE 1, 2, 5, 8
+FASE 7 (SumUp)
+    └──> FASE 9 (Stats) per ricavi da pagamenti carta
+    └──> FASE 11 (Scontrino) per metodo pagamento
 
-FASE 8 (Magazzino)
-    └──> FASE 7 (Stats) — prodotti più venduti
-    └──> FASE 10 (Scontrino) — righe prodotti nello scontrino
+FASE 8 (Marketing)
+    └──> dipende da FASE 4 (CRM) per dati segmentazione
 
-FASE 9 (Agenda)
-    └──> dipende da FASE 1 (Staff per colonne)
+FASE 9 (Stats)
+    └──> dipende da FASE 3, 4, 7, 10
 
-FASE 10 (Scontrino)
-    └──> dipende da FASE 5 (SumUp) e FASE 8 (Magazzino)
+FASE 10 (Magazzino)
+    └──> FASE 9 (Stats) per prodotti venduti
+    └──> FASE 11 (Scontrino) per righe prodotti
+
+FASE 11 (Scontrino)
+    └──> dipende da FASE 7 (SumUp) e FASE 10 (Magazzino)
+
+FASE 12 (Multi-sede)
+    └──> dipende da tutto: è l'ultimo livello
 ```
 
 ---
 
-# Ordine di Implementazione Consigliato
+# Ordine Implementazione Consigliato
 
 ```
-1 → 2 → 5 → 3 → 4 → 6 → 7 → 9 → 8 → 10
+FASE 1  → Onboarding & Business Level         (sblocca tutto)
+FASE 2  → Agenda avanzata + DnD               (cuore dell'app)
+FASE 4  → CRM avanzato                        (base per marketing e stats)
+FASE 7  → SumUp pagamenti                     (revenue feature immediata)
+FASE 5  → Pacchetti + Card + Gift Card        (revenue feature)
+FASE 6  → Fidelity punti                      (retention)
+FASE 3  → Staff (se lv >= 2)                  (scala quando serve)
+FASE 8  → Marketing automation                (scala con CRM)
+FASE 9  → Statistiche avanzate                (scala con dati)
+FASE 10 → Magazzino (se lv >= 2)              (scala quando serve)
+FASE 11 → Scontrino digitale PDF              (fiscale)
+FASE 12 → Multi-sede (se lv = 4)             (enterprise)
 ```
-
-Questo ordine rispetta le dipendenze, porta valore incrementale ad ogni fase e permette di usare le funzionalità produttive (pagamenti, pacchetti) prima di quelle puramente analitiche.
 
 ---
 
 # Riepilogo Globale
 
-| Fase | Funzionalità | Priorità | Stima |
-|---|---|---|---|
-| 1 | Gestione Staff | 🔴 Alta | 3–4 gg |
-| 2 | CRM Avanzato | 🔴 Alta | 3–4 gg |
-| 3 | Pacchetti + Card + Gift Card | 🔴 Alta | 5–6 gg |
-| 4 | Fidelity / Punti | 🟡 Media | 2–3 gg |
-| 5 | SumUp Pagamenti | 🔴 Alta | 2–3 gg |
-| 6 | Marketing Automation | 🟡 Media | 4–5 gg |
-| 7 | Statistiche & Report | 🟡 Media | 4–5 gg |
-| 8 | Magazzino | 🟢 Bassa | 3–4 gg |
-| 9 | Agenda Settimanale + DnD | 🟡 Media | 4–5 gg |
-| 10 | Scontrino Digitale PDF | 🟢 Bassa | 3–4 gg |
-| **TOT** | | | **33–47 gg** |
+| Fase | Funzionalità | Per Chi | Priorità | Stima |
+|---|---|---|---|---|
+| 1 | Onboarding + Business Level | Tutti | 🔴 Alta | 2–3 gg |
+| 2 | Agenda Avanzata + DnD | Tutti | 🔴 Alta | 3–4 gg |
+| 3 | Gestione Staff | Lv 2+ | 🟡 Media | 3–4 gg |
+| 4 | CRM Avanzato | Tutti | 🔴 Alta | 3–4 gg |
+| 5 | Pacchetti + Card + Gift Card | Tutti | 🔴 Alta | 5–6 gg |
+| 6 | Fidelity Punti | Tutti | 🟡 Media | 2–3 gg |
+| 7 | SumUp Pagamenti | Tutti | 🔴 Alta | 2–3 gg |
+| 8 | Marketing Automation | Tutti (scala) | 🟡 Media | 4–5 gg |
+| 9 | Statistiche & Report | Tutti (scala) | 🟡 Media | 4–5 gg |
+| 10 | Magazzino Prodotti | Lv 2+ opz, Lv 3+ | 🟢 Bassa | 3–4 gg |
+| 11 | Scontrino Digitale PDF | Tutti | 🟢 Bassa | 3–4 gg |
+| 12 | Multi-sede | Lv 4 | 🟢 Bassa | 5–7 gg |
+| **TOT** | | | | **39–52 gg** |
+
+---
+
+## Regola d'Oro per lo Sviluppo
+
+> **Se una funzionalità è nascosta per il livello attuale,
+> non deve esistere nell'interfaccia — nessun bottone grigio,
+> nessun "funzionalità disponibile nel piano Pro",
+> nessuna sezione vuota. Semplicemente non c'è.**
+
+L'utente non deve mai sentire che sta usando una versione limitata.
+Quando la sua esigenza cresce, fa l'upgrade in settings e le nuove funzionalità appaiono
+come se fossero sempre state lì — senza migrazioni, senza reinstallazioni, senza frizioni.
 
 ---
 
