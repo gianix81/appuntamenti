@@ -8,8 +8,10 @@ import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations } from '@/types/database'
 import { AppointmentStatusBadge, ConfirmationStatusBadge } from '@/components/ui/StatusBadge'
-import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2 } from 'lucide-react'
+import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2, CalendarPlus, Check } from 'lucide-react'
 import { clsx } from 'clsx'
+import { getAlarmSettings } from '@/lib/alarmDB'
+import { generateICS, downloadICS } from '@/lib/icsGenerator'
 
 interface Props {
   appointment: AppointmentWithRelations
@@ -29,6 +31,8 @@ function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
 export function AppointmentCard({ appointment, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
+  const [calAdded, setCalAdded]           = useState(false)
+  const [calLoading, setCalLoading]       = useState(false)
 
   const isPending = appointment.confirmation_status === 'pending'
   const start     = new Date(appointment.start_time)
@@ -42,6 +46,40 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
     } catch {
       setDeleting(false)
       setConfirmDelete(false)
+    }
+  }
+
+  async function handleAddToCalendar() {
+    setCalLoading(true)
+    try {
+      const settings = await getAlarmSettings()
+      const offsets  = settings?.offsets_minutes ?? [120, 30]
+
+      const ics = generateICS(
+        {
+          id:           appointment.id,
+          start_time:   appointment.start_time,
+          end_time:     appointment.end_time,
+          client_name:  `${appointment.clients.first_name} ${appointment.clients.last_name}`,
+          client_phone: appointment.clients.phone,
+          service_name: appointment.services.name,
+          notes:        appointment.notes,
+        },
+        { offsets_minutes: offsets },
+      )
+
+      downloadICS(
+        ics,
+        `${appointment.clients.first_name} ${appointment.clients.last_name}`,
+        start,
+      )
+
+      setCalAdded(true)
+      setTimeout(() => setCalAdded(false), 4000)
+    } catch {
+      alert('Errore generazione calendario.')
+    } finally {
+      setCalLoading(false)
     }
   }
 
@@ -103,7 +141,7 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
             <p className="text-xs text-slate-400 mt-2 italic truncate">{appointment.notes}</p>
           )}
 
-          <div className="flex items-center justify-between mt-3 gap-2">
+          <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
             <a
               href={`tel:${appointment.clients.phone}`}
               className="flex items-center gap-1 text-blue-600 text-xs font-medium hover:underline"
@@ -112,17 +150,38 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
               {appointment.clients.phone}
             </a>
 
-            {appointment.status !== 'cancelled' && (
-              <a
-                href={buildWhatsAppUrl(appointment)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-full font-medium transition-colors"
-              >
-                <MessageCircle className="w-3 h-3" />
-                WhatsApp
-              </a>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Aggiungi al calendario nativo — sveglie offline */}
+              {appointment.status !== 'cancelled' && (
+                <button
+                  onClick={handleAddToCalendar}
+                  disabled={calLoading}
+                  title="Aggiungi sveglie al calendario del telefono"
+                  className={clsx(
+                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
+                    calAdded
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700',
+                  )}
+                >
+                  {calAdded
+                    ? <><Check className="w-3 h-3" /> Aggiunto!</>
+                    : <><CalendarPlus className="w-3 h-3" /> Calendario</>}
+                </button>
+              )}
+
+              {appointment.status !== 'cancelled' && (
+                <a
+                  href={buildWhatsAppUrl(appointment)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-full font-medium transition-colors"
+                >
+                  <MessageCircle className="w-3 h-3" />
+                  WhatsApp
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>
