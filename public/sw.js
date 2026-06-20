@@ -1,4 +1,4 @@
-const CACHE_NAME = 'appuntamenti-v4'
+const CACHE_NAME = 'appuntamenti-v5'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', event => {
@@ -95,8 +95,29 @@ self.addEventListener('notificationclick', event => {
 
 // Notifica chiusa dall'utente → togli il badge
 self.addEventListener('notificationclose', () => {
-  // Il numero badge viene gestito dalla pagina; qui proviamo a pulirlo
   if ('clearAppBadge' in self.navigator) {
     self.navigator.clearAppBadge().catch(() => {})
+  }
+})
+
+// ── Periodic Background Sync ─────────────────────────────────────────────────
+// Si sveglia ogni minuto anche con app CHIUSA (Chrome/Android PWA installata)
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'remind') {
+    event.waitUntil(
+      fetch('/api/cron/reminders', { cache: 'no-store', credentials: 'include' })
+        .catch(() => {})
+    )
+  }
+})
+
+// ── Background Sync ───────────────────────────────────────────────────────────
+// Si attiva quando il dispositivo torna online
+self.addEventListener('sync', event => {
+  if (event.tag === 'remind') {
+    event.waitUntil(
+      fetch('/api/cron/reminders', { cache: 'no-store', credentials: 'include' })
+        .catch(() => {})
+    )
   }
 })

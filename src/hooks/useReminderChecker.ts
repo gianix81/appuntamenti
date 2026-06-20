@@ -265,7 +265,44 @@ export function useReminderChecker() {
   const nowFiredRef     = useRef<Set<string>>(new Set())
   const loadedRef       = useRef(false)
 
-  // Carica impostazioni + appuntamenti di oggi via getDocs (affidabile come dashboard)
+  // ── Logica allarme estratta (usata sia dal tick che da loadData) ─────────
+  const runAlarmCheck = useCallback(() => {
+    if (!loadedRef.current) return
+    const now = new Date()
+
+    for (const apt of todayAptsRef.current) {
+      if (apt.status === 'cancelled') continue
+      const msUntil = new Date(apt.start_time).getTime() - now.getTime()
+
+      for (const slot of notificationSlotsRef.current) {
+        const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
+        const reminderMs = slot.interval * 60_000
+        if (!alarmFiredRef.current.has(alarmKey)) {
+          if (wasSlotNotified(apt.id, slot.interval, slot.type)) {
+            alarmFiredRef.current.add(alarmKey)
+          } else if (msUntil > 0 && msUntil <= reminderMs) {
+            alarmFiredRef.current.add(alarmKey)
+            markSlotNotified(apt.id, slot.interval, slot.type)
+            fireAlarm(apt, slot.interval, centerNameRef.current, false, slot.type)
+              .catch(err => console.error('[Reminder] fireAlarm:', err))
+          }
+        }
+      }
+
+      if (!nowFiredRef.current.has(apt.id)) {
+        if (wasNowNotified(apt.id)) {
+          nowFiredRef.current.add(apt.id)
+        } else if (msUntil <= 0 && msUntil > -30_000) {
+          nowFiredRef.current.add(apt.id)
+          markNowNotified(apt.id)
+          fireAlarm(apt, 0, centerNameRef.current, true, 'reminder')
+            .catch(err => console.error('[Reminder] fireAlarm now:', err))
+        }
+      }
+    }
+  }, [])
+
+  // Carica impostazioni + appuntamenti di oggi
   const loadData = useCallback(async () => {
     const authed = await waitForAuthReady()
     if (!authed) return
@@ -288,8 +325,10 @@ export function useReminderChecker() {
       ))
       todayAptsRef.current = snap.docs.map(d => ({ id: d.id, ...d.data() } as AptRow))
       loadedRef.current = true
+      // Controlla subito dopo il caricamento, senza aspettare il prossimo tick
+      runAlarmCheck()
     } catch (err) { console.error('[Reminder] caricamento appuntamenti:', err) }
-  }, [])
+  }, [runAlarmCheck])
 
   // Carica subito + ricarica ogni 5 minuti
   useEffect(() => {
@@ -300,50 +339,9 @@ export function useReminderChecker() {
 
   // ── SVEGLIA: un tick ogni secondo ────────────────────────────
   useEffect(() => {
-    const tick = setInterval(() => {
-      if (!loadedRef.current) return
-
-
-      const now = new Date()
-
-      for (const apt of todayAptsRef.current) {
-        if (apt.status === 'cancelled') continue
-
-        const msUntil = new Date(apt.start_time).getTime() - now.getTime()
-
-        // Allarme per ogni slot configurato (tempo + tipo)
-        for (const slot of notificationSlotsRef.current) {
-          const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
-          const reminderMs = slot.interval * 60_000
-
-          if (!alarmFiredRef.current.has(alarmKey)) {
-            if (wasSlotNotified(apt.id, slot.interval, slot.type)) {
-              alarmFiredRef.current.add(alarmKey)
-            } else if (msUntil > 0 && msUntil <= reminderMs) {
-              alarmFiredRef.current.add(alarmKey)
-              markSlotNotified(apt.id, slot.interval, slot.type)
-              fireAlarm(apt, slot.interval, centerNameRef.current, false, slot.type)
-                .catch(err => console.error('[Reminder] fireAlarm:', err))
-            }
-          }
-        }
-
-        // Allarme ADESSO (entro 30 secondi dopo l'orario)
-        if (!nowFiredRef.current.has(apt.id)) {
-          if (wasNowNotified(apt.id)) {
-            nowFiredRef.current.add(apt.id)
-          } else if (msUntil <= 0 && msUntil > -30_000) {
-            nowFiredRef.current.add(apt.id)
-            markNowNotified(apt.id)
-            fireAlarm(apt, 0, centerNameRef.current, true, 'reminder')
-              .catch(err => console.error('[Reminder] fireAlarm now:', err))
-          }
-        }
-      }
-    }, 1000)
-
+    const tick = setInterval(runAlarmCheck, 1000)
     return () => clearInterval(tick)
-  }, [])
+  }, [runAlarmCheck])
 
   // Azzera badge quando l'app torna in primo piano
   useEffect(() => {

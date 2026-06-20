@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [expandedCard, setExpandedCard]   = useState<string | null>(null)
   const [diagInfo, setDiagInfo]           = useState<string | null>(null)
   const [diagRunning, setDiagRunning]     = useState(false)
+  const [testPushSent, setTestPushSent]   = useState(false)
 
   const REMINDER_OPTIONS = [
     { value: 15,   label: '15 minuti prima' },
@@ -150,8 +151,7 @@ export default function SettingsPage() {
     }
   }
 
-  async function runDiagnostics() {
-    setDiagRunning(true)
+  async function runDiagnostics() {    setDiagRunning(true)
     const lines: string[] = []
     try {
       // 1. Notification API
@@ -184,11 +184,40 @@ export default function SettingsPage() {
       // 5. Slot configurati
       const slotCount = form.notification_slots.length
       lines.push(`Slot notifiche: ${slotCount > 0 ? `✅ ${slotCount} configurati` : '❌ nessuno — aggiungine in "Notifiche programmate"'}`)
+      // 6. Periodic Background Sync
+      if ('serviceWorker' in navigator) {
+        const reg2 = await navigator.serviceWorker.ready.catch(() => null)
+        if (reg2 && 'periodicSync' in reg2) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const tags = await (reg2 as any).periodicSync.getTags().catch(() => [])
+          lines.push(`Background Sync: ${tags.includes('remind') ? '✅ remind registrato' : '⚠️ non registrato (riattiva notifiche)'}`)
+        } else {
+          lines.push(`Background Sync: ⚠️ non supportato (solo Chrome/Android con PWA installata)`)
+        }
+      }
     } catch (err) {
       lines.push(`Errore: ${err}`)
     }
     setDiagInfo(lines.join('\n'))
     setDiagRunning(false)
+  }
+
+  async function handleTestServerPush() {
+    setTestPushSent(false)
+    try {
+      const res = await fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🔔 Test notifica server',
+          body: 'Funziona! Ricevi questo anche con l\'app chiusa ✓',
+          url: '/dashboard',
+        }),
+      })
+      if (res.ok) setTestPushSent(true)
+      else alert('Errore invio: ' + await res.text())
+    } catch (err) { alert('Errore: ' + err) }
+    setTimeout(() => setTestPushSent(false), 4000)
   }
 
   if (loading) return (
@@ -488,6 +517,14 @@ export default function SettingsPage() {
                   {diagInfo}
                 </div>
               )}
+
+              {/* Test push dal server */}
+              <button
+                onClick={handleTestServerPush}
+                className={`w-full flex items-center justify-center gap-2 text-sm font-medium py-2.5 rounded-xl transition-colors ${testPushSent ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-purple-50 hover:bg-purple-100 text-purple-700'}`}
+              >
+                {testPushSent ? '✓ Push inviata! Controlla le notifiche' : '📡 Test push dal server (app chiusa)'}
+              </button>
             </div>
           </div>
         ) : (

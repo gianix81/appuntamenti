@@ -38,6 +38,23 @@ async function doSubscribe(): Promise<PushSubscription | null> {
     body: JSON.stringify(sub.toJSON()),
   }).catch(() => {})
 
+  // Registra Periodic Background Sync (Chrome/Android PWA installata)
+  try {
+    if ('periodicSync' in reg) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (reg as any).periodicSync.register('remind', { minInterval: 60_000 })
+      console.log('[Push] Periodic Background Sync registrato')
+    }
+  } catch (e) { console.log('[Push] periodicSync non supportato:', e) }
+
+  // Registra Background Sync (si attiva al reconnect)
+  try {
+    if ('sync' in reg) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (reg as any).sync.register('remind')
+    }
+  } catch { /* non supportato */ }
+
   return sub
 }
 
