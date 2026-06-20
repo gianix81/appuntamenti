@@ -17,20 +17,24 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react'
 import Link from 'next/link'
 
-function waitForAuth(): Promise<boolean> {
-  // Se Firebase ha già ripristinato l'utente, risponde subito
-  if (auth.currentUser) return Promise.resolve(true)
-  // Altrimenti aspetta fino a 8 secondi (su mobile Firebase è più lento)
-  return new Promise(resolve => {
-    let done = false
-    const unsub = onAuthStateChanged(auth, user => {
-      if (done) return
-      done = true; unsub(); resolve(!!user)
+async function waitForAuth(): Promise<boolean> {
+  try {
+    // authStateReady() attende che Firebase ripristini la sessione da IndexedDB
+    // Disponibile da Firebase 10.1+ — molto più affidabile su mobile
+    await (auth as typeof auth & { authStateReady(): Promise<void> }).authStateReady()
+    return !!auth.currentUser
+  } catch {
+    // Fallback per ambienti senza authStateReady
+    if (auth.currentUser) return true
+    return new Promise(resolve => {
+      let done = false
+      const unsub = onAuthStateChanged(auth, user => {
+        if (done) return
+        done = true; unsub(); resolve(!!user)
+      })
+      setTimeout(() => { if (!done) { done = true; unsub(); resolve(false) } }, 12000)
     })
-    setTimeout(() => {
-      if (!done) { done = true; unsub(); resolve(false) }
-    }, 8000)
-  })
+  }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -165,7 +169,7 @@ export default function DashboardPage() {
     setError(null)
     try {
       const authed = await waitForAuth()
-      if (!authed) { window.location.href = '/login'; return }
+      if (!authed) { setError('Sessione scaduta. Effettua nuovamente il login.'); return }
       await auth.currentUser?.getIdToken()
       const [list, settingsSnap] = await Promise.all([
         fetchDayAppointments(date),
