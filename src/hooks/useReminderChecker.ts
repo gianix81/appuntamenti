@@ -5,6 +5,7 @@ import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firesto
 import { startOfDay, endOfDay } from 'date-fns'
 import { auth, db } from '@/lib/firebase/client'
 import { onAuthStateChanged } from 'firebase/auth'
+import { buildSmsUrl } from '@/lib/sms'
 
 // ── localStorage ──────────────────────────────────────────────
 const KEY_NOW      = (id: string) => `now_v2_${id}`
@@ -122,6 +123,7 @@ export async function triggerAlarm(
   const firstName = clientName.split(' ')[0]
   const msg = `Buongiorno ${firstName}, la ricordiamo del suo appuntamento per ${serviceName} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
   const whatsappUrl = phone ? buildWhatsAppUrl(phone, msg) : undefined
+  const smsUrl      = phone ? buildSmsUrl(phone, msg) : undefined
 
   const title   = isNow ? `⚡ Appuntamento ADESSO!` : `⏰ Appuntamento tra ${mins} min`
   const body    = isNow ? `${clientName} — ${serviceName} · ore ${time}` : `${clientName} — ${serviceName} alle ${time}`
@@ -130,23 +132,13 @@ export async function triggerAlarm(
 
   // 1. Popup in-app + suono IMMEDIATAMENTE (nessun await)
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms: false },
+    detail: { appointmentId: aptId, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, smsUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)
 
   // 2. Push SW (fire-and-forget)
   showSwNotification(title, body, tag, whatsappUrl, vibrate)
-
-  // 3. SMS automatico (fire-and-forget)
-  if (!isNow && mins > 0) {
-    fetch('/api/reminders/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ appointmentId: aptId, type: slotType, intervalMinutes: mins }),
-    }).catch(() => {})
-  }
 }
 
 // ── Lancia allarme per un singolo appuntamento ────────────────
@@ -167,6 +159,7 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
   const phone       = client.phone as string | undefined
   const msg         = `Buongiorno ${String(client.first_name)}, la ricordiamo del suo appuntamento per ${serviceName} alle ${time}.${centerName ? ` Cordiali saluti, ${centerName}.` : ''}`
   const whatsappUrl = phone ? buildWhatsAppUrl(phone, msg) : undefined
+  const smsUrl      = phone ? buildSmsUrl(phone, msg) : undefined
 
   const title   = isNow ? `⚡ Appuntamento ADESSO!` : `⏰ Appuntamento tra ${mins} min`
   const body    = isNow ? `${clientName} — ${serviceName} · ore ${time}` : `${clientName} — ${serviceName} alle ${time}`
@@ -177,23 +170,13 @@ async function fireAlarm(apt: AptRow, mins: number, centerName: string, isNow = 
 
   // 1. Popup in-app + suono IMMEDIATAMENTE
   window.dispatchEvent(new CustomEvent('appointment-reminder', {
-    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, autoSentSms: false },
+    detail: { appointmentId: apt.id, clientName, serviceName, time, reminderMinutes: mins, intervalMinutes: mins, slotType, whatsappUrl, smsUrl },
   }))
   playAlarm(isNow)
   setAppBadge(1)
 
   // 2. Push SW (fire-and-forget)
   showSwNotification(title, body, tag, whatsappUrl, vibrate)
-
-  // 3. SMS automatico (fire-and-forget)
-  if (!isNow && mins > 0) {
-    fetch('/api/reminders/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ appointmentId: apt.id, type: slotType, intervalMinutes: mins }),
-    }).catch(() => {})
-  }
 }
 
 // ── Check on-demand per "Verifica ora" ────────────────────────
