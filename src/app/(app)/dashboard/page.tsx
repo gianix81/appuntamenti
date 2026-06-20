@@ -10,9 +10,8 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
-import {
-  triggerAlarm, wasSlotNotified, markSlotNotified, wasNowNotified, markNowNotified,
-} from '@/hooks/useReminderChecker'
+import { wasSlotNotified, markSlotNotified, wasNowNotified, markNowNotified } from '@/hooks/useReminderChecker'
+import { buildSmsUrl, buildSmsBody } from '@/lib/sms'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, Bell, BellOff } from 'lucide-react'
@@ -88,6 +87,20 @@ export default function DashboardPage() {
   // Refs per deduplicazione allarmi (questa sessione)
   const alarmFiredRef    = useRef<Set<string>>(new Set())
   const nowAlarmFiredRef = useRef<Set<string>>(new Set())
+
+  // Allarmi attivi mostrati inline nella pagina
+  type ActiveAlarm = {
+    key: string
+    clientName: string
+    serviceName: string
+    time: string
+    phone: string
+    isNow: boolean
+    slotType: 'confirmation' | 'reminder'
+    intervalMinutes: number
+  }
+  const [activeAlarms, setActiveAlarms] = useState<ActiveAlarm[]>([])
+  function dismissAlarm(key: string) { setActiveAlarms(p => p.filter(a => a.key !== key)) }
 
   // Orologio live
   const [now, setNow] = useState(new Date())
@@ -166,8 +179,9 @@ export default function DashboardPage() {
     for (const apt of appointments) {
       if (apt.status === 'cancelled') continue
       const msUntil = new Date(apt.start_time).getTime() - now.getTime()
+      const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+      const clientName = `${apt.clients.first_name} ${apt.clients.last_name}`
 
-      // Allarme per ogni slot configurato (tempo + tipo)
       for (const slot of notificationSlots) {
         const alarmKey   = `${apt.id}_${slot.interval}_${slot.type}`
         const reminderMs = slot.interval * 60_000
@@ -178,39 +192,29 @@ export default function DashboardPage() {
           } else if (msUntil > 0 && msUntil <= reminderMs) {
             alarmFiredRef.current.add(alarmKey)
             markSlotNotified(apt.id, slot.interval, slot.type)
-            triggerAlarm(
-              apt.id,
-              `${apt.clients.first_name} ${apt.clients.last_name}`,
-              apt.services.name,
-              apt.start_time,
-              apt.clients.phone,
-              centerName,
-              false,
-              slot.interval,
-              slot.type,
-            ).catch(console.error)
+            setActiveAlarms(p => p.some(a => a.key === alarmKey) ? p : [...p, {
+              key: alarmKey, clientName, serviceName: apt.services.name,
+              time, phone: apt.clients.phone ?? '',
+              isNow: false, slotType: slot.type, intervalMinutes: slot.interval,
+            }])
+            playBeep(false)
           }
         }
       }
 
-      // Allarme ADESSO (all'orario esatto, finestra 30 sec)
       if (!nowAlarmFiredRef.current.has(apt.id)) {
         if (wasNowNotified(apt.id)) {
           nowAlarmFiredRef.current.add(apt.id)
         } else if (msUntil <= 0 && msUntil > -30_000) {
           nowAlarmFiredRef.current.add(apt.id)
           markNowNotified(apt.id)
-          triggerAlarm(
-            apt.id,
-            `${apt.clients.first_name} ${apt.clients.last_name}`,
-            apt.services.name,
-            apt.start_time,
-            apt.clients.phone,
-            centerName,
-            true,
-            0,
-            'reminder',
-          ).catch(console.error)
+          const key = `${apt.id}_now`
+          setActiveAlarms(p => p.some(a => a.key === key) ? p : [...p, {
+            key, clientName, serviceName: apt.services.name,
+            time, phone: apt.clients.phone ?? '',
+            isNow: true, slotType: 'reminder', intervalMinutes: 0,
+          }])
+          playBeep(true)
         }
       }
     }
@@ -225,33 +229,34 @@ export default function DashboardPage() {
     }
   }
 
+  function playBeep(intense: boolean) {
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      const ctx = new AC()
+      const bip = (t: number, f = 880, dur = 0.4) => {
+        const o = ctx.createOscillator(); const g = ctx.createGain()
+        o.connect(g); g.connect(ctx.destination)
+        o.type = 'square'; o.frequency.value = f
+        g.gain.setValueAtTime(0.8, ctx.currentTime + t)
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur)
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + dur + 0.05)
+      }
+      if (intense) { bip(0, 1046); bip(0.5, 880); bip(1.0, 1046); bip(1.5, 1318) }
+      else { bip(0); bip(0.5); bip(1.0) }
+    } catch { /* audio bloccato */ }
+  }
+
   function testAlarm() {
     const apt = appointments[0]
     if (!apt) { alert('Nessun appuntamento oggi per testare'); return }
     const time = new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
-    window.dispatchEvent(new CustomEvent('appointment-reminder', {
-      detail: {
-        appointmentId: apt.id + '_test',
-        clientName: `${apt.clients.first_name} ${apt.clients.last_name}`,
-        serviceName: apt.services.name,
-        time,
-        reminderMinutes: 60,
-        intervalMinutes: 60,
-        slotType: 'reminder' as const,
-        whatsappUrl: apt.clients.phone ? `https://wa.me/${apt.clients.phone.replace(/[^\d]/g, '')}?text=TEST` : undefined,
-        smsUrl: apt.clients.phone ? `sms:${apt.clients.phone}?body=TEST` : undefined,
-      },
-    }))
-    try {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-      const ctx = new AC()
-      const o = ctx.createOscillator(); const g = ctx.createGain()
-      o.connect(g); g.connect(ctx.destination)
-      o.type = 'square'; o.frequency.value = 880
-      g.gain.setValueAtTime(0.7, ctx.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
-      o.start(); o.stop(ctx.currentTime + 0.5)
-    } catch { /* audio bloccato */ }
+    const key = apt.id + '_test_' + Date.now()
+    setActiveAlarms(p => [...p, {
+      key, clientName: `${apt.clients.first_name} ${apt.clients.last_name}`,
+      serviceName: apt.services.name, time, phone: apt.clients.phone ?? '',
+      isNow: false, slotType: 'reminder', intervalMinutes: 60,
+    }])
+    playBeep(false)
   }
 
   const cells = getMonthCells(calMonth)
@@ -301,6 +306,47 @@ export default function DashboardPage() {
 
       {/* ── Orologio ── */}
       <div className="bg-blue-950 rounded-2xl px-6 py-5 flex items-center justify-center gap-1 select-none">
+
+      {/* ── ALLARMI ATTIVI ── mostrati direttamente inline, senza eventi ── */}
+      {activeAlarms.map(alarm => {
+        const smsBody = buildSmsBody(alarm.slotType, {
+          firstName: alarm.clientName.split(' ')[0],
+          lastName: alarm.clientName.split(' ').slice(1).join(' '),
+          serviceName: alarm.serviceName,
+          startTime: (() => { const d = new Date(); const [h, m] = alarm.time.split(':'); d.setHours(+h, +m, 0); return d.toISOString() })(),
+          centerName,
+          intervalMinutes: alarm.intervalMinutes,
+        })
+        const smsUrl = alarm.phone ? buildSmsUrl(alarm.phone, smsBody) : null
+        const waUrl  = alarm.phone ? `https://wa.me/${alarm.phone.replace(/\D/g, '')}?text=${encodeURIComponent(smsBody)}` : null
+        return (
+          <div key={alarm.key} className={`fixed inset-x-0 top-0 z-[9999] p-3 ${alarm.isNow ? 'bg-red-600' : 'bg-blue-700'}`}>
+            <div className="max-w-lg mx-auto">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-white font-bold text-sm">
+                  {alarm.isNow ? '⚡ ADESSO!' : `⏰ Tra ${alarm.intervalMinutes} min`}
+                  {' — '}{alarm.clientName} · {alarm.serviceName} alle {alarm.time}
+                </p>
+                <button onClick={() => dismissAlarm(alarm.key)} className="text-white/70 hover:text-white text-xl leading-none shrink-0">✕</button>
+              </div>
+              <div className="flex gap-2">
+                {waUrl && (
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 text-center bg-[#25D366] text-white text-xs font-bold py-2 rounded-lg">
+                    💬 WhatsApp
+                  </a>
+                )}
+                {smsUrl && (
+                  <a href={smsUrl}
+                    className={`flex-1 text-center text-white text-xs font-bold py-2 rounded-lg ${alarm.slotType === 'confirmation' ? 'bg-sky-400' : 'bg-amber-400'}`}>
+                    📱 {alarm.slotType === 'confirmation' ? 'SMS Conferma' : 'SMS Promemoria'}
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
         <span className="text-5xl font-bold text-white tabular-nums tracking-tight">
           {format(now, 'HH')}
         </span>
