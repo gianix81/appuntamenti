@@ -79,6 +79,9 @@ export interface Appointment {
   confirmed_at: string | null
   cancelled_at: string | null
   notes: string | null
+  google_calendar_event_id?: string | null
+  google_calendar_html_link?: string | null
+  google_calendar_synced_at?: string | null
   created_at: string
   updated_at: string
 }
@@ -127,6 +130,14 @@ export interface Settings {
   // ── Calendario ICS ────────────────────────────────────────────
   calendar_token?: string
   alarm_offsets_minutes?: number[]
+  google_calendar?: {
+    access_token?: string
+    refresh_token?: string
+    expires_at?: string
+    calendar_id?: string
+    scope?: string
+    connected_at?: string
+  }
   // ── Timestamps ────────────────────────────────────────────────
   created_at: string
   updated_at?: string

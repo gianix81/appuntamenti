@@ -41,6 +41,15 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   async function handleDelete() {
     setDeleting(true)
     try {
+      const syncRes = await fetch('/api/google-calendar/sync', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ appointmentId: appointment.id, action: 'delete' }),
+      })
+      if (!syncRes.ok && syncRes.status !== 409) {
+        const body = await syncRes.json().catch(() => ({}))
+        throw new Error(body.error ?? 'Sincronizzazione Google Calendar non riuscita')
+      }
       await deleteDoc(doc(db, 'appointments', appointment.id))
       onDelete?.(appointment.id)
     } catch {

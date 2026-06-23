@@ -26,9 +26,15 @@ export default function SettingsPage() {
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
+  const [googleSyncing, setGoogleSyncing] = useState(false)
   const [notifPerm, setNotifPerm] = useState<NotificationPermission | 'unsupported'>('default')
   const [calToken, setCalToken]   = useState<string | null>(null)
   const [copied, setCopied]       = useState(false)
+  const [googleStatus, setGoogleStatus] = useState<{
+    configured: boolean
+    connected: boolean
+    connectedAt?: string | null
+  } | null>(null)
 
   const [form, setForm] = useState({ center_name: '', phone_number: '', address: '', city: '' })
   const [businessLevel, setBusinessLevel] = useState<BusinessLevel>(1)
@@ -54,13 +60,19 @@ export default function SettingsPage() {
           if (d.calendar_token)        setCalToken(d.calendar_token)
         }
         if (idbSettings?.offsets_minutes?.length) setAlarmOffsets(idbSettings.offsets_minutes)
+        fetch('/api/google-calendar/status')
+          .then(res => res.json())
+          .then(setGoogleStatus)
+          .catch(() => setGoogleStatus(null))
       } catch { /* ignore */ }
       setLoading(false)
     }
     load()
 
-    if ('Notification' in window) setNotifPerm(Notification.permission)
-    else setNotifPerm('unsupported')
+    queueMicrotask(() => {
+      if ('Notification' in window) setNotifPerm(Notification.permission)
+      else setNotifPerm('unsupported')
+    })
   }, [])
 
   function set(field: string, value: string) {
@@ -101,6 +113,42 @@ export default function SettingsPage() {
     await navigator.clipboard.writeText(feedUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
+  }
+
+  function handleConnectGoogleCalendar() {
+    window.location.href = '/api/google-calendar/connect'
+  }
+
+  async function handleSyncGoogleCalendar() {
+    setGoogleSyncing(true)
+    try {
+      const res = await fetch('/api/google-calendar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Sincronizzazione non riuscita')
+      alert(`Google Calendar sincronizzato: ${body.results?.length ?? 0} appuntamenti controllati.`)
+    } catch (err) {
+      alert(`Errore Google Calendar: ${err}`)
+    } finally {
+      setGoogleSyncing(false)
+    }
+  }
+
+  async function handleDisconnectGoogleCalendar() {
+    if (!confirm('Scollegare Google Calendar? Gli eventi già creati su Google non verranno eliminati.')) return
+    setGoogleSyncing(true)
+    try {
+      const res = await fetch('/api/google-calendar/disconnect', { method: 'POST' })
+      if (!res.ok) throw new Error('Disconnessione non riuscita')
+      setGoogleStatus(prev => prev ? { ...prev, connected: false, connectedAt: null } : prev)
+    } catch (err) {
+      alert(`Errore Google Calendar: ${err}`)
+    } finally {
+      setGoogleSyncing(false)
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -173,20 +221,66 @@ export default function SettingsPage() {
         <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-slate-700">Calendario automatico</h2>
+            <h2 className="text-sm font-semibold text-slate-700">Google Calendar</h2>
           </div>
           <p className="text-xs text-slate-500">
-            Iscriviti una sola volta: tutti gli appuntamenti futuri si sincronizzano
-            automaticamente nel calendario del telefono con le sveglie già impostate.
-            Funziona anche senza internet, anche a telefono spento.
+            Collega Google Calendar: ogni appuntamento creato, modificato o annullato viene
+            scritto direttamente nel calendario Google.
           </p>
+          {googleStatus?.configured === false && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+              Configura GOOGLE_CALENDAR_CLIENT_ID e GOOGLE_CALENDAR_CLIENT_SECRET sul server.
+            </p>
+          )}
+          {googleStatus?.connected && (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Google Calendar collegato
+              {googleStatus.connectedAt ? ` dal ${new Date(googleStatus.connectedAt).toLocaleDateString('it-IT')}` : ''}
+            </p>
+          )}
+          {!googleStatus?.connected ? (
+            <button
+              type="button"
+              onClick={handleConnectGoogleCalendar}
+              disabled={googleStatus?.configured === false}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+            >
+              <Calendar className="w-4 h-4" />
+              Collega Google Calendar
+            </button>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleSyncGoogleCalendar}
+                disabled={googleSyncing}
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+              >
+                <Calendar className="w-4 h-4" />
+                {googleSyncing ? 'Sincronizzo…' : 'Sincronizza ora'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDisconnectGoogleCalendar}
+                disabled={googleSyncing}
+                className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-60 text-slate-600 text-sm font-medium py-3 rounded-xl transition-colors"
+              >
+                Scollega
+              </button>
+            </div>
+          )}
+          <div className="border-t border-slate-100 pt-4 space-y-3">
+            <p className="text-xs text-slate-400">
+              Link ICS di emergenza, utile solo per calendari che non supportano il collegamento Google diretto.
+            </p>
           <button
             type="button"
             onClick={handleSubscribeCalendar}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-medium py-2.5 rounded-xl transition-colors"
           >
             <Calendar className="w-4 h-4" />
-            Iscriviti al calendario
+              Apri feed ICS
           </button>
           <button
             type="button"
@@ -196,10 +290,7 @@ export default function SettingsPage() {
             <Copy className="w-3.5 h-3.5" />
             {copied ? 'Link copiato!' : 'Copia link (per Google Calendar)'}
           </button>
-          <p className="text-xs text-slate-400">
-            Su iPhone apri direttamente il link qui sopra. Su Android copia il link
-            e incollalo in Google Calendar → Altre agende → Da URL.
-          </p>
+          </div>
         </div>
 
         {/* ── Sveglie ────────────────────────────────────────────────── */}

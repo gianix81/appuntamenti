@@ -33,12 +33,14 @@ export function AppointmentForm({ existing }: Props) {
 
   // Set start_time on client only — avoids hydration mismatch
   useEffect(() => {
-    setForm(prev => ({
-      ...prev,
-      start_time: existing
-        ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
-        : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-    }))
+    queueMicrotask(() => {
+      setForm(prev => ({
+        ...prev,
+        start_time: existing
+          ? format(parseISO(existing.start_time), "yyyy-MM-dd'T'HH:mm")
+          : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      }))
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -74,6 +76,20 @@ export function AppointmentForm({ existing }: Props) {
   function getEndTime() {
     if (!selectedService || !form.start_time) return new Date(form.start_time).toISOString()
     return addMinutes(new Date(form.start_time), selectedService.duration_minutes).toISOString()
+  }
+
+  async function syncGoogleCalendar(appointmentId: string) {
+    const res = await fetch('/api/google-calendar/sync', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ appointmentId }),
+    })
+
+    if (res.status === 409) return
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.error ?? 'Sincronizzazione Google Calendar non riuscita')
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -126,6 +142,8 @@ export function AppointmentForm({ existing }: Props) {
       } else if (payload.status === 'cancelled') {
         cancelAlarms(appointmentId).catch(() => {})
       }
+
+      await syncGoogleCalendar(appointmentId)
 
       router.push('/dashboard')
       router.refresh()
