@@ -35,6 +35,7 @@ export default function SettingsPage() {
     connected: boolean
     connectedAt?: string | null
   } | null>(null)
+  const [whatsAppStatus, setWhatsAppStatus] = useState<{ configured: boolean } | null>(null)
 
   const [form, setForm] = useState({ center_name: '', phone_number: '', address: '', city: '' })
   const [businessLevel, setBusinessLevel] = useState<BusinessLevel>(1)
@@ -64,6 +65,10 @@ export default function SettingsPage() {
           .then(res => res.json())
           .then(setGoogleStatus)
           .catch(() => setGoogleStatus(null))
+        fetch('/api/whatsapp/status')
+          .then(res => res.json())
+          .then(setWhatsAppStatus)
+          .catch(() => setWhatsAppStatus(null))
       } catch { /* ignore */ }
       setLoading(false)
     }
@@ -291,6 +296,27 @@ export default function SettingsPage() {
             {copied ? 'Link copiato!' : 'Copia link (per Google Calendar)'}
           </button>
           </div>
+        </div>
+
+        {/* ── WhatsApp ───────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-green-600" />
+            <h2 className="text-sm font-semibold text-slate-700">WhatsApp</h2>
+          </div>
+          {whatsAppStatus?.configured ? (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Invio WhatsApp collegato
+            </p>
+          ) : (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+              Configura GIGAWA_USER_ID e GIGAWA_SESSION_ID sul server.
+            </p>
+          )}
+          <p className="text-xs text-slate-500">
+            Il pulsante WhatsApp negli appuntamenti invia un messaggio reale tramite Gigawa.
+          </p>
         </div>
 
         {/* ── Sveglie ────────────────────────────────────────────────── */}

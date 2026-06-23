@@ -33,6 +33,8 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   const [deleting, setDeleting]           = useState(false)
   const [calAdded, setCalAdded]           = useState(false)
   const [calLoading, setCalLoading]       = useState(false)
+  const [whatsAppSent, setWhatsAppSent]   = useState(false)
+  const [whatsAppLoading, setWhatsAppLoading] = useState(false)
 
   const isPending = appointment.confirmation_status === 'pending'
   const start     = new Date(appointment.start_time)
@@ -89,6 +91,27 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       alert('Errore generazione calendario.')
     } finally {
       setCalLoading(false)
+    }
+  }
+
+  async function handleSendWhatsApp() {
+    setWhatsAppLoading(true)
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ appointmentId: appointment.id, kind: 'confirmation' }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Invio WhatsApp non riuscito')
+
+      setWhatsAppSent(true)
+      setTimeout(() => setWhatsAppSent(false), 4000)
+    } catch (err) {
+      alert(`WhatsApp: ${err}`)
+      window.open(buildWhatsAppUrl(appointment), '_blank', 'noopener,noreferrer')
+    } finally {
+      setWhatsAppLoading(false)
     }
   }
 
@@ -189,15 +212,21 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
               )}
 
               {appointment.status !== 'cancelled' && (
-                <a
-                  href={buildWhatsAppUrl(appointment)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-full font-medium transition-colors"
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  disabled={whatsAppLoading}
+                  className={clsx(
+                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
+                    whatsAppSent
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-60',
+                  )}
                 >
-                  <MessageCircle className="w-3 h-3" />
-                  WhatsApp
-                </a>
+                  {whatsAppSent
+                    ? <><Check className="w-3 h-3" /> Inviato</>
+                    : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? 'Invio…' : 'WhatsApp'}</>}
+                </button>
               )}
             </div>
           </div>
