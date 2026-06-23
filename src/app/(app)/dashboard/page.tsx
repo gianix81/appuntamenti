@@ -9,7 +9,7 @@ import { it } from 'date-fns/locale'
 import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase/client'
-import type { AppointmentWithRelations, Client, Service } from '@/types/database'
+import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -33,7 +33,10 @@ async function waitForAuth(): Promise<boolean> {
   }
 }
 
-async function fetchDayAppointments(date: Date): Promise<AppointmentWithRelations[]> {
+async function fetchDayAppointments(
+  date: Date,
+  staffMap: Record<string, Staff & { id: string }>,
+): Promise<AppointmentWithRelations[]> {
   const snap = await getDocs(query(
     collection(db, 'appointments'),
     where('start_time', '>=', startOfDay(date).toISOString()),
@@ -41,7 +44,7 @@ async function fetchDayAppointments(date: Date): Promise<AppointmentWithRelation
     orderBy('start_time'),
   ))
 
-  const apts   = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string })[]
+  const apts   = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string; staff_id?: string | null })[]
   const active = apts.filter(a => a.status !== 'cancelled')
 
   const clientIds  = [...new Set(active.map(a => a.client_id))]
@@ -55,7 +58,12 @@ async function fetchDayAppointments(date: Date): Promise<AppointmentWithRelation
   const clientMap  = Object.fromEntries(cSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
   const serviceMap = Object.fromEntries(sSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
 
-  return active.map(a => ({ ...a, clients: clientMap[a.client_id], services: serviceMap[a.service_id] }))
+  return active.map(a => ({
+    ...a,
+    clients:  clientMap[a.client_id],
+    services: serviceMap[a.service_id],
+    staff:    a.staff_id ? (staffMap[a.staff_id] ?? null) : null,
+  }))
 }
 
 function getMonthCells(month: Date): (Date | null)[] {
@@ -77,6 +85,7 @@ export default function DashboardPage() {
   const [date, setDate]         = useState(new Date())
   const [calMonth, setCalMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
+  const [staffMap, setStaffMap] = useState<Record<string, Staff & { id: string }>>({})
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState<string | null>(null)
   const [stats, setStats]       = useState({ total: 0, pending: 0, confirmed: 0 })
@@ -111,6 +120,18 @@ export default function DashboardPage() {
 
   useEffect(() => { loadMonthDates(calMonth) }, [calMonth, loadMonthDates])
 
+  // Carica staff una volta al mount
+  useEffect(() => {
+    getDocs(query(collection(db, 'staff'), orderBy('name')))
+      .then(snap => {
+        const map: Record<string, Staff & { id: string }> = {}
+        snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() } as Staff & { id: string } })
+        setStaffMap(map)
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -118,7 +139,7 @@ export default function DashboardPage() {
       const authed = await waitForAuth()
       if (!authed) { router.replace('/login'); return }
       await auth.currentUser?.getIdToken()
-      const list = await fetchDayAppointments(date)
+      const list = await fetchDayAppointments(date, staffMap)
       setAppointments(list)
       setStats({
         total:     list.length,
@@ -130,7 +151,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
-  }, [date, router])
+  }, [date, router, staffMap])
 
   useEffect(() => { load() }, [load])
 
@@ -163,15 +184,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Orologio */}
-      <div className="bg-blue-950 rounded-2xl px-6 py-5 flex items-center justify-center gap-1 select-none">
-        <span suppressHydrationWarning className="text-5xl font-bold text-white tabular-nums tracking-tight">
+      <div className="bg-blue-950 rounded-2xl px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-center gap-1 select-none">
+        <span suppressHydrationWarning className="text-4xl sm:text-5xl font-bold text-white tabular-nums tracking-tight">
           {now ? format(now, 'HH') : '--'}
         </span>
-        <span className="text-4xl font-light text-blue-400 pb-0.5">:</span>
-        <span suppressHydrationWarning className="text-5xl font-bold text-white tabular-nums tracking-tight">
+        <span className="text-3xl sm:text-4xl font-light text-blue-400 pb-0.5">:</span>
+        <span suppressHydrationWarning className="text-4xl sm:text-5xl font-bold text-white tabular-nums tracking-tight">
           {now ? format(now, 'mm') : '--'}
         </span>
-        <span suppressHydrationWarning className="text-2xl font-light text-blue-400 pb-0.5 ml-1">
+        <span suppressHydrationWarning className="text-xl sm:text-2xl font-light text-blue-400 pb-0.5 ml-1">
           :{now ? format(now, 'ss') : '--'}
         </span>
       </div>

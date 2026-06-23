@@ -9,20 +9,35 @@ import {
 import { it } from 'date-fns/locale'
 import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
-import type { AppointmentWithRelations, Client, Service } from '@/types/database'
+import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { clsx } from 'clsx'
+import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+
+type StaffDoc = Staff & { id: string }
 
 export default function AppointmentsPage() {
+  const { hasStaff } = useBusinessLevel()
+
   const [weekStart, setWeekStart]       = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
+  const [staffList, setStaffList]       = useState<StaffDoc[]>([])
+  const [staffFilter, setStaffFilter]   = useState<string | null>(null)  // null = tutte
   const [loading, setLoading]           = useState(true)
 
   const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn: 1 }) })
+
+  // Carica staff una volta
+  useEffect(() => {
+    if (!hasStaff) return
+    getDocs(query(collection(db, 'staff'), orderBy('name')))
+      .then(snap => setStaffList(snap.docs.map(d => ({ id: d.id, ...d.data() }) as StaffDoc)))
+      .catch(() => {})
+  }, [hasStaff])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -35,30 +50,46 @@ export default function AppointmentsPage() {
         orderBy('start_time'),
       ))
 
-      const apts = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string })[]
+      const apts = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string; staff_id?: string | null })[]
+
       const clientIds  = [...new Set(apts.map(a => a.client_id))]
       const serviceIds = [...new Set(apts.map(a => a.service_id))]
+
       const [cSnaps, sSnaps] = await Promise.all([
-        Promise.all(clientIds.map(id => getDoc(doc(db, 'clients', id)))),
+        Promise.all(clientIds.map(id  => getDoc(doc(db, 'clients',  id)))),
         Promise.all(serviceIds.map(id => getDoc(doc(db, 'services', id)))),
       ])
+
       const cMap = Object.fromEntries(cSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
       const sMap = Object.fromEntries(sSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
 
-      setAppointments(apts.map(a => ({ ...a, clients: cMap[a.client_id], services: sMap[a.service_id] })))
+      // Usa staffList già caricata per join locale (evita N+1 reads extra)
+      const stMap = Object.fromEntries(staffList.map(s => [s.id, s]))
+
+      setAppointments(apts.map(a => ({
+        ...a,
+        clients:  cMap[a.client_id],
+        services: sMap[a.service_id],
+        staff:    a.staff_id ? (stMap[a.staff_id] ?? null) : null,
+      })))
     } catch (err) {
       console.error('[Appointments] load:', err)
     } finally {
       setLoading(false)
     }
-  }, [weekStart])
+  }, [weekStart, staffList])
 
   useEffect(() => { load() }, [load])
 
   function prevWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n }) }
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }
 
-  const dayAppointments = appointments.filter(a => isSameDay(new Date(a.start_time), selectedDate))
+  // Filtra appuntamenti per giorno selezionato + filtro staff
+  const dayAppointments = appointments.filter(a => {
+    if (!isSameDay(new Date(a.start_time), selectedDate)) return false
+    if (staffFilter && a.staff_id !== staffFilter) return false
+    return true
+  })
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto w-full">
@@ -72,6 +103,7 @@ export default function AppointmentsPage() {
         </Link>
       </div>
 
+      {/* Navigatore settimanale */}
       <div className="bg-white rounded-2xl border border-slate-100 p-3 mb-4">
         <div className="flex items-center justify-between mb-3">
           <button onClick={prevWeek} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
@@ -86,7 +118,10 @@ export default function AppointmentsPage() {
         </div>
         <div className="grid grid-cols-7 gap-1">
           {days.map(day => {
-            const hasAppts   = appointments.some(a => isSameDay(new Date(a.start_time), day))
+            const hasAppts   = appointments.some(a =>
+              isSameDay(new Date(a.start_time), day) &&
+              (!staffFilter || a.staff_id === staffFilter),
+            )
             const isSelected = isSameDay(day, selectedDate)
             return (
               <button
@@ -94,7 +129,7 @@ export default function AppointmentsPage() {
                 onClick={() => setSelectedDate(day)}
                 className={clsx(
                   'flex flex-col items-center py-2 rounded-xl transition-colors text-xs relative',
-                  isSelected   ? 'bg-blue-600 text-white'
+                  isSelected    ? 'bg-blue-600 text-white'
                   : isToday(day) ? 'bg-blue-50 text-blue-600'
                   : 'hover:bg-slate-50 text-slate-600',
                 )}
@@ -110,9 +145,48 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
+      {/* Filtro staff — solo se hasStaff e ci sono operatrici */}
+      {hasStaff && staffList.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-none">
+          <button
+            onClick={() => setStaffFilter(null)}
+            className={clsx(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
+              staffFilter === null
+                ? 'bg-slate-800 text-white'
+                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300',
+            )}
+          >
+            Tutte
+          </button>
+          {staffList.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setStaffFilter(staffFilter === s.id ? null : s.id)}
+              className={clsx(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
+                staffFilter === s.id
+                  ? 'text-white'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300',
+              )}
+              style={staffFilter === s.id ? { backgroundColor: s.color } : {}}
+            >
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: s.color }}
+              />
+              {s.name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <p className="text-sm font-medium text-slate-500 mb-3 capitalize">
         {isToday(selectedDate) ? 'Oggi' : format(selectedDate, 'EEEE d MMMM', { locale: it })}
         {' — '}{dayAppointments.length} appuntament{dayAppointments.length === 1 ? 'o' : 'i'}
+        {staffFilter && staffList.length > 0 && (
+          <> · {staffList.find(s => s.id === staffFilter)?.name.split(' ')[0]}</>
+        )}
       </p>
 
       {loading ? (

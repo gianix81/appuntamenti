@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-full antialiased bg-slate-50 text-slate-900 font-sans">
+      <body className="min-h-full antialiased bg-slate-50 text-slate-900 font-sans overflow-x-hidden">
         {children}
         <script
           dangerouslySetInnerHTML={{

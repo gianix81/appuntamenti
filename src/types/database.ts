@@ -31,10 +31,43 @@ export interface Service {
   updated_at: string
 }
 
+export interface DaySchedule {
+  start: string  // "09:00"
+  end: string    // "18:00"
+}
+
+export type WeekSchedule = {
+  monday:    DaySchedule | null
+  tuesday:   DaySchedule | null
+  wednesday: DaySchedule | null
+  thursday:  DaySchedule | null
+  friday:    DaySchedule | null
+  saturday:  DaySchedule | null
+  sunday:    DaySchedule | null
+}
+
+export interface Staff {
+  id?: string
+  name: string
+  role: string
+  color: string        // hex color per l'agenda
+  initials: string     // 1-2 chars, es. "MR"
+  phone: string | null
+  email: string | null
+  active: boolean
+  is_owner: boolean
+  commission_pct: number  // 0-100
+  schedule: WeekSchedule
+  days_off: string[]      // ISO dates "YYYY-MM-DD"
+  created_at: string
+  updated_at?: string
+}
+
 export interface Appointment {
   id: string
   client_id: string
   service_id: string
+  staff_id?: string | null   // null = non assegnato
   start_time: string
   end_time: string
   status: AppointmentStatus
@@ -53,6 +86,7 @@ export interface Appointment {
 export interface AppointmentWithRelations extends Appointment {
   clients: Client
   services: Service
+  staff?: Staff | null
 }
 
 export interface MessageLog {
@@ -70,18 +104,30 @@ export interface MessageLog {
   created_at: string
 }
 
+export type BusinessLevel = 1 | 2 | 3 | 4
+
 export interface Settings {
   id?: string
+  // ── Profilo business ──────────────────────────────────────────
+  business_level: BusinessLevel          // 1=Solo, 2=Piccolo salone, 3=Centro, 4=Catena
+  onboarding_completed: boolean
+  specialties: string[]                  // es. ['estetica', 'nails', 'massaggi']
+  // ── Dati centro ───────────────────────────────────────────────
   center_name: string
   phone_number: string | null
   address: string | null
-  // SMS ai clienti
+  city: string | null
+  logo_url: string | null
+  // ── Notifiche ─────────────────────────────────────────────────
   reminder_enabled: boolean
-  notification_slots: NotificationSlot[]  // slot configurati con tempo + tipo
-  reminder_intervals: number[]            // retrocompatibilità
-  reminder_minutes: number                // retrocompatibilità
-  // Template dei 2 tipi di messaggio SMS
+  notification_slots: NotificationSlot[]
+  reminder_intervals: number[]
+  reminder_minutes: number
   notification_messages?: { confirmation?: string; reminder?: string }
+  // ── Calendario ICS ────────────────────────────────────────────
+  calendar_token?: string
+  alarm_offsets_minutes?: number[]
+  // ── Timestamps ────────────────────────────────────────────────
   created_at: string
   updated_at?: string
 }

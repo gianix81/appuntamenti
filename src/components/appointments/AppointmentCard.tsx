@@ -88,9 +88,9 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       'bg-white rounded-2xl border overflow-hidden',
       isPending ? 'border-yellow-200 ring-1 ring-yellow-100' : 'border-slate-100'
     )}>
-      <div className="p-4 flex gap-4">
+      <div className="p-3 sm:p-4 flex gap-3 sm:gap-4">
         {/* Orario */}
-        <div className="flex flex-col items-center justify-center w-14 shrink-0">
+        <div className="flex flex-col items-center justify-center w-12 sm:w-14 shrink-0">
           <span className="text-xl font-bold text-blue-600">{format(start, 'HH:mm')}</span>
           <span className="text-xs text-slate-400">{format(end, 'HH:mm')}</span>
         </div>
@@ -135,13 +135,22 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <AppointmentStatusBadge status={appointment.status} />
             <ConfirmationStatusBadge status={appointment.confirmation_status} />
+            {appointment.staff && (
+              <span
+                className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full text-white"
+                style={{ backgroundColor: appointment.staff.color }}
+              >
+                {appointment.staff.initials}
+                <span className="hidden sm:inline opacity-90">· {appointment.staff.name.split(' ')[0]}</span>
+              </span>
+            )}
           </div>
 
           {appointment.notes && (
             <p className="text-xs text-slate-400 mt-2 italic truncate">{appointment.notes}</p>
           )}
 
-          <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+          <div className="flex items-center justify-between mt-3 gap-2 flex-wrap min-w-0">
             <a
               href={`tel:${appointment.clients.phone}`}
               className="flex items-center gap-1 text-blue-600 text-xs font-medium hover:underline"

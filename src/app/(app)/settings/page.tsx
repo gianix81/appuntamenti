@@ -4,13 +4,22 @@ import { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import { saveAlarmSettings, getAlarmSettings } from '@/lib/alarmDB'
-import { CheckCircle, Bell, Calendar, Copy } from 'lucide-react'
+import { CheckCircle, Bell, Calendar, Copy, Scissors, Users, Building2, Globe } from 'lucide-react'
+import type { BusinessLevel } from '@/types/database'
+import { clsx } from 'clsx'
 
 const ALARM_OPTIONS: { label: string; minutes: number }[] = [
   { label: '24 ore prima',        minutes: 1440 },
   { label: '2 ore prima',         minutes: 120  },
   { label: '30 min prima',        minutes: 30   },
   { label: "All'orario esatto",   minutes: 0    },
+]
+
+const LEVEL_OPTIONS: { value: BusinessLevel; icon: React.ComponentType<{ className?: string }>; title: string; desc: string }[] = [
+  { value: 1, icon: Scissors,  title: 'Da sola',         desc: 'Studio singolo o a domicilio' },
+  { value: 2, icon: Users,     title: 'Piccolo salone',  desc: '2–4 collaboratrici' },
+  { value: 3, icon: Building2, title: 'Centro',          desc: '5+ operatori, struttura organizzata' },
+  { value: 4, icon: Globe,     title: 'Più sedi',        desc: 'Gestione multi-punto vendita' },
 ]
 
 export default function SettingsPage() {
@@ -21,7 +30,8 @@ export default function SettingsPage() {
   const [calToken, setCalToken]   = useState<string | null>(null)
   const [copied, setCopied]       = useState(false)
 
-  const [form, setForm] = useState({ center_name: '', phone_number: '', address: '' })
+  const [form, setForm] = useState({ center_name: '', phone_number: '', address: '', city: '' })
+  const [businessLevel, setBusinessLevel] = useState<BusinessLevel>(1)
   const [alarmOffsets, setAlarmOffsets] = useState<number[]>([1440, 120, 30])
 
   useEffect(() => {
@@ -37,7 +47,9 @@ export default function SettingsPage() {
             center_name:  d.center_name  ?? '',
             phone_number: d.phone_number ?? '',
             address:      d.address      ?? '',
+            city:         d.city         ?? '',
           })
+          if (d.business_level)         setBusinessLevel(d.business_level as BusinessLevel)
           if (d.alarm_offsets_minutes) setAlarmOffsets(d.alarm_offsets_minutes)
           if (d.calendar_token)        setCalToken(d.calendar_token)
         }
@@ -77,40 +89,18 @@ export default function SettingsPage() {
   }
 
   async function handleSubscribeCalendar() {
-    try {
-      const token   = await ensureCalendarToken()
-      const feedUrl = `${window.location.origin}/api/calendar/${token}`
-
-      // Test the feed first — gives a clear error if something's wrong
-      const res = await fetch(feedUrl)
-      if (!res.ok) {
-        const txt = await res.text().catch(() => `HTTP ${res.status}`)
-        alert(`Errore feed calendario (${res.status}): ${txt}`)
-        return
-      }
-
-      // Open webcal:// via anchor click — works in PWA where window.open is blocked
-      const webcalUrl = feedUrl.replace(/^https?:\/\//, 'webcal://')
-      const a = document.createElement('a')
-      a.href  = webcalUrl
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } catch (err) {
-      alert(`Impossibile aprire il calendario: ${err}`)
-    }
+    const token = await ensureCalendarToken()
+    const feedUrl = `${window.location.origin}/api/calendar/${token}`
+    // webcal:// causes the OS to open the calendar subscription dialog
+    window.open(feedUrl.replace(/^https?:\/\//, 'webcal://'), '_blank')
   }
 
   async function handleCopyLink() {
-    try {
-      const token   = await ensureCalendarToken()
-      const feedUrl = `${window.location.origin}/api/calendar/${token}`
-      await navigator.clipboard.writeText(feedUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
-    } catch {
-      alert('Copia non riuscita. Prova dal browser.')
-    }
+    const token  = await ensureCalendarToken()
+    const feedUrl = `${window.location.origin}/api/calendar/${token}`
+    await navigator.clipboard.writeText(feedUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -119,9 +109,11 @@ export default function SettingsPage() {
     try {
       await saveAlarmSettings({ offsets_minutes: alarmOffsets })
       await setDoc(doc(db, 'settings', 'main'), {
+        business_level:        businessLevel,
         center_name:           form.center_name.trim(),
         phone_number:          form.phone_number.trim() || null,
         address:               form.address.trim()      || null,
+        city:                  form.city.trim()         || null,
         alarm_offsets_minutes: alarmOffsets,
         updated_at:            new Date().toISOString(),
       }, { merge: true })
@@ -141,6 +133,41 @@ export default function SettingsPage() {
       <h1 className="text-xl font-bold text-slate-800 mb-6">Impostazioni</h1>
 
       <form onSubmit={handleSave} className="space-y-4">
+
+        {/* ── Tipo di attività ──────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-700">Tipo di attività</h2>
+          <p className="text-xs text-slate-500">
+            Cambiando livello appaiono o scompaiono le sezioni Staff, Statistiche e Magazzino.
+          </p>
+          <div className="space-y-2">
+            {LEVEL_OPTIONS.map(({ value, icon: Icon, title, desc }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setBusinessLevel(value)}
+                className={clsx(
+                  'w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all',
+                  businessLevel === value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
+                )}
+              >
+                <div className={clsx(
+                  'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
+                  businessLevel === value ? 'bg-blue-600' : 'bg-slate-100',
+                )}>
+                  <Icon className={clsx('w-4 h-4', businessLevel === value ? 'text-white' : 'text-slate-400')} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={clsx('text-sm font-medium', businessLevel === value ? 'text-blue-700' : 'text-slate-700')}>{title}</p>
+                  <p className="text-xs text-slate-400">{desc}</p>
+                </div>
+                {businessLevel === value && <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* ── Sincronizzazione calendario ────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
@@ -169,15 +196,10 @@ export default function SettingsPage() {
             <Copy className="w-3.5 h-3.5" />
             {copied ? 'Link copiato!' : 'Copia link (per Google Calendar)'}
           </button>
-          <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs text-slate-500">
-            <p className="font-medium text-slate-600">Come funziona:</p>
-            <p>📱 <strong>iPhone</strong>: tocca &quot;Iscriviti&quot; → iOS chiede conferma → Aggiungi</p>
-            <p>🤖 <strong>Android</strong>: copia il link → apri Google Calendar →
-               menu ☰ → Altre agende → Da URL → incolla → Aggiungi</p>
-            <p className="text-slate-400 pt-1">
-              Dopo l&apos;iscrizione ogni nuovo appuntamento appare nel calendario automaticamente entro 1 ora.
-            </p>
-          </div>
+          <p className="text-xs text-slate-400">
+            Su iPhone apri direttamente il link qui sopra. Su Android copia il link
+            e incollalo in Google Calendar → Altre agende → Da URL.
+          </p>
         </div>
 
         {/* ── Sveglie ────────────────────────────────────────────────── */}
@@ -244,6 +266,12 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-slate-700 mb-1">Indirizzo</label>
             <input type="text" value={form.address} onChange={e => set('address', e.target.value)}
               placeholder="Via …"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Città</label>
+            <input type="text" value={form.city} onChange={e => set('city', e.target.value)}
+              placeholder="Roma, Milano…"
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
           </div>
         </div>

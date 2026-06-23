@@ -12,25 +12,33 @@ import {
   CalendarDays,
   Settings,
   LogOut,
+  UserCog,
+  BarChart3,
+  Package,
 } from 'lucide-react'
-
-const nav = [
-  { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/appointments', label: 'Appuntamenti', icon: CalendarDays },
-  { href: '/clients',      label: 'Clienti',      icon: Users },
-  { href: '/services',     label: 'Servizi',      icon: Scissors },
-  { href: '/settings',     label: 'Impostazioni', icon: Settings },
-]
+import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { hasStaff, hasMarketing, hasWarehouse } = useBusinessLevel()
 
   async function handleLogout() {
     await signOut(auth)
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
+
+  const nav = [
+    { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard, show: true },
+    { href: '/appointments', label: 'Appuntamenti', icon: CalendarDays,    show: true },
+    { href: '/clients',      label: 'Clienti',      icon: Users,           show: true },
+    { href: '/services',     label: 'Servizi',      icon: Scissors,        show: true },
+    { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff },
+    { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing },
+    { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse },
+    { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
+  ].filter(item => item.show)
 
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-blue-950 border-r border-blue-900 py-6 px-3">

@@ -70,9 +70,9 @@ export default function ClientsPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 truncate">{client.first_name} {client.last_name}</p>
-                <div className="flex items-center gap-3 mt-0.5">
-                  <span className="flex items-center gap-1 text-slate-500 text-xs"><Phone className="w-3 h-3" /> {client.phone}</span>
-                  {client.email && <span className="flex items-center gap-1 text-slate-500 text-xs truncate"><Mail className="w-3 h-3" /> {client.email}</span>}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 min-w-0">
+                  <span className="flex items-center gap-1 text-slate-500 text-xs shrink-0"><Phone className="w-3 h-3" /> {client.phone}</span>
+                  {client.email && <span className="flex items-center gap-1 text-slate-500 text-xs min-w-0 truncate"><Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{client.email}</span></span>}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">

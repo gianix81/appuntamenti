@@ -59,7 +59,7 @@ export function ServiceForm({ existing }: Props) {
         <input required value={form.name} onChange={e => set('name', e.target.value)}
           className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="Es. Manicure, Pulizia viso…" />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Durata (minuti) *</label>
           <input required type="number" min={5} step={5} value={form.duration_minutes} onChange={e => set('duration_minutes', e.target.value)}
