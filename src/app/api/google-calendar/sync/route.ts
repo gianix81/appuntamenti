@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!accessToken) {
-      return NextResponse.json({ ok: false, connected: false, error: 'Google Calendar non collegato' }, { status: 409 })
+      return NextResponse.json({ ok: false, connected: false, error: 'Google Calendar non collegato' })
     }
 
     const calendarId = googleCalendar?.calendar_id ?? 'primary'

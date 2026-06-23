@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { format } from 'date-fns'
-import { it } from 'date-fns/locale'
 import { getAdminDb, isAdminConfigured } from '@/lib/firebase/admin'
+import { buildAppointmentMessage, type AppointmentMessageKind } from '@/lib/appointmentMessages'
 import { normalizeWhatsAppNumber, sendGigawaMessage } from '@/lib/gigawa'
 import type { Appointment } from '@/types/database'
 
 export const runtime = 'nodejs'
-
-type MessageKind = 'confirmation' | 'reminder'
 
 export async function POST(request: NextRequest) {
   if (!isAdminConfigured()) {
     return NextResponse.json({ error: 'Firebase Admin non configurato' }, { status: 503 })
   }
 
-  let body: { appointmentId?: string; kind?: MessageKind } = {}
+  let body: { appointmentId?: string; kind?: AppointmentMessageKind } = {}
   try {
     body = await request.json()
   } catch {
@@ -86,20 +83,4 @@ export async function POST(request: NextRequest) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
-}
-
-function buildAppointmentMessage(params: {
-  kind: MessageKind
-  firstName: string
-  serviceName: string
-  start: Date
-}): string {
-  const time = format(params.start, 'HH:mm', { locale: it })
-  const date = format(params.start, 'EEEE d MMMM', { locale: it })
-
-  if (params.kind === 'reminder') {
-    return `Ciao ${params.firstName}, ti ricordiamo l'appuntamento per ${params.serviceName} ${date} alle ${time}. A presto!`
-  }
-
-  return `Ciao ${params.firstName}! Ti confermiamo l'appuntamento per ${params.serviceName} ${date} alle ${time}. Rispondi a questo messaggio per confermare o disdire. Grazie!`
 }

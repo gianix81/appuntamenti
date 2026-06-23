@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
@@ -28,6 +28,17 @@ function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
 }
 
+function formatCountdown(ms: number): string {
+  const totalMinutes = Math.max(0, Math.ceil(ms / 60_000))
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+
+  if (days > 0) return `${days}g ${hours}h`
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
 export function AppointmentCard({ appointment, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
@@ -35,10 +46,19 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   const [calLoading, setCalLoading]       = useState(false)
   const [whatsAppSent, setWhatsAppSent]   = useState(false)
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
+  const [now, setNow] = useState(() => Date.now())
 
   const isPending = appointment.confirmation_status === 'pending'
   const start     = new Date(appointment.start_time)
   const end       = new Date(appointment.end_time)
+  const msToStart = start.getTime() - now
+  const msToEnd = end.getTime() - now
+  const reminderMs = msToStart - 30 * 60_000
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function handleDelete() {
     setDeleting(true)
@@ -141,6 +161,20 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
               <div className="flex items-center gap-1 text-slate-500 text-xs mt-0.5">
                 <Clock className="w-3 h-3 shrink-0" />
                 <span>{appointment.services.duration_minutes} min</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs mt-1">
+                {msToStart > 0 ? (
+                  <span className="font-medium text-blue-600">Inizia tra {formatCountdown(msToStart)}</span>
+                ) : msToEnd > 0 ? (
+                  <span className="font-medium text-green-600">In corso</span>
+                ) : (
+                  <span className="font-medium text-slate-400">Terminato</span>
+                )}
+                {appointment.status !== 'cancelled' && !appointment.notifications_sent?.whatsapp_reminder_30 && msToStart > 0 && (
+                  <span className="text-slate-400">
+                    Reminder WhatsApp {reminderMs > 0 ? `tra ${formatCountdown(reminderMs)}` : 'in invio'}
+                  </span>
+                )}
               </div>
             </div>
 
