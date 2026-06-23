@@ -77,6 +77,7 @@ export default function SettingsPage() {
         const status = await loadGoogleStatus()
         const params = new URLSearchParams(window.location.search)
         const googleCalendarResult = params.get('googleCalendar')
+        const googleCalendarReason = params.get('googleCalendarReason')
         if (googleCalendarResult) {
           if (googleCalendarResult === 'connected') {
             setGoogleNotice({
@@ -90,7 +91,12 @@ export default function SettingsPage() {
           } else if (googleCalendarResult === 'firebase_error') {
             setGoogleNotice({ type: 'error', text: 'Collegamento Google non riuscito: Firebase Admin non configurato.' })
           } else {
-            setGoogleNotice({ type: 'error', text: 'Collegamento Google non riuscito. Riprova da questo pulsante.' })
+            setGoogleNotice({
+              type: 'error',
+              text: googleCalendarReason
+                ? `Collegamento Google non riuscito: ${googleCalendarReason}`
+                : 'Collegamento Google non riuscito. Riprova da questo pulsante.',
+            })
           }
           const cleanUrl = `${window.location.pathname}${window.location.hash}`
           window.history.replaceState(null, '', cleanUrl)

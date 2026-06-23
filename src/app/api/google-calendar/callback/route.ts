@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
     settingsUrl.searchParams.set('googleCalendar', 'connected')
   } catch (err) {
     console.error('[google-calendar callback]', err)
+    const message = err instanceof Error ? err.message : String(err)
     settingsUrl.searchParams.set('googleCalendar', 'error')
+    settingsUrl.searchParams.set('googleCalendarReason', message.slice(0, 240))
   }
 
   const response = NextResponse.redirect(settingsUrl)

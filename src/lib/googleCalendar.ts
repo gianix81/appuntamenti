@@ -5,7 +5,7 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_CALENDAR_API = 'https://www.googleapis.com/calendar/v3'
 const GOOGLE_SCOPES = [
-  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events',
 ]
 
 interface GoogleTokenResponse {
@@ -86,9 +86,14 @@ async function requestToken(params: Record<string, string>): Promise<GoogleToken
 }
 
 export function tokenToSettings(token: GoogleTokenResponse, previous?: GoogleCalendarSettings): GoogleCalendarSettings {
+  const refreshToken = token.refresh_token ?? previous?.refresh_token
+  if (!refreshToken) {
+    throw new Error('Google non ha restituito il refresh token. Revoca l’accesso dell’app dal tuo Account Google e riprova il collegamento.')
+  }
+
   return {
     access_token: token.access_token,
-    refresh_token: token.refresh_token ?? previous?.refresh_token,
+    refresh_token: refreshToken,
     expires_at: new Date(Date.now() + token.expires_in * 1000 - 60_000).toISOString(),
     calendar_id: previous?.calendar_id ?? 'primary',
     scope: token.scope ?? previous?.scope,
