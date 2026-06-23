@@ -46,6 +46,9 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   const [calLoading, setCalLoading]       = useState(false)
   const [whatsAppSent, setWhatsAppSent]   = useState(false)
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
+  const [autoReminderSent, setAutoReminderSent] = useState(Boolean(appointment.notifications_sent?.whatsapp_reminder_30))
+  const [autoReminderError, setAutoReminderError] = useState<string | null>(null)
+  const [autoReminderAttempted, setAutoReminderAttempted] = useState(false)
   const [now, setNow] = useState(() => Date.now())
 
   const isPending = appointment.confirmation_status === 'pending'
@@ -135,6 +138,60 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
     }
   }
 
+  async function sendReminderWhatsApp() {
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ appointmentId: appointment.id, kind: 'reminder' }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Reminder WhatsApp non riuscito')
+
+      setAutoReminderSent(true)
+      setAutoReminderError(null)
+      showReminderNotification()
+    } catch (err) {
+      setAutoReminderError(err instanceof Error ? err.message : String(err))
+    }
+  }
+
+  function showReminderNotification() {
+    const title = 'Reminder WhatsApp inviato'
+    const body = `${appointment.clients.first_name} ${appointment.clients.last_name} - ${appointment.services.name} alle ${format(start, 'HH:mm')}`
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready
+        .then(reg => reg.showNotification(title, {
+          body,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-72.png',
+          tag: `reminder-${appointment.id}`,
+        } as NotificationOptions))
+        .catch(() => {})
+    } else if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icons/icon-192.png', badge: '/icons/icon-72.png' } as NotificationOptions)
+    }
+  }
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setAutoReminderSent(Boolean(appointment.notifications_sent?.whatsapp_reminder_30))
+    })
+  }, [appointment.notifications_sent?.whatsapp_reminder_30])
+
+  useEffect(() => {
+    if (appointment.status === 'cancelled' || appointment.status === 'completed') return
+    if (autoReminderSent || autoReminderAttempted) return
+    if (msToStart <= 0 || msToStart > 30 * 60_000) return
+
+    queueMicrotask(() => {
+      setAutoReminderAttempted(true)
+      sendReminderWhatsApp()
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointment.status, autoReminderAttempted, autoReminderSent, msToStart])
+
   return (
     <div className={clsx(
       'bg-white rounded-2xl border overflow-hidden',
@@ -170,10 +227,16 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                 ) : (
                   <span className="font-medium text-slate-400">Terminato</span>
                 )}
-                {appointment.status !== 'cancelled' && !appointment.notifications_sent?.whatsapp_reminder_30 && msToStart > 0 && (
-                  <span className="text-slate-400">
-                    Reminder WhatsApp {reminderMs > 0 ? `tra ${formatCountdown(reminderMs)}` : 'in invio'}
-                  </span>
+                {appointment.status !== 'cancelled' && msToStart > 0 && (
+                  autoReminderSent ? (
+                    <span className="text-green-600">Reminder WhatsApp inviato</span>
+                  ) : autoReminderError ? (
+                    <span className="text-red-500">Reminder WhatsApp non inviato</span>
+                  ) : (
+                    <span className="text-slate-400">
+                      Reminder WhatsApp {reminderMs > 0 ? `tra ${formatCountdown(reminderMs)}` : autoReminderAttempted ? 'in invio' : 'ora'}
+                    </span>
+                  )
                 )}
               </div>
             </div>

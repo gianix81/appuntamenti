@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
       message,
     })
 
+    const kind = body.kind ?? 'confirmation'
     const now = new Date().toISOString()
-    const notificationKey = body.kind === 'reminder' ? 'whatsapp_reminder' : 'whatsapp_confirmation'
+    const notificationKey = kind === 'reminder' ? 'whatsapp_reminder_30' : 'whatsapp_confirmation'
     await Promise.all([
       aptSnap.ref.set({
         confirmation_status: body.kind === 'confirmation' ? 'pending' : appointment.confirmation_status,
@@ -70,8 +71,8 @@ export async function POST(request: NextRequest) {
         provider_message_id: null,
         direction: 'outbound',
         status: 'sent',
-        notification_type: body.kind ?? 'confirmation',
-        interval_minutes: null,
+        notification_type: kind,
+        interval_minutes: kind === 'reminder' ? 30 : null,
         received_response: false,
         created_at: now,
       }),
