@@ -7,7 +7,6 @@ import type { Appointment } from '@/types/database'
 export const runtime = 'nodejs'
 
 const REMINDER_MINUTES = 30
-const LOOKAHEAD_MINUTES = 35
 const SENT_KEY = `whatsapp_reminder_${REMINDER_MINUTES}`
 
 export async function GET(request: NextRequest) {
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const now = Date.now()
-    const upper = new Date(now + LOOKAHEAD_MINUTES * 60_000).toISOString()
+    const upper = new Date(now + REMINDER_MINUTES * 60_000).toISOString()
     const lower = new Date(now - 2 * 60_000).toISOString()
     const snap = await db.collection('appointments')
       .where('start_time', '>=', lower)
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest) {
         results.push({ appointmentId: appointment.id, status: 'skipped' })
         continue
       }
-      if (minutesToStart < 0 || minutesToStart > LOOKAHEAD_MINUTES) {
+      if (minutesToStart < 0 || minutesToStart > REMINDER_MINUTES) {
         results.push({ appointmentId: appointment.id, status: 'skipped' })
         continue
       }
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
           start: new Date(appointment.start_time),
         })
 
-        await sendGigawaMessage({
+        const result = await sendGigawaMessage({
           number: normalizeWhatsAppNumber(client.phone),
           message,
         })
@@ -101,6 +100,8 @@ export async function GET(request: NextRequest) {
             provider_message_id: null,
             direction: 'outbound',
             status: 'sent',
+            provider_response: result,
+            recipient_number: normalizeWhatsAppNumber(client.phone),
             notification_type: 'reminder',
             interval_minutes: REMINDER_MINUTES,
             received_response: false,

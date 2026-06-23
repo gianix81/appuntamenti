@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
 
     const client = clientSnap.data() as { first_name: string; last_name: string; phone: string }
     const service = serviceSnap.data() as { name: string }
+    const number = normalizeWhatsAppNumber(client.phone)
     const message = buildAppointmentMessage({
       kind: body.kind ?? 'confirmation',
       firstName: client.first_name,
@@ -47,22 +48,25 @@ export async function POST(request: NextRequest) {
     })
 
     const result = await sendGigawaMessage({
-      number: normalizeWhatsAppNumber(client.phone),
+      number,
       message,
     })
 
     const kind = body.kind ?? 'confirmation'
     const now = new Date().toISOString()
     const notificationKey = kind === 'reminder' ? 'whatsapp_reminder_30' : 'whatsapp_confirmation'
+    const appointmentUpdate = {
+      confirmation_status: body.kind === 'confirmation' ? 'pending' : appointment.confirmation_status,
+      notifications_sent: {
+        ...(appointment.notifications_sent ?? {}),
+        [notificationKey]: now,
+      },
+      ...(kind === 'reminder' ? { reminder_sent_at: now } : {}),
+      updated_at: now,
+    }
+
     await Promise.all([
-      aptSnap.ref.set({
-        confirmation_status: body.kind === 'confirmation' ? 'pending' : appointment.confirmation_status,
-        notifications_sent: {
-          ...(appointment.notifications_sent ?? {}),
-          [notificationKey]: now,
-        },
-        updated_at: now,
-      }, { merge: true }),
+      aptSnap.ref.set(appointmentUpdate, { merge: true }),
       db.collection('message_logs').add({
         appointment_id: appointment.id,
         client_id: appointment.client_id,
@@ -71,6 +75,8 @@ export async function POST(request: NextRequest) {
         provider_message_id: null,
         direction: 'outbound',
         status: 'sent',
+        provider_response: result,
+        recipient_number: number,
         notification_type: kind,
         interval_minutes: kind === 'reminder' ? 30 : null,
         received_response: false,

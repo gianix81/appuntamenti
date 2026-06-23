@@ -40,13 +40,16 @@ function formatCountdown(ms: number): string {
 }
 
 export function AppointmentCard({ appointment, onDelete }: Props) {
+  const hasConfirmedReminder = Boolean(
+    appointment.notifications_sent?.whatsapp_reminder_30 && appointment.reminder_sent_at,
+  )
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
   const [calAdded, setCalAdded]           = useState(false)
   const [calLoading, setCalLoading]       = useState(false)
   const [whatsAppSent, setWhatsAppSent]   = useState(false)
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
-  const [autoReminderSent, setAutoReminderSent] = useState(Boolean(appointment.notifications_sent?.whatsapp_reminder_30))
+  const [autoReminderSent, setAutoReminderSent] = useState(hasConfirmedReminder)
   const [autoReminderError, setAutoReminderError] = useState<string | null>(null)
   const [autoReminderAttempted, setAutoReminderAttempted] = useState(false)
   const [now, setNow] = useState(() => Date.now())
@@ -127,6 +130,9 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error ?? 'Invio WhatsApp non riuscito')
+      if (body.ok !== true || body.result?.success !== true) {
+        throw new Error(body.error ?? 'Gigawa non ha confermato l’invio')
+      }
 
       setWhatsAppSent(true)
       setTimeout(() => setWhatsAppSent(false), 4000)
@@ -147,6 +153,9 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error ?? 'Reminder WhatsApp non riuscito')
+      if (body.ok !== true || body.result?.success !== true) {
+        throw new Error(body.error ?? 'Gigawa non ha confermato l’invio')
+      }
 
       setAutoReminderSent(true)
       setAutoReminderError(null)
@@ -176,9 +185,9 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
 
   useEffect(() => {
     queueMicrotask(() => {
-      setAutoReminderSent(Boolean(appointment.notifications_sent?.whatsapp_reminder_30))
+      setAutoReminderSent(hasConfirmedReminder)
     })
-  }, [appointment.notifications_sent?.whatsapp_reminder_30])
+  }, [appointment.notifications_sent?.whatsapp_reminder_30, hasConfirmedReminder])
 
   useEffect(() => {
     if (appointment.status === 'cancelled' || appointment.status === 'completed') return
