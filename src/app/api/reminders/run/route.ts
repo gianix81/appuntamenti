@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminDb, isAdminConfigured } from '@/lib/firebase/admin'
+import { getAdminAuth, getAdminDb, isAdminConfigured } from '@/lib/firebase/admin'
 import { buildAppointmentMessage } from '@/lib/appointmentMessages'
 import { normalizeWhatsAppNumber, sendGigawaMessage } from '@/lib/gigawa'
 import type { Appointment } from '@/types/database'
@@ -11,8 +11,7 @@ const LOOKAHEAD_MINUTES = 35
 const SENT_KEY = `whatsapp_reminder_${REMINDER_MINUTES}`
 
 export async function GET(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && request.headers.get('authorization') !== `Bearer ${cronSecret}`) {
+  if (!(await isAuthorized(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -127,5 +126,25 @@ export async function GET(request: NextRequest) {
     console.error('[reminders run]', err)
     const message = err instanceof Error ? err.message : String(err)
     return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
+
+async function isAuthorized(request: NextRequest): Promise<boolean> {
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret && request.headers.get('authorization') === `Bearer ${cronSecret}`) return true
+
+  const session = request.cookies.get('__session')?.value
+  if (!session || !isAdminConfigured()) return false
+
+  try {
+    await getAdminAuth().verifySessionCookie(session)
+    return true
+  } catch {
+    try {
+      await getAdminAuth().verifyIdToken(session)
+      return true
+    } catch {
+      return false
+    }
   }
 }

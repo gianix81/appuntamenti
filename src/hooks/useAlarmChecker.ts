@@ -60,9 +60,14 @@ async function fireAlarms() {
   }
 }
 
+async function runServerReminders() {
+  await fetch('/api/reminders/run', { method: 'GET' }).catch(() => {})
+}
+
 export function useAlarmChecker() {
   const permissionRef  = useRef(false)
   const intervalRef    = useRef<ReturnType<typeof setInterval> | null>(null)
+  const reminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const requestPermission = useCallback(async () => {
     if (permissionRef.current) return
@@ -97,13 +102,21 @@ export function useAlarmChecker() {
       }
     }, 60_000)
 
+    reminderIntervalRef.current = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        runServerReminders().catch(() => {})
+      }
+    }, 60_000)
+
     // Immediate check on mount
     if (Notification.permission === 'granted') {
       fireAlarms().catch(() => {})
     }
+    runServerReminders().catch(() => {})
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      if (reminderIntervalRef.current) clearInterval(reminderIntervalRef.current)
     }
   }, [requestPermission])
 }
