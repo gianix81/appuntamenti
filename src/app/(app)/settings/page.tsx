@@ -35,6 +35,7 @@ export default function SettingsPage() {
     connected: boolean
     connectedAt?: string | null
   } | null>(null)
+  const [googleNotice, setGoogleNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [whatsAppStatus, setWhatsAppStatus] = useState<{ configured: boolean } | null>(null)
 
   const [form, setForm] = useState({ center_name: '', phone_number: '', address: '', city: '' })
@@ -42,6 +43,18 @@ export default function SettingsPage() {
   const [alarmOffsets, setAlarmOffsets] = useState<number[]>([1440, 120, 30])
 
   useEffect(() => {
+    async function loadGoogleStatus() {
+      try {
+        const res = await fetch('/api/google-calendar/status', { cache: 'no-store' })
+        const status = await res.json()
+        setGoogleStatus(status)
+        return status as { configured: boolean; connected: boolean; connectedAt?: string | null }
+      } catch {
+        setGoogleStatus(null)
+        return null
+      }
+    }
+
     async function load() {
       try {
         const [snap, idbSettings] = await Promise.all([
@@ -61,10 +74,27 @@ export default function SettingsPage() {
           if (d.calendar_token)        setCalToken(d.calendar_token)
         }
         if (idbSettings?.offsets_minutes?.length) setAlarmOffsets(idbSettings.offsets_minutes)
-        fetch('/api/google-calendar/status')
-          .then(res => res.json())
-          .then(setGoogleStatus)
-          .catch(() => setGoogleStatus(null))
+        const status = await loadGoogleStatus()
+        const params = new URLSearchParams(window.location.search)
+        const googleCalendarResult = params.get('googleCalendar')
+        if (googleCalendarResult) {
+          if (googleCalendarResult === 'connected') {
+            setGoogleNotice({
+              type: 'success',
+              text: status?.connected
+                ? 'Google Calendar collegato correttamente.'
+                : 'Autorizzazione Google completata. Sto verificando il collegamento.',
+            })
+          } else if (googleCalendarResult === 'state_error') {
+            setGoogleNotice({ type: 'error', text: 'Collegamento Google non riuscito: sessione OAuth scaduta. Riprova.' })
+          } else if (googleCalendarResult === 'firebase_error') {
+            setGoogleNotice({ type: 'error', text: 'Collegamento Google non riuscito: Firebase Admin non configurato.' })
+          } else {
+            setGoogleNotice({ type: 'error', text: 'Collegamento Google non riuscito. Riprova da questo pulsante.' })
+          }
+          const cleanUrl = `${window.location.pathname}${window.location.hash}`
+          window.history.replaceState(null, '', cleanUrl)
+        }
         fetch('/api/whatsapp/status')
           .then(res => res.json())
           .then(setWhatsAppStatus)
@@ -121,6 +151,7 @@ export default function SettingsPage() {
   }
 
   function handleConnectGoogleCalendar() {
+    setGoogleNotice(null)
     window.location.href = '/api/google-calendar/connect'
   }
 
@@ -134,6 +165,10 @@ export default function SettingsPage() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(body.error ?? 'Sincronizzazione non riuscita')
+      if (body.connected === false) {
+        setGoogleNotice({ type: 'error', text: 'Google Calendar non è ancora collegato. Premi “Collega Google Calendar”.' })
+        return
+      }
       alert(`Google Calendar sincronizzato: ${body.results?.length ?? 0} appuntamenti controllati.`)
     } catch (err) {
       alert(`Errore Google Calendar: ${err}`)
@@ -235,6 +270,16 @@ export default function SettingsPage() {
           {googleStatus?.configured === false && (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
               Configura GOOGLE_CALENDAR_CLIENT_ID e GOOGLE_CALENDAR_CLIENT_SECRET sul server.
+            </p>
+          )}
+          {googleNotice && (
+            <p className={clsx(
+              'text-xs rounded-xl px-3 py-2 border',
+              googleNotice.type === 'success'
+                ? 'text-green-700 bg-green-50 border-green-100'
+                : 'text-red-700 bg-red-50 border-red-100',
+            )}>
+              {googleNotice.text}
             </p>
           )}
           {googleStatus?.connected && (
