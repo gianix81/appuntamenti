@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { doc, getDoc, getDocs, query, collection, where, orderBy } from 'firebase/firestore'
+import { doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, AppointmentWithRelations, Service, Staff, ClientTreatment, TreatmentCategory } from '@/types/database'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -176,12 +176,14 @@ export default function ClientHistoryPage() {
     async function load() {
       const [clientSnap, aptsSnap] = await Promise.all([
         getDoc(doc(db, 'clients', id)),
-        getDocs(query(collection(db, 'appointments'), where('client_id', '==', id), orderBy('start_time', 'desc'))),
+        getDocs(query(collection(db, 'appointments'), where('client_id', '==', id))),
       ])
       if (!clientSnap.exists()) { setLoading(false); return }
       setClient({ id: clientSnap.id, ...clientSnap.data() } as Client)
 
-      const raw   = aptsSnap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { service_id: string; staff_id?: string | null })[]
+      const raw   = aptsSnap.docs
+        .map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { service_id: string; staff_id?: string | null })[]
+      raw.sort((a, b) => b.start_time.localeCompare(a.start_time))
       const sIds  = [...new Set(raw.map(a => a.service_id).filter(Boolean))]
       const stIds = [...new Set(raw.map(a => a.staff_id).filter((x): x is string => Boolean(x)))]
       const [sSnaps, stSnaps] = await Promise.all([
