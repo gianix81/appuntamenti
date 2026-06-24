@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '@/lib/firebase/client'
+import { db } from '@/lib/firebase/client'
 import type { Staff } from '@/types/database'
 import {
   Plus, Pencil, Trash2, Crown, UserCog, KeyRound,
@@ -41,14 +40,17 @@ function StaffAvatar({
     if (!file) return
     setUploading(true)
     try {
-      const storageRef = ref(storage, `staff-photos/${staff.id}`)
-      await uploadBytes(storageRef, file, { contentType: file.type })
-      const url = await getDownloadURL(storageRef)
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch(`/api/staff/${staff.id}/upload-photo`, { method: 'POST', body: formData })
+      if (!res.ok) throw new Error(await res.text())
+      const { url } = await res.json()
       await updateDoc(doc(db, 'staff', staff.id), { photo_url: url })
       setLocalUrl(url)
       onPhotoUpdated?.(url)
     } catch (err) {
       console.error('[photo upload]', err)
+      alert('Errore nel caricamento della foto')
     } finally {
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
