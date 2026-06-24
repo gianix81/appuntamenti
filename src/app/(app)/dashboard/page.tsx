@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import {
   format, startOfWeek, endOfWeek, eachDayOfInterval,
   addWeeks, subWeeks, addDays, subDays, addMonths, subMonths,
@@ -9,9 +8,8 @@ import {
   isToday, isSameDay, isSameMonth, startOfDay, endOfDay,
 } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
-import { onAuthStateChanged } from 'firebase/auth'
-import { auth, db } from '@/lib/firebase/client'
+import { collection, onSnapshot, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -42,25 +40,8 @@ function nowTop() {
   return ((d.getHours() * 60 + d.getMinutes() - START_HOUR * 60) / GRID_MINS) * GRID_H
 }
 
-async function waitForAuth(): Promise<boolean> {
-  try {
-    await (auth as typeof auth & { authStateReady(): Promise<void> }).authStateReady()
-    return !!auth.currentUser
-  } catch {
-    if (auth.currentUser) return true
-    return new Promise(resolve => {
-      let done = false
-      const unsub = onAuthStateChanged(auth, user => {
-        if (done) return; done = true; unsub(); resolve(!!user)
-      })
-      setTimeout(() => { if (!done) { done = true; unsub(); resolve(false) } }, 12000)
-    })
-  }
-}
-
 /* ── Page ───────────────────────────────────────────────────── */
 export default function DashboardPage() {
-  const router = useRouter()
   const { hasStaff } = useBusinessLevel()
   const { role, staffId: myStaffId } = useUserRole()
   const isStaff = role === 'staff'
@@ -177,48 +158,46 @@ export default function DashboardPage() {
       .catch(() => {})
   }, [hasStaff])
 
-  /* Load appointments */
-  const loadData = useCallback(async () => {
+  /* Real-time appointments listener — si aggiorna automaticamente su tutti i dispositivi */
+  useEffect(() => {
     setLoading(true)
-    try {
-      const authed = await waitForAuth()
-      if (!authed) { router.replace('/login'); return }
+    const q = query(
+      collection(db, 'appointments'),
+      where('start_time', '>=', startOfDay(rangeStart).toISOString()),
+      where('start_time', '<=', endOfDay(rangeEnd).toISOString()),
+      orderBy('start_time'),
+    )
+    const unsub = onSnapshot(q, async (snap) => {
+      try {
+        const raw = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & {
+          client_id: string; service_id: string; staff_id?: string | null
+        })[]
+        const active = raw.filter(a => a.status !== 'cancelled')
 
-      const snap = await getDocs(query(
-        collection(db, 'appointments'),
-        where('start_time', '>=', startOfDay(rangeStart).toISOString()),
-        where('start_time', '<=', endOfDay(rangeEnd).toISOString()),
-        orderBy('start_time'),
-      ))
+        const cIds = [...new Set(active.map(a => a.client_id))]
+        const sIds = [...new Set(active.map(a => a.service_id))]
+        const [cs, ss] = await Promise.all([
+          Promise.all(cIds.map(id => getDoc(doc(db, 'clients',  id)))),
+          Promise.all(sIds.map(id => getDoc(doc(db, 'services', id)))),
+        ])
 
-      const raw = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & {
-        client_id: string; service_id: string; staff_id?: string | null
-      })[]
-      const active = raw.filter(a => a.status !== 'cancelled')
+        const cMap  = Object.fromEntries(cs.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
+        const sMap  = Object.fromEntries(ss.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
+        const sfMap = Object.fromEntries(staff.map(s => [s.id, s]))
 
-      const cIds = [...new Set(active.map(a => a.client_id))]
-      const sIds = [...new Set(active.map(a => a.service_id))]
-      const [cs, ss] = await Promise.all([
-        Promise.all(cIds.map(id => getDoc(doc(db, 'clients',  id)))),
-        Promise.all(sIds.map(id => getDoc(doc(db, 'services', id)))),
-      ])
+        setAppointments(active.map(a => ({
+          ...a,
+          clients:  cMap[a.client_id],
+          services: sMap[a.service_id],
+          staff:    a.staff_id ? (sfMap[a.staff_id] ?? null) : null,
+        })).filter(a => a.clients != null && a.services != null))
+      } catch (e) { console.error('[dash]', e) }
+      finally { setLoading(false) }
+    }, (err) => { console.error('[dash] snapshot:', err); setLoading(false) })
 
-      const cMap  = Object.fromEntries(cs.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
-      const sMap  = Object.fromEntries(ss.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
-      const sfMap = Object.fromEntries(staff.map(s => [s.id, s]))
-
-      setAppointments(active.map(a => ({
-        ...a,
-        clients:  cMap[a.client_id],
-        services: sMap[a.service_id],
-        staff:    a.staff_id ? (sfMap[a.staff_id] ?? null) : null,
-      })))
-    } catch (e) { console.error('[dash]', e) }
-    finally { setLoading(false) }
+    return unsub
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rangeStart.toISOString(), rangeEnd.toISOString(), staff.length, router])
-
-  useEffect(() => { loadData() }, [loadData])
+  }, [rangeStart.toISOString(), rangeEnd.toISOString(), staff.map(s => s.id).join(',')])
 
   const visible = staffFilter ? appointments.filter(a => a.staff_id === staffFilter) : appointments
 

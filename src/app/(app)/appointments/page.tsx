@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   format, startOfWeek, endOfWeek, eachDayOfInterval,
   isToday, isSameDay, startOfDay, endOfDay,
 } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
+import { collection, onSnapshot, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
@@ -49,47 +49,49 @@ export default function AppointmentsPage() {
       .catch(() => {})
   }, [hasStaff])
 
-  const load = useCallback(async () => {
+  /* Real-time listener — stessa logica del dashboard, cancellati esclusi */
+  useEffect(() => {
     setLoading(true)
-    try {
-      const wEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
-      const snap = await getDocs(query(
-        collection(db, 'appointments'),
-        where('start_time', '>=', startOfDay(weekStart).toISOString()),
-        where('start_time', '<=', endOfDay(wEnd).toISOString()),
-        orderBy('start_time'),
-      ))
+    const wEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
+    const q = query(
+      collection(db, 'appointments'),
+      where('start_time', '>=', startOfDay(weekStart).toISOString()),
+      where('start_time', '<=', endOfDay(wEnd).toISOString()),
+      orderBy('start_time'),
+    )
+    const unsub = onSnapshot(q, async (snap) => {
+      try {
+        const apts = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string; staff_id?: string | null })[]
+        const active = apts.filter(a => a.status !== 'cancelled')
 
-      const apts = snap.docs.map(d => ({ id: d.id, ...d.data() })) as (AppointmentWithRelations & { client_id: string; service_id: string; staff_id?: string | null })[]
+        const clientIds  = [...new Set(active.map(a => a.client_id))]
+        const serviceIds = [...new Set(active.map(a => a.service_id))]
 
-      const clientIds  = [...new Set(apts.map(a => a.client_id))]
-      const serviceIds = [...new Set(apts.map(a => a.service_id))]
+        const [cSnaps, sSnaps] = await Promise.all([
+          Promise.all(clientIds.map(id  => getDoc(doc(db, 'clients',  id)))),
+          Promise.all(serviceIds.map(id => getDoc(doc(db, 'services', id)))),
+        ])
 
-      const [cSnaps, sSnaps] = await Promise.all([
-        Promise.all(clientIds.map(id  => getDoc(doc(db, 'clients',  id)))),
-        Promise.all(serviceIds.map(id => getDoc(doc(db, 'services', id)))),
-      ])
+        const cMap  = Object.fromEntries(cSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
+        const sMap  = Object.fromEntries(sSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
+        const stMap = Object.fromEntries(staffList.map(s => [s.id, s]))
 
-      const cMap = Object.fromEntries(cSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
-      const sMap = Object.fromEntries(sSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
+        setAppointments(active.map(a => ({
+          ...a,
+          clients:  cMap[a.client_id],
+          services: sMap[a.service_id],
+          staff:    a.staff_id ? (stMap[a.staff_id] ?? null) : null,
+        })).filter(a => a.clients != null && a.services != null))
+      } catch (err) {
+        console.error('[Appointments] snapshot:', err)
+      } finally {
+        setLoading(false)
+      }
+    }, (err) => { console.error('[Appointments] snapshot error:', err); setLoading(false) })
 
-      // Usa staffList già caricata per join locale (evita N+1 reads extra)
-      const stMap = Object.fromEntries(staffList.map(s => [s.id, s]))
-
-      setAppointments(apts.map(a => ({
-        ...a,
-        clients:  cMap[a.client_id],
-        services: sMap[a.service_id],
-        staff:    a.staff_id ? (stMap[a.staff_id] ?? null) : null,
-      })).filter(a => a.clients != null && a.services != null))
-    } catch (err) {
-      console.error('[Appointments] load:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [weekStart, staffList])
-
-  useEffect(() => { load() }, [load])
+    return unsub
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, staffList.map(s => s.id).join(',')])
 
   function prevWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n }) }
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }
