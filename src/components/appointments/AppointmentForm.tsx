@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, addMinutes, parseISO, startOfDay, endOfDay } from 'date-fns'
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy, where } from 'firebase/firestore'
@@ -8,18 +8,28 @@ import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus, Staff } from '@/types/database'
 import { scheduleAlarms, cancelAlarms } from '@/lib/alarmScheduler'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+import { useUserRole } from '@/hooks/useUserRole'
+import { Search, X, ChevronDown, UserPlus } from 'lucide-react'
+import Link from 'next/link'
 
 interface Props { existing?: Appointment }
 
 export function AppointmentForm({ existing }: Props) {
   const router = useRouter()
   const { hasStaff } = useBusinessLevel()
+  const { role } = useUserRole()
+  const isStaff = role === 'staff'
 
   const [clients,  setClients]  = useState<Client[]>([])
   const [services, setServices] = useState<Service[]>([])
   const [staffList, setStaffList] = useState<(Staff & { id: string })[]>([])
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+
+  // Client combobox state
+  const [clientSearch,  setClientSearch]  = useState('')
+  const [clientOpen,    setClientOpen]    = useState(false)
+  const clientBoxRef = useRef<HTMLDivElement>(null)
 
   const [form, setForm] = useState({
     client_id:           existing?.client_id           ?? '',
@@ -66,6 +76,38 @@ export function AppointmentForm({ existing }: Props) {
       })
       .catch(() => {})
   }, [hasStaff])
+
+  // Deduplicate clients by last_name+first_name+phone, then filter by search
+  const dedupedClients = useMemo(() => {
+    const seen = new Set<string>()
+    return clients.filter(c => {
+      const key = `${c.last_name}|${c.first_name}|${c.phone}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [clients])
+
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase()
+    if (!q) return dedupedClients
+    return dedupedClients.filter(c =>
+      `${c.first_name} ${c.last_name} ${c.phone}`.toLowerCase().includes(q)
+    )
+  }, [dedupedClients, clientSearch])
+
+  const selectedClient = clients.find(c => c.id === form.client_id)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (clientBoxRef.current && !clientBoxRef.current.contains(e.target as Node)) {
+        setClientOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -187,20 +229,96 @@ export function AppointmentForm({ existing }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
 
-      {/* Cliente */}
+      {/* Cliente — combobox cercabile */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Cliente *</label>
-        <select
-          required
-          value={form.client_id}
-          onChange={e => set('client_id', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 bg-white"
-        >
-          <option value="">Seleziona cliente…</option>
-          {clients.map(c => (
-            <option key={c.id} value={c.id}>{c.last_name} {c.first_name} — {c.phone}</option>
-          ))}
-        </select>
+        <div ref={clientBoxRef} className="relative">
+          {/* Trigger input */}
+          <div
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm bg-white cursor-pointer transition-all ${
+              clientOpen ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'
+            }`}
+            onClick={() => { setClientOpen(v => !v); setClientSearch('') }}
+          >
+            {selectedClient ? (
+              <>
+                <span className="flex-1 text-slate-800 font-medium">
+                  {selectedClient.last_name} {selectedClient.first_name}
+                  {!isStaff && <span className="text-slate-400 font-normal"> — {selectedClient.phone}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); set('client_id', ''); setClientSearch('') }}
+                  className="text-slate-300 hover:text-slate-500 shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-slate-400">Seleziona cliente…</span>
+                <ChevronDown className="w-4 h-4 text-slate-300 shrink-0" />
+              </>
+            )}
+          </div>
+
+          {/* Dropdown */}
+          {clientOpen && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+              {/* Search input */}
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
+                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Cerca per nome o telefono…"
+                  value={clientSearch}
+                  onChange={e => setClientSearch(e.target.value)}
+                  className="flex-1 text-sm outline-none text-slate-800 placeholder:text-slate-400"
+                  onClick={e => e.stopPropagation()}
+                />
+                {clientSearch && (
+                  <button type="button" onClick={() => setClientSearch('')} className="text-slate-300 hover:text-slate-500">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Options */}
+              <div className="max-h-52 overflow-y-auto">
+                {filteredClients.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-slate-400 text-center">Nessun cliente trovato</div>
+                ) : (
+                  filteredClients.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => { set('client_id', c.id); setClientOpen(false); setClientSearch('') }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center justify-between gap-2 ${
+                        form.client_id === c.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'
+                      }`}
+                    >
+                      <span>{c.last_name} {c.first_name}</span>
+                      {!isStaff && <span className="text-slate-400 text-xs shrink-0">{c.phone}</span>}
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {/* Crea nuovo cliente */}
+              <div className="border-t border-slate-100">
+                <Link
+                  href={`/clients/new${clientSearch ? `?prefill=${encodeURIComponent(clientSearch)}` : ''}`}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 font-semibold transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Crea nuovo cliente
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* Hidden input for form validation */}
+        <input type="hidden" required value={form.client_id} onChange={() => {}} />
       </div>
 
       {/* Servizio */}
