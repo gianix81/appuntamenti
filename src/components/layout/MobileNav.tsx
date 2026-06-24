@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { clsx } from 'clsx'
 import { LayoutDashboard, Users, Scissors, CalendarDays, Settings, UserCog } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const ACTIVE_COLORS: Record<string, string> = {
   '/dashboard':    'text-indigo-600',
@@ -27,13 +28,15 @@ const ACTIVE_BG: Record<string, string> = {
 export function MobileNav() {
   const pathname = usePathname()
   const { hasStaff } = useBusinessLevel()
+  const { role } = useUserRole()
+  const isStaff = role === 'staff'
 
   const nav = [
     { href: '/dashboard',    label: 'Home',    icon: LayoutDashboard, show: true },
     { href: '/appointments', label: 'Agenda',  icon: CalendarDays,    show: true },
-    { href: '/clients',      label: 'Clienti', icon: Users,           show: true },
-    { href: '/staff',        label: 'Staff',   icon: UserCog,         show: hasStaff },
-    { href: '/services',     label: 'Servizi', icon: Scissors,        show: !hasStaff },
+    { href: '/clients',      label: 'Clienti', icon: Users,           show: !isStaff },
+    { href: '/staff',        label: 'Staff',   icon: UserCog,         show: hasStaff && !isStaff },
+    { href: '/services',     label: 'Servizi', icon: Scissors,        show: !hasStaff && !isStaff },
     { href: '/settings',     label: 'Menu',    icon: Settings,        show: true },
   ].filter(item => item.show)
 

@@ -17,11 +17,14 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { CalendarDays, Plus, ChevronLeft, ChevronRight, List, LayoutGrid } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+import { useUserRole } from '@/hooks/useUserRole'
 
 type StaffDoc = Staff & { id: string }
 
 export default function AppointmentsPage() {
   const { hasStaff } = useBusinessLevel()
+  const { role, staffId: myStaffId } = useUserRole()
+  const isStaff = role === 'staff'
 
   const [weekStart, setWeekStart]       = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -32,6 +35,11 @@ export default function AppointmentsPage() {
   const [loading, setLoading]           = useState(true)
 
   const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn: 1 }) })
+
+  // Lock filter to own staff ID for operatrici
+  useEffect(() => {
+    if (isStaff && myStaffId) setStaffFilter(myStaffId)
+  }, [isStaff, myStaffId])
 
   // Carica staff una volta
   useEffect(() => {
@@ -172,8 +180,8 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Filtro staff — solo se hasStaff e ci sono operatrici */}
-      {hasStaff && staffList.length > 0 && (
+      {/* Filtro staff — nascosto per le operatrici (vedono solo i propri) */}
+      {hasStaff && staffList.length > 0 && !isStaff && (
         <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-none">
           <button
             onClick={() => setStaffFilter(null)}

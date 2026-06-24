@@ -15,6 +15,7 @@ import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+import { useUserRole } from '@/hooks/useUserRole'
 
 /* ── Constants ──────────────────────────────────────────────── */
 const HOUR_PX    = 60
@@ -59,6 +60,8 @@ async function waitForAuth(): Promise<boolean> {
 export default function DashboardPage() {
   const router = useRouter()
   const { hasStaff } = useBusinessLevel()
+  const { role, staffId: myStaffId } = useUserRole()
+  const isStaff = role === 'staff'
 
   const [weekRef, setWeekRef]           = useState(() => new Date())
   const [staff, setStaff]               = useState<(Staff & { id: string })[]>([])
@@ -88,6 +91,11 @@ export default function DashboardPage() {
   // dot = only color block, init = initials only, name = first name
   const aptDisplay  = laneCount >= 5 ? 'dot' : laneCount >= 4 ? 'init' : 'name'
   const circleSize  = laneCount >= 4 ? 16 : 20  // px
+
+  /* Lock filter to own staff ID for operatrici */
+  useEffect(() => {
+    if (isStaff && myStaffId) setStaffFilter(myStaffId)
+  }, [isStaff, myStaffId])
 
   /* Live clock line */
   useEffect(() => {
@@ -174,8 +182,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Staff filter pills */}
-        {hasStaff && staff.length > 0 && (
+        {/* Staff filter pills — hidden for operatrici (they only see their own) */}
+        {hasStaff && staff.length > 0 && !isStaff && (
           <div className="flex items-center gap-1.5 overflow-x-auto flex-1">
             <button
               onClick={() => setStaffFilter(null)}

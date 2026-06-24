@@ -17,6 +17,7 @@ import {
   Package,
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const NAV_COLORS: Record<string, string> = {
   '/dashboard':    'from-blue-500 to-indigo-600',
@@ -33,6 +34,8 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { hasStaff, hasMarketing, hasWarehouse } = useBusinessLevel()
+  const { role, staffRecord } = useUserRole()
+  const isStaff = role === 'staff'
 
   async function handleLogout() {
     await signOut(auth)
@@ -43,11 +46,11 @@ export function Sidebar() {
   const nav = [
     { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard, show: true },
     { href: '/appointments', label: 'Appuntamenti', icon: CalendarDays,    show: true },
-    { href: '/clients',      label: 'Clienti',      icon: Users,           show: true },
-    { href: '/services',     label: 'Servizi',      icon: Scissors,        show: true },
-    { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff },
-    { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing },
-    { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse },
+    { href: '/clients',      label: 'Clienti',      icon: Users,           show: !isStaff },
+    { href: '/services',     label: 'Servizi',      icon: Scissors,        show: !isStaff },
+    { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
+    { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing && !isStaff },
+    { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse && !isStaff },
     { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
   ].filter(item => item.show)
 
@@ -61,7 +64,9 @@ export function Sidebar() {
           </div>
           <div>
             <p className="font-bold text-white text-sm leading-tight">Estetista</p>
-            <p className="text-white/40 text-xs">Gestione salone</p>
+            <p className="text-white/40 text-xs">
+              {isStaff && staffRecord ? staffRecord.name : 'Gestione salone'}
+            </p>
           </div>
         </div>
       </div>
