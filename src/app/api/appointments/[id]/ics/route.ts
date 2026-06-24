@@ -21,16 +21,18 @@ function fold(line: string): string {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!isAdminConfigured()) {
     return new NextResponse('Server error', { status: 503 })
   }
 
+  const { id } = await params
+
   try {
     const db = getAdminDb()
     const [aptSnap, settingsSnap] = await Promise.all([
-      db.collection('appointments').doc(params.id).get(),
+      db.collection('appointments').doc(id).get(),
       db.collection('settings').doc('main').get(),
     ])
 
@@ -69,7 +71,7 @@ export async function GET(
       apt.notes  ? `Note: ${apt.notes}`     : null,
     ].filter(Boolean).join('\\n')
 
-    const uid     = `apt-${params.id}@estetista`
+    const uid     = `apt-${id}@estetista`
     const dtStart = toICSDate(apt.start_time)
     const dtEnd   = toICSDate(apt.end_time)
     const dtstamp = toICSDate(new Date().toISOString())
