@@ -182,37 +182,39 @@ export default function AppointmentsPage() {
 
       {/* Filtro staff — nascosto per le operatrici (vedono solo i propri) */}
       {hasStaff && staffList.length > 0 && !isStaff && (
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-4 scrollbar-none">
-          <button
-            onClick={() => setStaffFilter(null)}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
-              staffFilter === null
-                ? 'bg-slate-800 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300',
-            )}
-          >
-            Tutte
-          </button>
-          {staffList.map(s => (
+        <div className="overflow-x-auto pb-1 mb-4 scrollbar-none">
+          <div className="flex gap-2 w-max">
             <button
-              key={s.id}
-              onClick={() => setStaffFilter(staffFilter === s.id ? null : s.id)}
+              onClick={() => setStaffFilter(null)}
               className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0',
-                staffFilter === s.id
-                  ? 'text-white'
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                staffFilter === null
+                  ? 'bg-slate-800 text-white'
                   : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300',
               )}
-              style={staffFilter === s.id ? { backgroundColor: s.color } : {}}
             >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: s.color }}
-              />
-              {s.name.split(' ')[0]}
+              Tutte
             </button>
-          ))}
+            {staffList.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setStaffFilter(staffFilter === s.id ? null : s.id)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                  staffFilter === s.id
+                    ? 'text-white'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300',
+                )}
+                style={staffFilter === s.id ? { backgroundColor: s.color } : {}}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: s.color }}
+                />
+                {s.name.split(' ')[0]}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

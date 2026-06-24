@@ -243,7 +243,7 @@ export default function DashboardPage() {
     <div className="flex flex-col bg-white overflow-hidden h-full">
 
       {/* ── Controls bar ──────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-slate-100 bg-white">
+      <div className="shrink-0 border-b border-slate-100 bg-white overflow-x-hidden">
         {/* Row 1: view tabs + date nav + today + new */}
         <div className="flex items-center gap-2 px-3 py-2">
           {/* View mode switcher */}
@@ -292,24 +292,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Row 2: staff filter pills (scrollabile, nessun overflow) */}
+        {/* Row 2: staff filter pills — outer clips, inner scrolls */}
         {hasStaff && staff.length > 0 && !isStaff && (
-          <div className="flex items-center gap-1.5 overflow-x-auto px-3 pb-2 scrollbar-none">
-            <button onClick={() => setStaffFilter(null)}
-              className={clsx('shrink-0 text-xs font-bold px-2.5 py-1 rounded-full transition-all',
-                staffFilter === null ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}>
-              Tutte
-            </button>
-            {staff.map(s => (
-              <button key={s.id} onClick={() => setStaffFilter(p => p === s.id ? null : s.id)}
-                className={clsx('shrink-0 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full transition-all',
-                  staffFilter === s.id ? 'text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
-                style={staffFilter === s.id ? { backgroundColor: s.color } : {}}>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ backgroundColor: staffFilter === s.id ? 'rgba(255,255,255,0.6)' : s.color }} />
-                {s.name.split(' ')[0]}
+          <div className="overflow-x-auto pb-2 scrollbar-none">
+            <div className="flex items-center gap-1.5 px-3 w-max">
+              <button onClick={() => setStaffFilter(null)}
+                className={clsx('text-xs font-bold px-2.5 py-1 rounded-full transition-all whitespace-nowrap',
+                  staffFilter === null ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}>
+                Tutte
               </button>
-            ))}
+              {staff.map(s => (
+                <button key={s.id} onClick={() => setStaffFilter(p => p === s.id ? null : s.id)}
+                  className={clsx('flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full transition-all whitespace-nowrap',
+                    staffFilter === s.id ? 'text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
+                  style={staffFilter === s.id ? { backgroundColor: s.color } : {}}>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: staffFilter === s.id ? 'rgba(255,255,255,0.6)' : s.color }} />
+                  {s.name.split(' ')[0]}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -363,7 +365,7 @@ export default function DashboardPage() {
       {viewMode !== 'month' && (
         <div className="flex flex-col flex-1 min-h-0">
           {/* Static header */}
-          <div className="shrink-0 flex border-b border-slate-200 bg-white">
+          <div className="shrink-0 flex border-b border-slate-200 bg-white overflow-x-hidden">
             <div style={{ width: GUTTER_W, minWidth: GUTTER_W }} className="shrink-0" />
             {viewDays.map((day, dayIdx) => {
               const today = isToday(day)
@@ -385,7 +387,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   {laneCount > 1 && (
-                    <div className="flex justify-around items-center py-1 shrink-0">
+                    <div className="hidden md:flex justify-around items-center py-1 shrink-0">
                       {activeLanes.map(lane => (
                         <div key={lane.id ?? '__'} className="flex-1 flex items-center justify-center" title={lane.name}>
                           {(lane as typeof lane & { photo_url?: string | null }).photo_url ? (
