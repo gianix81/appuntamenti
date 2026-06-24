@@ -140,6 +140,54 @@ export function AppointmentForm({ existing }: Props) {
     setError(null)
     setLoading(true)
 
+    // ── Schedule / orari di lavoro ────────────────────────────────
+    if (form.staff_id && selectedService) {
+      const staffMember = staffList.find(s => s.id === form.staff_id)
+      if (staffMember?.schedule) {
+        const startDt  = new Date(form.start_time)
+        const endDt    = addMinutes(startDt, selectedService.duration_minutes)
+        const DAY_KEYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'] as const
+        const dayKey   = DAY_KEYS[startDt.getDay()]
+
+        // Ferie / giorno libero
+        const dateStr = format(startDt, 'yyyy-MM-dd')
+        if (staffMember.days_off?.includes(dateStr)) {
+          setError(`${staffMember.name} è in ferie in questa data.`)
+          setLoading(false)
+          return
+        }
+
+        const daySchedule = staffMember.schedule[dayKey]
+
+        // Giorno non lavorativo
+        if (!daySchedule) {
+          const IT_DAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato']
+          setError(`${staffMember.name} non lavora il ${IT_DAYS[startDt.getDay()]}.`)
+          setLoading(false)
+          return
+        }
+
+        // Orario: minuti dall'inizio della giornata
+        const toMins = (hhmm: string) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
+        const aptStart = startDt.getHours() * 60 + startDt.getMinutes()
+        const aptEnd   = endDt.getHours()   * 60 + endDt.getMinutes()
+
+        if (aptStart < toMins(daySchedule.start)) {
+          setError(`Orario non disponibile: ${staffMember.name} inizia alle ${daySchedule.start}.`)
+          setLoading(false)
+          return
+        }
+        if (aptEnd > toMins(daySchedule.end)) {
+          setError(
+            `L'appuntamento terminerebbe alle ${format(endDt, 'HH:mm')} ` +
+            `ma il centro chiude alle ${daySchedule.end}. Anticipa l'orario o scegli un servizio più breve.`,
+          )
+          setLoading(false)
+          return
+        }
+      }
+    }
+
     // Overlap check: query appointments for same day, filter by staff and time overlap
     if (form.staff_id && selectedService) {
       const startDt = new Date(form.start_time)
