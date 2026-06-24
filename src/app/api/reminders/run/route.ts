@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const db = getAdminDb()
     const settings = (await db.collection('settings').doc('main').get()).data() ?? {}
+    const templates = settings.notification_messages as { confirmation?: string; reminder?: string } | undefined
     const remindersEnabled = settings.reminder_enabled !== false
     const alarmOffsets = settings.alarm_offsets_minutes as number[] | undefined
 
@@ -75,6 +76,7 @@ export async function GET(request: NextRequest) {
           firstName: client.first_name,
           serviceName: service.name,
           start: new Date(appointment.start_time),
+          templates,
         })
 
         const result = await sendGigawaMessage({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminDb, isAdminConfigured } from '@/lib/firebase/admin'
-import { buildAppointmentMessage, type AppointmentMessageKind } from '@/lib/appointmentMessages'
+import { buildAppointmentMessage, type AppointmentMessageKind, type MessageTemplates } from '@/lib/appointmentMessages'
 import { normalizeWhatsAppNumber, sendGigawaMessage } from '@/lib/gigawa'
 import type { Appointment } from '@/types/database'
 
@@ -24,10 +24,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const db = getAdminDb()
-    const aptSnap = await db.collection('appointments').doc(body.appointmentId).get()
+    const [aptSnap, settingsSnap] = await Promise.all([
+      db.collection('appointments').doc(body.appointmentId).get(),
+      db.collection('settings').doc('main').get(),
+    ])
+
     if (!aptSnap.exists) return NextResponse.json({ error: 'Appuntamento non trovato' }, { status: 404 })
 
     const appointment = { id: aptSnap.id, ...aptSnap.data() } as Appointment
+    const templates = settingsSnap.data()?.notification_messages as MessageTemplates | undefined
+
     const [clientSnap, serviceSnap] = await Promise.all([
       db.collection('clients').doc(appointment.client_id).get(),
       db.collection('services').doc(appointment.service_id).get(),
@@ -37,26 +43,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cliente o servizio non trovato' }, { status: 404 })
     }
 
-    const client = clientSnap.data() as { first_name: string; last_name: string; phone: string }
+    const client  = clientSnap.data() as { first_name: string; last_name: string; phone: string }
     const service = serviceSnap.data() as { name: string }
-    const number = normalizeWhatsAppNumber(client.phone)
+    const number  = normalizeWhatsAppNumber(client.phone)
+    const kind    = body.kind ?? 'confirmation'
+
     const message = buildAppointmentMessage({
-      kind: body.kind ?? 'confirmation',
-      firstName: client.first_name,
+      kind,
+      firstName:   client.first_name,
       serviceName: service.name,
-      start: new Date(appointment.start_time),
+      start:       new Date(appointment.start_time),
+      templates,
     })
 
-    const result = await sendGigawaMessage({
-      number,
-      message,
-    })
+    const result = await sendGigawaMessage({ number, message })
 
-    const kind = body.kind ?? 'confirmation'
     const now = new Date().toISOString()
     const notificationKey = kind === 'reminder' ? 'whatsapp_reminder_30' : 'whatsapp_confirmation'
     const appointmentUpdate = {
-      confirmation_status: body.kind === 'confirmation' ? 'pending' : appointment.confirmation_status,
+      confirmation_status: kind === 'confirmation' ? 'pending' : appointment.confirmation_status,
       notifications_sent: {
         ...(appointment.notifications_sent ?? {}),
         [notificationKey]: now,
@@ -68,19 +73,19 @@ export async function POST(request: NextRequest) {
     await Promise.all([
       aptSnap.ref.set(appointmentUpdate, { merge: true }),
       db.collection('message_logs').add({
-        appointment_id: appointment.id,
-        client_id: appointment.client_id,
-        channel: 'whatsapp',
-        message_body: message,
+        appointment_id:    appointment.id,
+        client_id:         appointment.client_id,
+        channel:           'whatsapp',
+        message_body:      message,
         provider_message_id: null,
-        direction: 'outbound',
-        status: 'sent',
+        direction:         'outbound',
+        status:            'sent',
         provider_response: result,
-        recipient_number: number,
+        recipient_number:  number,
         notification_type: kind,
-        interval_minutes: kind === 'reminder' ? 30 : null,
+        interval_minutes:  kind === 'reminder' ? 30 : null,
         received_response: false,
-        created_at: now,
+        created_at:        now,
       }),
     ])
 

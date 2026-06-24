@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { format, addMinutes, parseISO } from 'date-fns'
-import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy } from 'firebase/firestore'
+import { format, addMinutes, parseISO, startOfDay, endOfDay } from 'date-fns'
+import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus, Staff } from '@/types/database'
 import { scheduleAlarms, cancelAlarms } from '@/lib/alarmScheduler'
@@ -97,6 +97,37 @@ export function AppointmentForm({ existing }: Props) {
     if (!form.client_id || !form.service_id) { setError('Seleziona cliente e servizio.'); return }
     setError(null)
     setLoading(true)
+
+    // Overlap check: query appointments for same day, filter by staff and time overlap
+    if (form.staff_id && selectedService) {
+      const startDt = new Date(form.start_time)
+      const endDt   = addMinutes(startDt, selectedService.duration_minutes)
+      const dayStart = startOfDay(startDt).toISOString()
+      const dayEnd   = endOfDay(startDt).toISOString()
+
+      const conflictSnap = await getDocs(query(
+        collection(db, 'appointments'),
+        where('start_time', '>=', dayStart),
+        where('start_time', '<=', dayEnd),
+        orderBy('start_time'),
+      ))
+
+      const hasConflict = conflictSnap.docs.some(d => {
+        if (d.id === existing?.id) return false
+        const data = d.data()
+        if (data.staff_id !== form.staff_id) return false
+        if (data.status === 'cancelled') return false
+        const aptStart = new Date(data.start_time).getTime()
+        const aptEnd   = new Date(data.end_time).getTime()
+        return startDt.getTime() < aptEnd && endDt.getTime() > aptStart
+      })
+
+      if (hasConflict) {
+        setError('Orario già occupato: questa operatrice ha un appuntamento in questa fascia. Scegli un altro orario.')
+        setLoading(false)
+        return
+      }
+    }
 
     const payload = {
       client_id:           form.client_id,

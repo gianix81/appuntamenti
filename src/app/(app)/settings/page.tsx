@@ -41,6 +41,8 @@ export default function SettingsPage() {
   const [form, setForm] = useState({ center_name: '', phone_number: '', address: '', city: '' })
   const [businessLevel, setBusinessLevel] = useState<BusinessLevel>(1)
   const [alarmOffsets, setAlarmOffsets] = useState<number[]>([1440, 120, 30])
+  const [msgConfirmation, setMsgConfirmation] = useState('')
+  const [msgReminder, setMsgReminder]         = useState('')
 
   useEffect(() => {
     async function loadGoogleStatus() {
@@ -72,6 +74,8 @@ export default function SettingsPage() {
           if (d.business_level)         setBusinessLevel(d.business_level as BusinessLevel)
           if (d.alarm_offsets_minutes) setAlarmOffsets(d.alarm_offsets_minutes)
           if (d.calendar_token)        setCalToken(d.calendar_token)
+          if (d.notification_messages?.confirmation) setMsgConfirmation(d.notification_messages.confirmation)
+          if (d.notification_messages?.reminder)     setMsgReminder(d.notification_messages.reminder)
         }
         if (idbSettings?.offsets_minutes?.length) setAlarmOffsets(idbSettings.offsets_minutes)
         const status = await loadGoogleStatus()
@@ -209,6 +213,10 @@ export default function SettingsPage() {
         address:               form.address.trim()      || null,
         city:                  form.city.trim()         || null,
         alarm_offsets_minutes: alarmOffsets,
+        notification_messages: {
+          confirmation: msgConfirmation.trim() || null,
+          reminder:     msgReminder.trim()     || null,
+        },
         updated_at:            new Date().toISOString(),
       }, { merge: true })
       setSaved(true)
@@ -368,6 +376,40 @@ export default function SettingsPage() {
           <p className="text-xs text-slate-500">
             Il pulsante WhatsApp negli appuntamenti invia un messaggio reale tramite Gigawa.
           </p>
+        </div>
+
+        {/* ── Messaggi WhatsApp ─────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-green-600" />
+            <h2 className="text-sm font-semibold text-slate-700">Messaggi WhatsApp</h2>
+          </div>
+          <p className="text-xs text-slate-400">
+            Variabili disponibili: <code className="bg-slate-100 px-1 rounded">{'{nome}'}</code>{' '}
+            <code className="bg-slate-100 px-1 rounded">{'{servizio}'}</code>{' '}
+            <code className="bg-slate-100 px-1 rounded">{'{data}'}</code>{' '}
+            <code className="bg-slate-100 px-1 rounded">{'{ora}'}</code>
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Messaggio di conferma</label>
+            <textarea
+              rows={3}
+              value={msgConfirmation}
+              onChange={e => setMsgConfirmation(e.target.value)}
+              placeholder={`Ciao {nome}! Ti confermiamo l'appuntamento per {servizio} {data} alle {ora}. Rispondi per confermare o disdire. Grazie!`}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Messaggio promemoria</label>
+            <textarea
+              rows={3}
+              value={msgReminder}
+              onChange={e => setMsgReminder(e.target.value)}
+              placeholder={`Ciao {nome}, ti ricordiamo l'appuntamento per {servizio} {data} alle {ora}. A presto!`}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none"
+            />
+          </div>
         </div>
 
         {/* ── Sveglie ────────────────────────────────────────────────── */}

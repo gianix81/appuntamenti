@@ -8,7 +8,7 @@ import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations } from '@/types/database'
 import { AppointmentStatusBadge, ConfirmationStatusBadge } from '@/components/ui/StatusBadge'
-import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2, CalendarPlus, Check } from 'lucide-react'
+import { Clock, Phone, Scissors, Pencil, MessageCircle, Trash2, CalendarPlus, Check, Calendar } from 'lucide-react'
 import { clsx } from 'clsx'
 import { getAlarmSettings } from '@/lib/alarmDB'
 import { generateICS, downloadICS } from '@/lib/icsGenerator'
@@ -43,22 +43,34 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   const hasConfirmedReminder = Boolean(
     appointment.notifications_sent?.whatsapp_reminder_30 && appointment.reminder_sent_at,
   )
+  const hasConfirmedConfirmation = Boolean(appointment.notifications_sent?.whatsapp_confirmation)
+
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
   const [calAdded, setCalAdded]           = useState(false)
   const [calLoading, setCalLoading]       = useState(false)
-  const [whatsAppSent, setWhatsAppSent]   = useState(false)
-  const [whatsAppLoading, setWhatsAppLoading] = useState(false)
-  const [autoReminderSent, setAutoReminderSent] = useState(hasConfirmedReminder)
-  const [autoReminderError, setAutoReminderError] = useState<string | null>(null)
+
+  // Confirmation WA button state
+  const [whatsAppSent, setWhatsAppSent]         = useState(false)
+  const [whatsAppLoading, setWhatsAppLoading]   = useState(false)
+  const [confirmationSent, setConfirmationSent] = useState(hasConfirmedConfirmation)
+
+  // Reminder WA button state (manual)
+  const [reminderSent, setReminderSent]       = useState(false)
+  const [reminderLoading, setReminderLoading] = useState(false)
+
+  // Auto-reminder state
+  const [autoReminderSent, setAutoReminderSent]         = useState(hasConfirmedReminder)
+  const [autoReminderError, setAutoReminderError]       = useState<string | null>(null)
   const [autoReminderAttempted, setAutoReminderAttempted] = useState(false)
+
   const [now, setNow] = useState(() => Date.now())
 
   const isPending = appointment.confirmation_status === 'pending'
   const start     = new Date(appointment.start_time)
   const end       = new Date(appointment.end_time)
   const msToStart = start.getTime() - now
-  const msToEnd = end.getTime() - now
+  const msToEnd   = end.getTime() - now
   const reminderMs = msToStart - 30 * 60_000
 
   useEffect(() => {
@@ -135,6 +147,7 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       }
 
       setWhatsAppSent(true)
+      setConfirmationSent(true)
       setTimeout(() => setWhatsAppSent(false), 4000)
     } catch (err) {
       alert(`WhatsApp: ${err}`)
@@ -142,6 +155,39 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
     } finally {
       setWhatsAppLoading(false)
     }
+  }
+
+  async function handleSendReminder() {
+    setReminderLoading(true)
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ appointmentId: appointment.id, kind: 'reminder' }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error ?? 'Invio promemoria non riuscito')
+      if (body.ok !== true || body.result?.success !== true) {
+        throw new Error(body.error ?? 'Gigawa non ha confermato l’invio')
+      }
+
+      setReminderSent(true)
+      setAutoReminderSent(true)
+      setTimeout(() => setReminderSent(false), 4000)
+    } catch (err) {
+      alert(`Promemoria WhatsApp: ${err}`)
+    } finally {
+      setReminderLoading(false)
+    }
+  }
+
+  function handleSendCalendarToClient() {
+    const icsUrl = `${window.location.origin}/api/appointments/${appointment.id}/ics`
+    const firstName = appointment.clients.first_name
+    const serviceName = appointment.services.name
+    const phone = appointment.clients.phone.replace(/\s+/g, '').replace(/^\+/, '')
+    const msg = `Ciao ${firstName}! Aggiungi il tuo appuntamento per ${serviceName} al calendario: ${icsUrl}`
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer')
   }
 
   async function sendReminderWhatsApp() {
@@ -190,6 +236,12 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
   }, [appointment.notifications_sent?.whatsapp_reminder_30, hasConfirmedReminder])
 
   useEffect(() => {
+    queueMicrotask(() => {
+      setConfirmationSent(hasConfirmedConfirmation)
+    })
+  }, [appointment.notifications_sent?.whatsapp_confirmation, hasConfirmedConfirmation])
+
+  useEffect(() => {
     if (appointment.status === 'cancelled' || appointment.status === 'completed') return
     if (autoReminderSent || autoReminderAttempted) return
     if (msToStart <= 0 || msToStart > 30 * 60_000) return
@@ -236,18 +288,29 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                 ) : (
                   <span className="font-medium text-slate-400">Terminato</span>
                 )}
-                {appointment.status !== 'cancelled' && msToStart > 0 && (
-                  autoReminderSent ? (
-                    <span className="text-green-600">Reminder WhatsApp inviato</span>
-                  ) : autoReminderError ? (
-                    <span className="text-red-500">Reminder WhatsApp non inviato</span>
-                  ) : (
-                    <span className="text-slate-400">
-                      Reminder WhatsApp {reminderMs > 0 ? `tra ${formatCountdown(reminderMs)}` : autoReminderAttempted ? 'in invio' : 'ora'}
-                    </span>
-                  )
-                )}
               </div>
+              {appointment.status !== 'cancelled' && (
+                <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs mt-1">
+                  {confirmationSent && (
+                    <span className="text-green-600 flex items-center gap-0.5">
+                      <Check className="w-3 h-3" /> Conferma inviata
+                    </span>
+                  )}
+                  {msToStart > 0 && (
+                    autoReminderSent ? (
+                      <span className="text-green-600 flex items-center gap-0.5">
+                        <Check className="w-3 h-3" /> Promemoria inviato
+                      </span>
+                    ) : autoReminderError ? (
+                      <span className="text-red-500">Promemoria non inviato</span>
+                    ) : (
+                      <span className="text-slate-400">
+                        Auto-promemoria {reminderMs > 0 ? `tra ${formatCountdown(reminderMs)}` : autoReminderAttempted ? 'in invio' : 'ora'}
+                      </span>
+                    )
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
@@ -279,7 +342,7 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                 style={{ backgroundColor: appointment.staff.color }}
               >
                 {appointment.staff.initials}
-                <span className="hidden sm:inline opacity-90">· {appointment.staff.name.split(' ')[0]}</span>
+                <span className="hidden sm:inline opacity-90">&middot; {appointment.staff.name.split(' ')[0]}</span>
               </span>
             )}
           </div>
@@ -297,7 +360,7 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
               {appointment.clients.phone}
             </a>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {/* Aggiungi al calendario nativo — sveglie offline */}
               {appointment.status !== 'cancelled' && (
                 <button
@@ -305,7 +368,7 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                   disabled={calLoading}
                   title="Aggiungi sveglie al calendario del telefono"
                   className={clsx(
-                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
+                    'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium transition-colors',
                     calAdded
                       ? 'bg-green-100 text-green-700'
                       : 'bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700',
@@ -313,17 +376,32 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                 >
                   {calAdded
                     ? <><Check className="w-3 h-3" /> Aggiunto!</>
-                    : <><CalendarPlus className="w-3 h-3" /> Calendario</>}
+                    : <><CalendarPlus className="w-3 h-3" /> Cal</>}
                 </button>
               )}
 
+              {/* Invia ICS al cliente via WhatsApp */}
+              {appointment.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  onClick={handleSendCalendarToClient}
+                  title="Invia link calendario al cliente via WhatsApp"
+                  className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium transition-colors bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  <Calendar className="w-3 h-3" />
+                  <span>Cal&rarr;</span>
+                </button>
+              )}
+
+              {/* Conferma WhatsApp */}
               {appointment.status !== 'cancelled' && (
                 <button
                   type="button"
                   onClick={handleSendWhatsApp}
                   disabled={whatsAppLoading}
+                  title="Invia messaggio di conferma via WhatsApp"
                   className={clsx(
-                    'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
+                    'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium transition-colors',
                     whatsAppSent
                       ? 'bg-green-100 text-green-700'
                       : 'bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-60',
@@ -331,7 +409,27 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
                 >
                   {whatsAppSent
                     ? <><Check className="w-3 h-3" /> Inviato</>
-                    : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? 'Invio…' : 'WhatsApp'}</>}
+                    : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? 'Invio…' : 'Conferma'}</>}
+                </button>
+              )}
+
+              {/* Promemoria WhatsApp */}
+              {appointment.status !== 'cancelled' && (
+                <button
+                  type="button"
+                  onClick={handleSendReminder}
+                  disabled={reminderLoading}
+                  title="Invia messaggio promemoria via WhatsApp"
+                  className={clsx(
+                    'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full font-medium transition-colors',
+                    reminderSent
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-60',
+                  )}
+                >
+                  {reminderSent
+                    ? <><Check className="w-3 h-3" /> Inviato</>
+                    : <><MessageCircle className="w-3 h-3" /> {reminderLoading ? 'Invio…' : 'Promemoria'}</>}
                 </button>
               )}
             </div>
