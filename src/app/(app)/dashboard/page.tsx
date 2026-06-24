@@ -243,35 +243,58 @@ export default function DashboardPage() {
     <div className="flex flex-col bg-white overflow-hidden h-full">
 
       {/* ── Controls bar ──────────────────────────────────────── */}
-      <div className="shrink-0 border-b border-slate-100 bg-white px-3 py-2 flex items-center gap-3 flex-wrap">
+      <div className="shrink-0 border-b border-slate-100 bg-white">
+        {/* Row 1: view tabs + date nav + today + new */}
+        <div className="flex items-center gap-2 px-3 py-2">
+          {/* View mode switcher */}
+          <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5 shrink-0">
+            {(['day', 'week', 'month'] as ViewMode[]).map(m => (
+              <button key={m} onClick={() => setViewMode(m)}
+                className={clsx('py-1 rounded-md text-xs font-semibold transition-all px-1.5 md:px-2.5',
+                  viewMode === m ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+                <span className="md:hidden">{m === 'day' ? 'Gio' : m === 'week' ? 'Sett' : 'Mese'}</span>
+                <span className="hidden md:inline">{m === 'day' ? 'Giorno' : m === 'week' ? 'Settimana' : 'Mese'}</span>
+              </button>
+            ))}
+          </div>
 
-        {/* View mode switcher */}
-        <div className="flex gap-0.5 bg-slate-100 rounded-lg p-0.5 shrink-0">
-          {(['day', 'week', 'month'] as ViewMode[]).map(m => (
-            <button key={m} onClick={() => setViewMode(m)}
-              className={clsx('px-2.5 py-1 rounded-md text-xs font-semibold transition-all',
-                viewMode === m ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
-              {m === 'day' ? 'Giorno' : m === 'week' ? 'Settimana' : 'Mese'}
+          {/* Date nav — flex-1 con min-w-0 previene overflow */}
+          <div className="flex items-center gap-0.5 flex-1 min-w-0 justify-center">
+            <button onClick={navPrev} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors shrink-0">
+              <ChevronLeft className="w-4 h-4 text-slate-500" />
             </button>
-          ))}
+            <span className="text-xs md:text-sm font-bold text-slate-800 px-1 capitalize truncate min-w-0 text-center">
+              {rangeLabel}
+            </span>
+            <button onClick={navNext} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors shrink-0">
+              <ChevronRight className="w-4 h-4 text-slate-500" />
+            </button>
+          </div>
+
+          {/* Today + New */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-xs text-slate-300 font-medium hidden md:block">{loading ? '…' : visible.length}</span>
+            <button onClick={goToday}
+              className={clsx('text-xs font-bold px-2.5 py-1 rounded-lg transition-colors',
+                isCurrentPeriod ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600')}>
+              Oggi
+            </button>
+            {/* Desktop: testo + icona */}
+            <Link href="/appointments/new"
+              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              <Plus className="w-3.5 h-3.5" /> Nuovo
+            </Link>
+            {/* Mobile: solo icona */}
+            <Link href="/appointments/new"
+              className="md:hidden w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              <Plus className="w-4 h-4 text-white" />
+            </Link>
+          </div>
         </div>
 
-        {/* Date nav */}
-        <div className="flex items-center gap-0.5">
-          <button onClick={navPrev} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-            <ChevronLeft className="w-4 h-4 text-slate-500" />
-          </button>
-          <span className="text-sm font-bold text-slate-800 px-2 capitalize whitespace-nowrap">
-            {rangeLabel}
-          </span>
-          <button onClick={navNext} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-            <ChevronRight className="w-4 h-4 text-slate-500" />
-          </button>
-        </div>
-
-        {/* Staff filter pills */}
+        {/* Row 2: staff filter pills (scrollabile, nessun overflow) */}
         {hasStaff && staff.length > 0 && !isStaff && (
-          <div className="flex items-center gap-1.5 overflow-x-auto flex-1">
+          <div className="flex items-center gap-1.5 overflow-x-auto px-3 pb-2 scrollbar-none">
             <button onClick={() => setStaffFilter(null)}
               className={clsx('shrink-0 text-xs font-bold px-2.5 py-1 rounded-full transition-all',
                 staffFilter === null ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}>
@@ -289,20 +312,6 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-
-        {/* Right: counter + today + new */}
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-slate-300 font-medium">{loading ? '…' : `${visible.length}`}</span>
-          <button onClick={goToday}
-            className={clsx('text-xs font-bold px-2.5 py-1 rounded-lg transition-colors',
-              isCurrentPeriod ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600')}>
-            Oggi
-          </button>
-          <Link href="/appointments/new"
-            className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
-            <Plus className="w-3.5 h-3.5" /> Nuovo
-          </Link>
-        </div>
       </div>
 
       {/* ── MONTH VIEW ─────────────────────────────────────────── */}

@@ -75,15 +75,15 @@ export function MobileNav() {
           </Link>
         )
       })}
-      {/* Logout — always visible on mobile */}
+      {/* Logout — rosso e distinto */}
       <button
         onClick={handleLogout}
-        className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors"
+        className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors group"
       >
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center">
-          <LogOut className="text-slate-400" style={{ width: '18px', height: '18px' }} />
+        <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center group-active:bg-red-100 transition-colors">
+          <LogOut className="text-red-500" style={{ width: '18px', height: '18px' }} />
         </div>
-        <span className="text-[10px] font-semibold text-slate-400">Esci</span>
+        <span className="text-[10px] font-bold text-red-500">Esci</span>
       </button>
     </nav>
   )
