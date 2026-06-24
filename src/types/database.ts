@@ -9,6 +9,47 @@ export interface NotificationSlot {
   type: NotificationType
 }
 
+export type YesNo = 'no' | 'si' | null
+
+export interface ClientAnamnesi {
+  // Salute generale
+  health_state?: string | null
+  ongoing_treatments?: string | null
+  medical_history?: string | null
+  // Ginecologia
+  pregnancy?: YesNo
+  pregnancy_count?: string | null
+  breastfeeding?: YesNo
+  breastfeeding_duration?: string | null
+  menstrual_cycle?: 'regolare' | 'irregolare' | 'doloroso' | null
+  // Allergie & controindicazioni
+  allergies?: YesNo
+  allergies_detail?: string | null
+  pacemaker?: boolean
+  wounds?: boolean
+  prosthesis?: boolean
+  metal_wires?: boolean
+  surgical_wires?: boolean
+  hypertension?: boolean
+  // Contraccezione
+  contraception_iud?: boolean
+  contraception_other?: string | null
+  // Stile di vita
+  diet?: 'regolare' | 'irregolare' | null
+  smoking?: YesNo
+  smoking_amount?: string | null
+  physical_activity?: YesNo
+  physical_activity_type?: string | null
+  physical_activity_freq?: 'weekly' | 'three_times' | 'daily' | null
+  // Esame obiettivo
+  warts?: YesNo
+  warts_location?: string | null
+  mycosis?: YesNo
+  mycosis_location?: string | null
+  capillaries?: YesNo
+  capillaries_location?: string | null
+}
+
 export interface Client {
   id: string
   first_name: string
@@ -16,6 +57,14 @@ export interface Client {
   phone: string
   email: string | null
   notes: string | null
+  // Dati personali estesi
+  birth_date?: string | null
+  address?: string | null
+  city?: string | null
+  cap?: string | null
+  profession?: string | null
+  // Scheda anamnesi
+  anamnesi?: ClientAnamnesi | null
   created_at: string
   updated_at: string
 }
