@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { clsx } from 'clsx'
-import { LayoutDashboard, Users, Scissors, CalendarDays, Settings, UserCog } from 'lucide-react'
+import { LayoutDashboard, Users, Scissors, CalendarDays, Settings, UserCog, LogOut } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 import { useUserRole } from '@/hooks/useUserRole'
+import { signOut } from 'firebase/auth'
+import { auth } from '@/lib/firebase/client'
 
 const ACTIVE_COLORS: Record<string, string> = {
   '/dashboard':    'text-indigo-600',
@@ -27,9 +29,16 @@ const ACTIVE_BG: Record<string, string> = {
 
 export function MobileNav() {
   const pathname = usePathname()
+  const router   = useRouter()
   const { hasStaff } = useBusinessLevel()
   const { role } = useUserRole()
   const isStaff = role === 'staff'
+
+  async function handleLogout() {
+    await signOut(auth)
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+  }
 
   const nav = [
     { href: '/dashboard',    label: 'Home',    icon: LayoutDashboard, show: true },
@@ -55,26 +64,27 @@ export function MobileNav() {
               active ? (ACTIVE_BG[href] ?? 'bg-slate-100') : 'bg-transparent',
             )}>
               <Icon
-                className={clsx(
-                  'w-4.5 h-4.5 transition-colors',
-                  active
-                    ? (ACTIVE_COLORS[href] ?? 'text-blue-600')
-                    : 'text-slate-400',
-                )}
+                className={clsx('transition-colors', active ? (ACTIVE_COLORS[href] ?? 'text-blue-600') : 'text-slate-400')}
                 style={{ width: '18px', height: '18px' }}
               />
             </div>
-            <span className={clsx(
-              'text-[10px] font-semibold',
-              active
-                ? (ACTIVE_COLORS[href] ?? 'text-blue-600')
-                : 'text-slate-400',
-            )}>
+            <span className={clsx('text-[10px] font-semibold',
+              active ? (ACTIVE_COLORS[href] ?? 'text-blue-600') : 'text-slate-400')}>
               {label}
             </span>
           </Link>
         )
       })}
+      {/* Logout — always visible on mobile */}
+      <button
+        onClick={handleLogout}
+        className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors"
+      >
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center">
+          <LogOut className="text-slate-400" style={{ width: '18px', height: '18px' }} />
+        </div>
+        <span className="text-[10px] font-semibold text-slate-400">Esci</span>
+      </button>
     </nav>
   )
 }

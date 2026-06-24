@@ -6,7 +6,7 @@ import { doc, getDoc, getDocs, query, collection, where, orderBy } from 'firebas
 import { db } from '@/lib/firebase/client'
 import type { Client, AppointmentWithRelations, Service, Staff } from '@/types/database'
 import { LoadingState } from '@/components/ui/LoadingState'
-import { ArrowLeft, Phone, Mail, CalendarDays, Clock, User } from 'lucide-react'
+import { ArrowLeft, Phone, Mail, CalendarDays, Clock, User, CalendarPlus, Copy, Check } from 'lucide-react'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { it } from 'date-fns/locale'
@@ -22,9 +22,10 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
 
 export default function ClientHistoryPage() {
   const { id } = useParams<{ id: string }>()
-  const [client, setClient]   = useState<Client | null>(null)
-  const [apts, setApts]       = useState<AppointmentWithRelations[]>([])
-  const [loading, setLoading] = useState(true)
+  const [client, setClient]     = useState<Client | null>(null)
+  const [apts, setApts]         = useState<AppointmentWithRelations[]>([])
+  const [loading, setLoading]   = useState(true)
+  const [copiedCal, setCopiedCal] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -67,6 +68,7 @@ export default function ClientHistoryPage() {
   if (loading) return <div className="flex-1 flex items-center justify-center"><LoadingState /></div>
   if (!client) return <div className="flex-1 flex items-center justify-center text-slate-400">Cliente non trovato</div>
 
+  const calUrl   = typeof window !== 'undefined' ? `${window.location.origin}/api/clients/${id}/calendar` : `/api/clients/${id}/calendar`
   const fullName = `${client.first_name} ${client.last_name}`
   const initials = `${client.first_name[0]}${client.last_name[0]}`.toUpperCase()
   const completedApts = apts.filter(a => a.status !== 'cancelled' && a.status !== 'no_show')
@@ -126,6 +128,43 @@ export default function ClientHistoryPage() {
               <p className="text-xs text-slate-400 mt-0.5">{label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Calendar card */}
+        <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl border border-indigo-100 p-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+              <CalendarPlus className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-800 text-sm">Calendario personale cliente</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-3">
+                Invia questo link alla cliente: aggiungerà tutti i suoi appuntamenti a Google Calendar, Apple Calendar o Outlook — sempre aggiornato.
+              </p>
+              <div className="flex items-center gap-2 bg-white rounded-xl border border-indigo-100 px-3 py-2">
+                <code className="text-xs text-slate-600 flex-1 truncate">{calUrl}</code>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(calUrl)
+                    setCopiedCal(true)
+                    setTimeout(() => setCopiedCal(false), 2000)
+                  }}
+                  className="shrink-0 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors"
+                  title="Copia URL"
+                >
+                  {copiedCal ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-indigo-400" />}
+                </button>
+                <a
+                  href={calUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-700 whitespace-nowrap"
+                >
+                  Apri
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* History list */}
