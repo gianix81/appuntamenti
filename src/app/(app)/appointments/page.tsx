@@ -11,9 +11,10 @@ import { collection, getDocs, getDoc, doc, query, where, orderBy } from 'firebas
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
+import { AgendaView } from '@/components/appointments/AgendaView'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { CalendarDays, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarDays, Plus, ChevronLeft, ChevronRight, List, LayoutGrid } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 
@@ -27,6 +28,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
   const [staffList, setStaffList]       = useState<StaffDoc[]>([])
   const [staffFilter, setStaffFilter]   = useState<string | null>(null)  // null = tutte
+  const [viewMode, setViewMode]         = useState<'list' | 'agenda'>('list')
   const [loading, setLoading]           = useState(true)
 
   const days = eachDayOfInterval({ start: weekStart, end: endOfWeek(weekStart, { weekStartsOn: 1 }) })
@@ -92,15 +94,40 @@ export default function AppointmentsPage() {
   })
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto w-full">
+    <div className={clsx('p-4 md:p-6 w-full', viewMode === 'list' && 'max-w-3xl mx-auto')}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-800">Appuntamenti</h1>
-        <Link
-          href="/appointments/new"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Nuovo
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* Toggle lista / agenda */}
+          <div className="flex bg-slate-100 rounded-xl p-0.5">
+            <button
+              onClick={() => setViewMode('list')}
+              className={clsx(
+                'p-2 rounded-lg transition-colors',
+                viewMode === 'list' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600',
+              )}
+              title="Vista lista"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('agenda')}
+              className={clsx(
+                'p-2 rounded-lg transition-colors',
+                viewMode === 'agenda' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600',
+              )}
+              title="Vista agenda"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+          <Link
+            href="/appointments/new"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Nuovo
+          </Link>
+        </div>
       </div>
 
       {/* Navigatore settimanale */}
@@ -191,6 +218,14 @@ export default function AppointmentsPage() {
 
       {loading ? (
         <LoadingState />
+      ) : viewMode === 'agenda' ? (
+        <AgendaView
+          date={selectedDate}
+          appointments={appointments}
+          staff={staffList}
+          hasStaff={hasStaff}
+          staffFilter={staffFilter}
+        />
       ) : dayAppointments.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
