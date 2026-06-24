@@ -18,6 +18,17 @@ import {
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 
+const NAV_COLORS: Record<string, string> = {
+  '/dashboard':    'from-blue-500 to-indigo-600',
+  '/appointments': 'from-orange-400 to-rose-500',
+  '/clients':      'from-violet-500 to-purple-700',
+  '/services':     'from-emerald-400 to-teal-600',
+  '/staff':        'from-sky-400 to-blue-600',
+  '/reports':      'from-amber-400 to-orange-600',
+  '/inventory':    'from-pink-400 to-rose-600',
+  '/settings':     'from-slate-400 to-slate-600',
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
@@ -41,39 +52,63 @@ export function Sidebar() {
   ].filter(item => item.show)
 
   return (
-    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-blue-950 border-r border-blue-900 py-6 px-3">
+    <aside className="hidden md:flex flex-col w-60 min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 border-r border-white/5 py-6 px-3">
+      {/* Logo */}
       <div className="px-3 mb-8">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-sky-400 flex items-center justify-center">
-            <Scissors className="w-4 h-4 text-white" />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
+            <Scissors className="w-5 h-5 text-white" strokeWidth={1.8} />
           </div>
-          <span className="font-bold text-white text-sm leading-tight">Appuntamenti<br/>App</span>
+          <div>
+            <p className="font-bold text-white text-sm leading-tight">Estetista</p>
+            <p className="text-white/40 text-xs">Gestione salone</p>
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1">
-        {nav.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={clsx(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-              pathname.startsWith(href)
-                ? 'bg-white/10 text-white'
-                : 'text-blue-200 hover:bg-white/10 hover:text-white'
-            )}
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            {label}
-          </Link>
-        ))}
+      {/* Navigation */}
+      <nav className="flex-1 space-y-0.5">
+        {nav.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const gradient = NAV_COLORS[href] ?? 'from-slate-500 to-slate-600'
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={clsx(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                active
+                  ? 'bg-white/10 text-white'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+              )}
+            >
+              <div className={clsx(
+                'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br transition-opacity',
+                gradient,
+                active ? 'opacity-100 shadow-sm' : 'opacity-60',
+              )}>
+                <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+              </div>
+              {label}
+              {active && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />
+              )}
+            </Link>
+          )
+        })}
       </nav>
 
+      {/* Divider */}
+      <div className="border-t border-white/10 mx-3 my-3" />
+
+      {/* Logout */}
       <button
         onClick={handleLogout}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-blue-300 hover:bg-white/10 hover:text-white transition-colors mt-4"
+        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-white/5 hover:text-slate-300 transition-all"
       >
-        <LogOut className="w-4 h-4 shrink-0" />
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br from-slate-500 to-slate-600 opacity-60">
+          <LogOut className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+        </div>
         Esci
       </button>
     </aside>
