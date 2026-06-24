@@ -94,7 +94,7 @@ export default function AppointmentsPage() {
   })
 
   return (
-    <div className={clsx('p-4 md:p-6 w-full', viewMode === 'list' && 'max-w-3xl mx-auto')}>
+    <div className={clsx('flex-1 overflow-y-auto p-4 md:p-6 w-full', viewMode === 'list' && 'max-w-3xl mx-auto')}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-800">Appuntamenti</h1>
         <div className="flex items-center gap-2">

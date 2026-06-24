@@ -231,7 +231,7 @@ export default function SettingsPage() {
   if (loading) return <div className="p-6 text-slate-400 text-sm">Caricamento…</div>
 
   return (
-    <div className="p-4 md:p-6 max-w-lg mx-auto w-full">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 max-w-lg mx-auto w-full">
       <h1 className="text-xl font-bold text-slate-800 mb-6">Impostazioni</h1>
 
       <form onSubmit={handleSave} className="space-y-4">

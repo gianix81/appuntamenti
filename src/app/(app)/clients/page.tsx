@@ -54,7 +54,7 @@ export default function ClientsPage() {
   )
 
   return (
-    <div className="min-h-full bg-slate-50">
+    <div className="flex-1 overflow-y-auto bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
