@@ -103,6 +103,9 @@ export function AppointmentCard({ appointment, onDelete, hideClientDetails = fal
   const statusM = STATUS_META[appointment.status] ?? STATUS_META.scheduled
   const confM   = CONF_META[appointment.confirmation_status] ?? CONF_META.pending
 
+  // Guard: client o service potrebbero mancare se il documento è stato eliminato da Firestore
+  if (!appointment.clients || !appointment.services) return null
+
   const clientFullName = `${appointment.clients.first_name} ${appointment.clients.last_name}`
   const clientInitials = [appointment.clients.first_name[0], appointment.clients.last_name[0]].join('').toUpperCase()
 

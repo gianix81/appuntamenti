@@ -81,7 +81,7 @@ export default function AppointmentsPage() {
         clients:  cMap[a.client_id],
         services: sMap[a.service_id],
         staff:    a.staff_id ? (stMap[a.staff_id] ?? null) : null,
-      })))
+      })).filter(a => a.clients != null && a.services != null))
     } catch (err) {
       console.error('[Appointments] load:', err)
     } finally {
