@@ -428,7 +428,11 @@ export default function DashboardPage() {
                     )}
                     <div className="absolute inset-0 flex">
                       {activeLanes.map((lane, laneIdx) => {
-                        const laneApts = dayApts.filter(a => lane.id === null ? true : a.staff_id === lane.id)
+                        const laneApts = dayApts.filter(a => {
+                          if (lane.id === null) return true                        // mobile collapsed: mostra tutto
+                          if (!a.staff_id)      return laneIdx === 0              // senza staff: prima corsia
+                          return a.staff_id === lane.id
+                        })
                         return (
                           <div key={lane.id ?? '__'}
                             className={clsx('relative flex-1 h-full', laneIdx > 0 && 'border-l border-slate-100')}>

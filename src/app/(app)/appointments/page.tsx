@@ -96,12 +96,15 @@ export default function AppointmentsPage() {
   function prevWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n }) }
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }
 
-  // Filtra appuntamenti per giorno selezionato + filtro staff
-  const dayAppointments = appointments.filter(a => {
-    if (!isSameDay(new Date(a.start_time), selectedDate)) return false
-    if (staffFilter && a.staff_id !== staffFilter) return false
-    return true
-  })
+  // Appuntamenti settimana corrente filtrati per staff
+  const weekAppointments = appointments.filter(a =>
+    !staffFilter || a.staff_id === staffFilter,
+  )
+  // Per agenda view e per il navigatore settimanale
+  const dayAppointments = appointments.filter(a =>
+    isSameDay(new Date(a.start_time), selectedDate) &&
+    (!staffFilter || a.staff_id === staffFilter),
+  )
 
   return (
     <div className={clsx('flex-1 overflow-y-auto p-4 md:p-6 w-full', viewMode === 'list' && 'max-w-3xl mx-auto')}>
@@ -155,28 +158,27 @@ export default function AppointmentsPage() {
         </div>
         <div className="grid grid-cols-7 gap-1">
           {days.map(day => {
-            const hasAppts   = appointments.some(a =>
+            const dayCount = appointments.filter(a =>
               isSameDay(new Date(a.start_time), day) &&
               (!staffFilter || a.staff_id === staffFilter),
-            )
-            const isSelected = isSameDay(day, selectedDate)
+            ).length
             return (
-              <button
+              <div
                 key={day.toISOString()}
-                onClick={() => setSelectedDate(day)}
                 className={clsx(
-                  'flex flex-col items-center py-2 rounded-xl transition-colors text-xs relative',
-                  isSelected    ? 'bg-blue-600 text-white'
-                  : isToday(day) ? 'bg-blue-50 text-blue-600'
-                  : 'hover:bg-slate-50 text-slate-600',
+                  'flex flex-col items-center py-2 rounded-xl text-xs relative',
+                  isToday(day) ? 'bg-blue-600 text-white' : 'text-slate-600',
                 )}
               >
                 <span className="uppercase font-medium">{format(day, 'EEE', { locale: it }).slice(0, 3)}</span>
                 <span className="font-bold mt-0.5">{format(day, 'd')}</span>
-                {hasAppts && !isSelected && (
-                  <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-400" />
+                {dayCount > 0 && (
+                  <span className={clsx(
+                    'absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-bold',
+                    isToday(day) ? 'text-blue-200' : 'text-blue-500',
+                  )}>{dayCount}</span>
                 )}
-              </button>
+              </div>
             )
           })}
         </div>
@@ -220,9 +222,11 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      <p className="text-sm font-medium text-slate-500 mb-3 capitalize">
-        {isToday(selectedDate) ? 'Oggi' : format(selectedDate, 'EEEE d MMMM', { locale: it })}
-        {' — '}{dayAppointments.length} appuntament{dayAppointments.length === 1 ? 'o' : 'i'}
+      {/* Intestazione settimana */}
+      <p className="text-sm font-medium text-slate-500 mb-3">
+        {'Settimana — '}
+        <span className="font-bold text-slate-700">{weekAppointments.length}</span>
+        {' appuntament'}{weekAppointments.length === 1 ? 'o' : 'i'}
         {staffFilter && staffList.length > 0 && (
           <> · {staffList.find(s => s.id === staffFilter)?.name.split(' ')[0]}</>
         )}
@@ -238,11 +242,11 @@ export default function AppointmentsPage() {
           hasStaff={hasStaff}
           staffFilter={staffFilter}
         />
-      ) : dayAppointments.length === 0 ? (
+      ) : weekAppointments.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title="Nessun appuntamento"
-          description="Nessun appuntamento per questo giorno."
+          description="Nessun appuntamento questa settimana."
           action={
             <Link
               href="/appointments/new"
@@ -253,15 +257,34 @@ export default function AppointmentsPage() {
           }
         />
       ) : (
-        <div className="space-y-3">
-          {dayAppointments.map(apt => (
-            <AppointmentCard
-              key={apt.id}
-              appointment={apt}
-              onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
-              hideClientDetails={isStaff}
-            />
-          ))}
+        /* Lista settimanale raggruppata per giorno */
+        <div className="space-y-6">
+          {days.map(day => {
+            const dayApts = weekAppointments.filter(a =>
+              isSameDay(new Date(a.start_time), day),
+            )
+            if (dayApts.length === 0) return null
+            return (
+              <div key={day.toISOString()}>
+                <p className={clsx(
+                  'text-xs font-bold uppercase tracking-wide mb-2 capitalize',
+                  isToday(day) ? 'text-blue-600' : 'text-slate-400',
+                )}>
+                  {isToday(day) ? 'Oggi · ' : ''}{format(day, 'EEEE d MMMM', { locale: it })}
+                </p>
+                <div className="space-y-3">
+                  {dayApts.map(apt => (
+                    <AppointmentCard
+                      key={apt.id}
+                      appointment={apt}
+                      onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
+                      hideClientDetails={isStaff}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
