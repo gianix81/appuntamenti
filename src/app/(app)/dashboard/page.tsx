@@ -196,29 +196,26 @@ export default function DashboardPage() {
     <div className="min-h-full bg-slate-50">
 
       {/* ── Hero gradient ───────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 px-4 pt-8 pb-24 overflow-hidden">
-        {/* Decorazioni sfondo */}
-        <div className="absolute top-0 right-0 w-72 h-72 rounded-full bg-white/10 translate-x-24 -translate-y-24 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full bg-white/10 -translate-x-16 translate-y-20 pointer-events-none" />
+      <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-500 px-4 pt-6 pb-24 overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 rounded-full bg-white/10 translate-x-20 -translate-y-20 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 md:w-72 md:h-72 rounded-full bg-white/10 -translate-x-14 translate-y-16 pointer-events-none" />
 
         <div className="relative max-w-lg mx-auto">
-          {/* Saluto + data */}
-          <div className="flex items-start justify-between">
-            <div>
+          {/* Saluto + orologio */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <p suppressHydrationWarning className="text-white/70 text-sm font-medium">
                 {now ? getGreeting(now) : ''}
               </p>
-              <h1 className="text-white text-2xl font-bold mt-0.5 capitalize">
+              <h1 className="text-white text-xl sm:text-2xl font-bold mt-0.5 capitalize leading-tight">
                 {isToday(date) ? 'Oggi' : format(date, 'EEEE', { locale: it })}
-                <span className="text-white/60 font-normal text-lg ml-2 capitalize">
+                <span className="text-white/60 font-normal text-base sm:text-lg ml-2 capitalize">
                   {format(date, 'd MMM', { locale: it })}
                 </span>
               </h1>
             </div>
-
-            {/* Orologio digitale */}
-            <div className="text-right">
-              <p suppressHydrationWarning className="text-white text-2xl font-bold tabular-nums tracking-tight">
+            <div className="text-right shrink-0">
+              <p suppressHydrationWarning className="text-white text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">
                 {now ? format(now, 'HH:mm') : '--:--'}
               </p>
               <p suppressHydrationWarning className="text-white/50 text-xs tabular-nums">
@@ -227,19 +224,19 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Stat pills */}
-          <div className="flex gap-2 mt-5">
-            <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center border border-white/10">
-              <p className="text-white text-2xl font-bold">{loading ? '—' : stats.total}</p>
-              <p className="text-white/60 text-xs font-medium mt-0.5">Totali</p>
+          {/* Stat pills — 3 colonne sempre */}
+          <div className="grid grid-cols-3 gap-2 mt-5">
+            <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-2 py-3 text-center border border-white/10">
+              <p className="text-white text-2xl font-bold leading-none">{loading ? '—' : stats.total}</p>
+              <p className="text-white/60 text-xs font-medium mt-1">Totali</p>
             </div>
-            <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center border border-white/10">
-              <p className="text-amber-300 text-2xl font-bold">{loading ? '—' : stats.pending}</p>
-              <p className="text-white/60 text-xs font-medium mt-0.5">In attesa</p>
+            <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-2 py-3 text-center border border-white/10">
+              <p className="text-amber-300 text-2xl font-bold leading-none">{loading ? '—' : stats.pending}</p>
+              <p className="text-white/60 text-xs font-medium mt-1">Attesa</p>
             </div>
-            <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl px-3 py-2.5 text-center border border-white/10">
-              <p className="text-emerald-300 text-2xl font-bold">{loading ? '—' : stats.confirmed}</p>
-              <p className="text-white/60 text-xs font-medium mt-0.5">Confermati</p>
+            <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-2 py-3 text-center border border-white/10">
+              <p className="text-emerald-300 text-2xl font-bold leading-none">{loading ? '—' : stats.confirmed}</p>
+              <p className="text-white/60 text-xs font-medium mt-1">Confermati</p>
             </div>
           </div>
         </div>
@@ -251,20 +248,20 @@ export default function DashboardPage() {
         {/* Tile accesso rapido */}
         <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/60 p-5">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Accesso Rapido</p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {visibleTiles.map(tile => (
               <Link
                 key={tile.href}
                 href={tile.href}
-                className="group flex flex-col items-center gap-2 p-2 rounded-2xl hover:bg-slate-50 transition-colors"
+                className="group flex flex-col items-center gap-2.5 p-3 rounded-2xl hover:bg-slate-50 transition-colors"
               >
                 <div className={clsx(
-                  'w-14 h-14 rounded-2xl flex items-center justify-center shadow-md bg-gradient-to-br transition-transform group-hover:scale-105',
+                  'w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg bg-gradient-to-br transition-transform group-hover:scale-105 group-active:scale-95',
                   tile.from, tile.to,
                 )}>
-                  <tile.icon className="w-6 h-6 text-white" strokeWidth={1.8} />
+                  <tile.icon className="w-7 h-7 text-white" strokeWidth={1.8} />
                 </div>
-                <span className="text-xs font-semibold text-slate-600 text-center leading-tight">
+                <span className="text-xs font-bold text-slate-600 text-center leading-tight">
                   {tile.label}
                 </span>
               </Link>
