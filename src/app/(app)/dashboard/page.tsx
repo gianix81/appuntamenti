@@ -223,12 +223,14 @@ export default function DashboardPage() {
           >
             Oggi
           </button>
-          <Link
-            href="/appointments/new"
-            className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-3.5 h-3.5" /> Nuovo
-          </Link>
+          {!isStaff && (
+            <Link
+              href="/appointments/new"
+              className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nuovo
+            </Link>
+          )}
         </div>
       </div>
 
@@ -400,13 +402,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* FAB */}
-      <Link
-        href="/appointments/new"
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-300 hover:scale-105 transition-transform z-50"
-      >
-        <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
-      </Link>
+      {/* FAB — solo admin */}
+      {!isStaff && (
+        <Link
+          href="/appointments/new"
+          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-300 hover:scale-105 transition-transform z-50"
+        >
+          <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
+        </Link>
+      )}
     </div>
   )
 }

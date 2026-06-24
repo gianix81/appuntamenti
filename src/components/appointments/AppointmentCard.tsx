@@ -18,6 +18,7 @@ import { generateICS, downloadICS } from '@/lib/icsGenerator'
 interface Props {
   appointment: AppointmentWithRelations
   onDelete?: (id: string) => void
+  hideClientDetails?: boolean
 }
 
 function buildWhatsAppUrl(appointment: AppointmentWithRelations): string {
@@ -67,7 +68,7 @@ const CONF_META: Record<string, { label: string; cls: string }> = {
   no_response: { label: 'Nessuna risposta',cls: 'bg-slate-100 text-slate-500'   },
 }
 
-export function AppointmentCard({ appointment, onDelete }: Props) {
+export function AppointmentCard({ appointment, onDelete, hideClientDetails = false }: Props) {
   const hasConfirmedReminder     = Boolean(appointment.notifications_sent?.whatsapp_reminder_30 && appointment.reminder_sent_at)
   const hasConfirmedConfirmation = Boolean(appointment.notifications_sent?.whatsapp_confirmation)
 
@@ -372,14 +373,18 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
       {/* ── Action footer ─────────────────────────────────────────── */}
       {!isCancelled && (
         <div className="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between gap-2 bg-slate-50/60 flex-wrap">
-          {/* Telefono */}
-          <a
-            href={`tel:${appointment.clients.phone}`}
-            className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors"
-          >
-            <Phone className="w-3.5 h-3.5" />
-            {appointment.clients.phone}
-          </a>
+          {/* Telefono — solo admin */}
+          {!hideClientDetails ? (
+            <a
+              href={`tel:${appointment.clients.phone}`}
+              className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              {appointment.clients.phone}
+            </a>
+          ) : (
+            <span className="text-xs text-slate-300 italic">Solo nominativo</span>
+          )}
 
           {/* Azioni */}
           <div className="flex items-center gap-1.5 flex-wrap justify-end">
@@ -397,49 +402,55 @@ export function AppointmentCard({ appointment, onDelete }: Props) {
               {calAdded ? <><Check className="w-3 h-3" /> Ok!</> : <><CalendarPlus className="w-3 h-3" /> Cal</>}
             </button>
 
-            <button
-              type="button"
-              onClick={handleSendCalendarToClient}
-              title="Invia calendario al cliente via WhatsApp"
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-all"
-            >
-              <Calendar className="w-3 h-3" />
-              <span>Cal →</span>
-            </button>
+            {!hideClientDetails && (
+              <button
+                type="button"
+                onClick={handleSendCalendarToClient}
+                title="Invia calendario al cliente via WhatsApp"
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-all"
+              >
+                <Calendar className="w-3 h-3" />
+                <span>Cal →</span>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={handleSendWhatsApp}
-              disabled={whatsAppLoading}
-              title="Invia messaggio di conferma WhatsApp"
-              className={clsx(
-                'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
-                whatsAppSent
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60',
-              )}
-            >
-              {whatsAppSent
-                ? <><Check className="w-3 h-3" /> Inviato</>
-                : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? '…' : 'Conferma'}</>}
-            </button>
+            {!hideClientDetails && (
+              <button
+                type="button"
+                onClick={handleSendWhatsApp}
+                disabled={whatsAppLoading}
+                title="Invia messaggio di conferma WhatsApp"
+                className={clsx(
+                  'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
+                  whatsAppSent
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60',
+                )}
+              >
+                {whatsAppSent
+                  ? <><Check className="w-3 h-3" /> Inviato</>
+                  : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? '…' : 'Conferma'}</>}
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={handleSendReminder}
-              disabled={reminderLoading}
-              title="Invia promemoria WhatsApp"
-              className={clsx(
-                'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
-                reminderSent
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60',
-              )}
-            >
-              {reminderSent
-                ? <><Check className="w-3 h-3" /> Inviato</>
-                : <><MessageCircle className="w-3 h-3" /> {reminderLoading ? '…' : 'Promemoria'}</>}
-            </button>
+            {!hideClientDetails && (
+              <button
+                type="button"
+                onClick={handleSendReminder}
+                disabled={reminderLoading}
+                title="Invia promemoria WhatsApp"
+                className={clsx(
+                  'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
+                  reminderSent
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60',
+                )}
+              >
+                {reminderSent
+                  ? <><Check className="w-3 h-3" /> Inviato</>
+                  : <><MessageCircle className="w-3 h-3" /> {reminderLoading ? '…' : 'Promemoria'}</>}
+              </button>
+            )}
           </div>
         </div>
       )}
