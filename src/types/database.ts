@@ -59,6 +59,7 @@ export interface Staff {
   commission_pct: number  // 0-100
   schedule: WeekSchedule
   days_off: string[]      // ISO dates "YYYY-MM-DD"
+  photo_url?: string | null     // Firebase Storage download URL
   auth_uid?: string | null      // Firebase Auth UID (linked when login is created)
   login_email?: string | null   // email used for app login
   created_at: string

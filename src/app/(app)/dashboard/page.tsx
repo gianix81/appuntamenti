@@ -366,10 +366,19 @@ export default function DashboardPage() {
                     <div className="flex justify-around items-center py-1 shrink-0">
                       {activeLanes.map(lane => (
                         <div key={lane.id ?? '__'} className="flex-1 flex items-center justify-center" title={lane.name}>
-                          <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
-                            style={{ width: circleSize, height: circleSize, fontSize: circleSize <= 16 ? 7 : 8, backgroundColor: lane.color ?? '#6366f1' }}>
-                            {lane.initials}
-                          </div>
+                          {(lane as typeof lane & { photo_url?: string | null }).photo_url ? (
+                            <img
+                              src={(lane as typeof lane & { photo_url?: string | null }).photo_url!}
+                              alt={lane.name}
+                              className="rounded-full object-cover shrink-0"
+                              style={{ width: circleSize, height: circleSize }}
+                            />
+                          ) : (
+                            <div className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                              style={{ width: circleSize, height: circleSize, fontSize: circleSize <= 16 ? 7 : 8, backgroundColor: lane.color ?? '#6366f1' }}>
+                              {lane.initials}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

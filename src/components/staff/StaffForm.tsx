@@ -100,10 +100,13 @@ export function StaffForm({ existing }: Props) {
       {/* Preview + nome/ruolo */}
       <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
         <div
-          className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0"
+          className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-base shrink-0 overflow-hidden"
           style={{ backgroundColor: form.color }}
         >
-          {displayInitials}
+          {existing?.photo_url
+            ? <img src={existing.photo_url} alt={form.name} className="w-full h-full object-cover" />
+            : displayInitials
+          }
         </div>
         <div className="min-w-0">
           <p className="font-semibold text-slate-800 text-sm truncate">{form.name || 'Nome operatrice'}</p>
