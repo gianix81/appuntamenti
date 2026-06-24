@@ -20,12 +20,12 @@ import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 import { useUserRole } from '@/hooks/useUserRole'
 
 /* ── Constants ──────────────────────────────────────────────── */
-const HOUR_PX    = 60
+const HOUR_PX    = 44          // was 60 — more compact rows
 const START_HOUR = 8
 const END_HOUR   = 20
 const GRID_H     = (END_HOUR - START_HOUR) * HOUR_PX
 const GRID_MINS  = (END_HOUR - START_HOUR) * 60
-const GUTTER_W   = 40
+const GUTTER_W   = 36
 const HOURS      = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
 
 type ViewMode = 'day' | 'week' | 'month'
@@ -72,7 +72,15 @@ export default function DashboardPage() {
   const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([])
   const [loading, setLoading]           = useState(true)
   const [liveTop, setLiveTop]           = useState(nowTop)
+  const [isMobile, setIsMobile]         = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   /* Computed date range */
   const { rangeStart, rangeEnd, viewDays, rangeLabel } = useMemo(() => {
@@ -106,7 +114,9 @@ export default function DashboardPage() {
     }
   }, [viewMode, viewRef])
 
-  /* Active lanes per day column */
+  /* Active lanes per day column.
+     On mobile without a staff filter, collapse all operators into one column
+     (appointments are colored by staff color). */
   const activeLanes = useMemo(() => {
     if (!hasStaff || staff.length === 0)
       return [{ id: null as string | null, name: '', color: '#6366f1', initials: 'T' }]
@@ -114,11 +124,14 @@ export default function DashboardPage() {
       const s = staff.find(s => s.id === staffFilter)
       return s ? [{ ...s, id: s.id as string | null }] : []
     }
+    if (isMobile)
+      return [{ id: null as string | null, name: 'Tutte', color: '#6366f1', initials: 'T' }]
     return staff.map(s => ({ ...s, id: s.id as string | null }))
-  }, [hasStaff, staff, staffFilter])
+  }, [hasStaff, staff, staffFilter, isMobile])
 
   const laneCount  = activeLanes.length
-  const aptDisplay = laneCount >= 5 ? 'dot' : laneCount >= 4 ? 'init' : 'name'
+  // On mobile always show initials (columns are too narrow for full names)
+  const aptDisplay = isMobile ? 'init' : laneCount >= 5 ? 'dot' : laneCount >= 4 ? 'init' : 'name'
   const circleSize = laneCount >= 4 ? 16 : 20
 
   /* Navigation */
@@ -434,27 +447,31 @@ export default function DashboardPage() {
                               const height = apptHeight(apt.start_time, apt.end_time)
                               const color  = lane.id !== null ? (lane.color ?? '#6366f1') : (apt.staff?.color ?? '#6366f1')
                               if (top < 0 || top > GRID_H) return null
+                              // On mobile collapsed view, use the apt's staff color
+                              const aptColor = (isMobile && lane.id === null)
+                                ? (apt.staff?.color ?? '#6366f1')
+                                : color
                               return (
                                 <Link key={apt.id} href={`/appointments/${apt.id}/edit`}
-                                  className="absolute rounded-md overflow-hidden hover:brightness-90 active:brightness-75 transition-all shadow-sm"
-                                  style={{ top, height, left: 1, right: 1, backgroundColor: color, zIndex: 1 }}>
-                                  <div className="px-1 py-0.5 h-full overflow-hidden">
+                                  className="absolute rounded overflow-hidden hover:brightness-90 active:brightness-75 transition-all shadow-sm"
+                                  style={{ top, height: Math.max(height, 20), left: 1, right: 1, backgroundColor: aptColor, zIndex: 1 }}>
+                                  <div className="px-1 pt-0.5 h-full overflow-hidden">
                                     {aptDisplay === 'dot' ? null : aptDisplay === 'init' ? (
-                                      <p className="text-white font-bold leading-tight" style={{ fontSize: 9 }}>
+                                      <p className="text-white font-bold leading-none" style={{ fontSize: 9 }}>
                                         {apt.clients?.first_name?.[0]}{apt.clients?.last_name?.[0]}
                                       </p>
                                     ) : (
                                       <>
-                                        <p className="text-white font-bold leading-tight truncate" style={{ fontSize: 10 }}>
+                                        <p className="text-white font-bold leading-none truncate" style={{ fontSize: 10 }}>
                                           {apt.clients?.first_name} {apt.clients?.last_name?.[0]}.
                                         </p>
-                                        {height >= 34 && (
-                                          <p className="text-white/75 leading-tight truncate" style={{ fontSize: 9 }}>
+                                        {height >= 30 && (
+                                          <p className="text-white/75 leading-none truncate mt-0.5" style={{ fontSize: 9 }}>
                                             {apt.services?.name}
                                           </p>
                                         )}
-                                        {height >= 48 && (
-                                          <p className="text-white/60 tabular-nums" style={{ fontSize: 9 }}>
+                                        {height >= 42 && (
+                                          <p className="text-white/60 tabular-nums mt-0.5" style={{ fontSize: 9 }}>
                                             {new Date(apt.start_time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                                           </p>
                                         )}
