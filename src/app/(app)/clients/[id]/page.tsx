@@ -56,8 +56,8 @@ export default function ClientHistoryPage() {
       setApts(raw.map(a => ({
         ...a,
         clients:  { id, ...clientSnap.data() } as Client,
-        services: a.service_id ? sMap[a.service_id]  : undefined,
-        staff:    a.staff_id   ? stMap[a.staff_id]   : undefined,
+        services: (a.service_id ? sMap[a.service_id] : undefined) as Service,
+        staff:    (a.staff_id   ? stMap[a.staff_id]  : undefined) as Staff,
       })))
       setLoading(false)
     }
