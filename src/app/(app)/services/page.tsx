@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { Service } from '@/types/database'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
-import { Scissors, Plus, Pencil, Trash2, Clock, Euro, Download, X, Check } from 'lucide-react'
+import { Scissors, Plus, Pencil, Trash2, Clock, Euro, Download, X, Check, Zap, Flame, Sparkles, Leaf } from 'lucide-react'
 import { clsx } from 'clsx'
 
 /* ── Category helpers ────────────────────────────────────── */
@@ -26,12 +26,12 @@ function guessCategory(name: string): string {
   return 'Altro'
 }
 
-const CATEGORY_STYLE: Record<string, { pill: string; bg: string; icon: string }> = {
-  Unghie:       { pill: 'bg-pink-100 text-pink-700',   bg: 'from-pink-400 to-rose-500',    icon: '💅' },
-  Ceretta:      { pill: 'bg-amber-100 text-amber-700', bg: 'from-amber-400 to-orange-500', icon: '🪶' },
-  Laser:        { pill: 'bg-violet-100 text-violet-700', bg: 'from-violet-400 to-purple-600', icon: '✨' },
-  Trattamenti:  { pill: 'bg-teal-100 text-teal-700',   bg: 'from-teal-400 to-emerald-500', icon: '🌿' },
-  Altro:        { pill: 'bg-slate-100 text-slate-600', bg: 'from-slate-400 to-slate-600',  icon: '🔷' },
+const CATEGORY_STYLE: Record<string, { pill: string; bg: string; Icon: React.ElementType }> = {
+  Unghie:       { pill: 'bg-pink-100 text-pink-700',     bg: 'from-pink-400 to-rose-500',      Icon: Scissors  },
+  Ceretta:      { pill: 'bg-amber-100 text-amber-700',   bg: 'from-amber-400 to-orange-500',   Icon: Flame     },
+  Laser:        { pill: 'bg-violet-100 text-violet-700', bg: 'from-violet-400 to-purple-600',  Icon: Zap       },
+  Trattamenti:  { pill: 'bg-teal-100 text-teal-700',     bg: 'from-teal-400 to-emerald-500',   Icon: Leaf      },
+  Altro:        { pill: 'bg-slate-100 text-slate-600',   bg: 'from-slate-400 to-slate-600',    Icon: Sparkles  },
 }
 
 /* ── Predefined services list ─────────────────────────────── */
@@ -99,7 +99,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
             return (
               <div key={cat}>
                 <div className="px-5 py-2 bg-slate-50 sticky top-0 z-10">
-                  <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', style.pill)}>{style.icon} {cat}</span>
+                  <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', style.pill)}>{cat}</span>
                 </div>
                 {catRows.map(({ r, i }) => (
                   <div key={i} className={clsx('flex items-center gap-3 px-5 py-2.5 border-b border-slate-50', !r.selected && 'opacity-40')}>
@@ -151,13 +151,14 @@ function ServiceCard({ service, onToggle, onDelete }: {
 }) {
   const cat   = guessCategory(service.name)
   const style = CATEGORY_STYLE[cat] ?? CATEGORY_STYLE.Altro
+  const { Icon } = style
   const hasPrice = Number(service.price) > 0
 
   return (
     <div className={clsx('bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all', !service.active && 'opacity-50')}>
       {/* Coloured header */}
       <div className={clsx('bg-gradient-to-br h-20 flex items-center justify-center relative', style.bg)}>
-        <span className="text-4xl">{style.icon}</span>
+        <Icon className="w-10 h-10 text-white/80" strokeWidth={1.5} />
         {/* Active toggle */}
         <button onClick={onToggle} title={service.active ? 'Disattiva' : 'Attiva'}
           className={clsx('absolute top-2 right-2 w-8 h-4 rounded-full transition-colors', service.active ? 'bg-white/40' : 'bg-black/20')}>
