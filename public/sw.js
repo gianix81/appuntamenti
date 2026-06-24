@@ -1,4 +1,4 @@
-const CACHE_NAME  = 'appuntamenti-v10'
+const CACHE_NAME  = 'appuntamenti-v11'
 const OFFLINE_URL = '/offline'
 const DB_NAME     = 'estetista-alarms'
 const DB_VERSION  = 1
