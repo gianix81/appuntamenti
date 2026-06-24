@@ -34,7 +34,7 @@ export function MobileNav() {
   const nav = [
     { href: '/dashboard',    label: 'Home',    icon: LayoutDashboard, show: true },
     { href: '/appointments', label: 'Agenda',  icon: CalendarDays,    show: true },
-    { href: '/clients',      label: 'Clienti', icon: Users,           show: !isStaff },
+    { href: '/clients',      label: 'Clienti', icon: Users,           show: true },
     { href: '/staff',        label: 'Staff',   icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/services',     label: 'Servizi', icon: Scissors,        show: !hasStaff && !isStaff },
     { href: '/settings',     label: 'Menu',    icon: Settings,        show: true },

@@ -46,7 +46,7 @@ export function Sidebar() {
   const nav = [
     { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard, show: true },
     { href: '/appointments', label: 'Appuntamenti', icon: CalendarDays,    show: true },
-    { href: '/clients',      label: 'Clienti',      icon: Users,           show: !isStaff },
+    { href: '/clients',      label: 'Clienti',      icon: Users,           show: true },
     { href: '/services',     label: 'Servizi',      icon: Scissors,        show: !isStaff },
     { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing && !isStaff },

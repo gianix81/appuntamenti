@@ -129,14 +129,12 @@ export default function AppointmentsPage() {
               <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
-          {!isStaff && (
-            <Link
-              href="/appointments/new"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Nuovo
-            </Link>
-          )}
+          <Link
+            href="/appointments/new"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Nuovo
+          </Link>
         </div>
       </div>
 
@@ -256,7 +254,7 @@ export default function AppointmentsPage() {
             <AppointmentCard
               key={apt.id}
               appointment={apt}
-              onDelete={isStaff ? undefined : id => setAppointments(prev => prev.filter(a => a.id !== id))}
+              onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
               hideClientDetails={isStaff}
             />
           ))}
