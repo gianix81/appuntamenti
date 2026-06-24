@@ -11,6 +11,26 @@ export interface NotificationSlot {
 
 export type YesNo = 'no' | 'si' | null
 
+export type TreatmentCategory = 'corpo' | 'viso' | 'laser' | 'prodotto'
+
+export interface ClientTreatment {
+  id: string
+  client_id: string
+  category: TreatmentCategory
+  date: string               // YYYY-MM-DD
+  treatment: string          // nome trattamento o prodotto
+  operator: string | null    // eseguito da / venduto da
+  notes: string | null
+  price: number | null
+  // Parametri laser
+  zone: string | null
+  program: string | null
+  energy: string | null
+  frequency_hz: string | null
+  pulse_duration: string | null
+  created_at: string
+}
+
 export interface ClientAnamnesi {
   // Salute generale
   health_state?: string | null
