@@ -149,7 +149,7 @@ export function StaffForm({ existing }: Props) {
             value={form.name}
             onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
             placeholder="Es. Maria Rossi"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
           />
         </div>
 
@@ -174,7 +174,7 @@ export function StaffForm({ existing }: Props) {
             onChange={e => setForm(p => ({ ...p, initials: e.target.value.slice(0, 2).toUpperCase() }))}
             maxLength={2}
             placeholder="Es. MR"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
           />
         </div>
       </div>
@@ -209,7 +209,7 @@ export function StaffForm({ existing }: Props) {
             value={form.phone}
             onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
             placeholder="+39 333 1234567"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
           />
         </div>
         <div>
@@ -219,7 +219,7 @@ export function StaffForm({ existing }: Props) {
             value={form.email}
             onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
             placeholder="email@esempio.it"
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
           />
         </div>
         <div>
@@ -232,7 +232,7 @@ export function StaffForm({ existing }: Props) {
             max={100}
             value={form.commission_pct}
             onChange={e => setForm(p => ({ ...p, commission_pct: Number(e.target.value) }))}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800"
           />
         </div>
       </div>
@@ -264,14 +264,14 @@ export function StaffForm({ existing }: Props) {
                       type="time"
                       value={day!.start}
                       onChange={e => setDay(key, { ...day!, start: e.target.value })}
-                      className="flex-1 min-w-0 px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      className="flex-1 min-w-0 px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800"
                     />
                     <span className="text-slate-400 text-xs shrink-0">–</span>
                     <input
                       type="time"
                       value={day!.end}
                       onChange={e => setDay(key, { ...day!, end: e.target.value })}
-                      className="flex-1 min-w-0 px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      className="flex-1 min-w-0 px-2 sm:px-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800"
                     />
                   </div>
                 ) : (

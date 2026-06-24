@@ -82,7 +82,7 @@ export function ClientForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Note</label>
         <textarea rows={3} value={form.notes} onChange={e => set('notes', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none" placeholder="Allergie, preferenze, ecc." />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 resize-none" placeholder="Allergie, preferenze, ecc." />
       </div>
       {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">{error}</div>}
       <div className="flex gap-3 pt-2">
