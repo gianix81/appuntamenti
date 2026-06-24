@@ -16,6 +16,7 @@ import { clsx } from 'clsx'
 
 type StaffDoc = Staff & { id: string }
 
+const DAY_ORDER = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const
 const DAY_LABELS: Record<string, string> = {
   monday: 'Lu', tuesday: 'Ma', wednesday: 'Me', thursday: 'Gi',
   friday: 'Ve', saturday: 'Sa', sunday: 'Do',
@@ -259,9 +260,9 @@ export default function StaffPage() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {staffList.map(s => {
-              const workDays = Object.entries(s.schedule ?? {})
-                .filter(([, v]) => v !== null)
-                .map(([k]) => DAY_LABELS[k] ?? k)
+              const workDays = DAY_ORDER
+                .filter(d => s.schedule?.[d] !== null && s.schedule?.[d] !== undefined)
+                .map(d => DAY_LABELS[d])
               const hasLogin = !!s.auth_uid
               const icsUrl   = `/api/staff/${s.id}/calendar`
 
