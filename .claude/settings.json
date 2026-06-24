@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:www.makiapp.it)",
       "WebFetch(domain:developer.sumup.com)",
-      "WebFetch(domain:simplybook.me)"
+      "WebFetch(domain:simplybook.me)",
+      "Bash(git commit -m ' *)",
+      "Bash(gh repo *)"
     ]
   }
 }

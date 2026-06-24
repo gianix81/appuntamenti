@@ -7,7 +7,7 @@ import { db } from '@/lib/firebase/client'
 import type { Client } from '@/types/database'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
-import { Users, Plus, Search, Phone, Mail, Pencil, Trash2 } from 'lucide-react'
+import { Users, Plus, Search, Phone, Mail, Pencil, Trash2, Clock } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useUserRole } from '@/hooks/useUserRole'
 
@@ -162,6 +162,13 @@ export default function ClientsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
+                    <Link
+                      href={`/clients/${client.id}`}
+                      className="p-2 text-slate-300 hover:text-violet-500 hover:bg-violet-50 rounded-xl transition-colors"
+                      title="Storico visite"
+                    >
+                      <Clock className="w-4 h-4" />
+                    </Link>
                     {!isStaff && (
                       <Link
                         href={`/clients/${client.id}/edit`}

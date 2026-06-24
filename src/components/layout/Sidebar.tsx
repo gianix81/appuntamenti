@@ -15,6 +15,7 @@ import {
   UserCog,
   BarChart3,
   Package,
+  Mail,
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 import { useUserRole } from '@/hooks/useUserRole'
@@ -26,6 +27,7 @@ const NAV_COLORS: Record<string, string> = {
   '/services':     'from-emerald-400 to-teal-600',
   '/staff':        'from-sky-400 to-blue-600',
   '/reports':      'from-amber-400 to-orange-600',
+  '/marketing':    'from-violet-400 to-purple-600',
   '/inventory':    'from-pink-400 to-rose-600',
   '/settings':     'from-slate-400 to-slate-600',
 }
@@ -50,6 +52,7 @@ export function Sidebar() {
     { href: '/services',     label: 'Servizi',      icon: Scissors,        show: !isStaff },
     { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing && !isStaff },
+    { href: '/marketing',    label: 'Email',        icon: Mail,            show: hasMarketing && !isStaff },
     { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse && !isStaff },
     { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
   ].filter(item => item.show)
