@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
@@ -205,6 +205,8 @@ export default function ServicesPage() {
   const [services, setServices]   = useState<Service[]>([])
   const [loading, setLoading]     = useState(true)
   const [showImport, setShowImport] = useState(false)
+  const [cols, setCols]           = useState(4)
+  const gridRef                   = useRef<HTMLDivElement>(null)
 
   async function loadServices() {
     const snap = await getDocs(query(collection(db, 'services'), orderBy('name')))
@@ -213,6 +215,38 @@ export default function ServicesPage() {
   }
 
   useEffect(() => { loadServices() }, [])
+
+  /* Calcola il numero ottimale di colonne:
+     - tenta di riempire la larghezza disponibile
+     - priorizza N % cols === 0 (nessuna cella vuota nell'ultima riga)
+     - poi preferisce più colonne (riempie lo schermo) */
+  const N = services.length
+  useEffect(() => {
+    function compute() {
+      if (!gridRef.current || !N) return
+      const W   = gridRef.current.clientWidth
+      const H   = window.innerHeight - 130   // altezza disponibile (escluso header)
+      const GAP = 12
+      const CARD_MIN_W = 128
+      const CARD_H     = 208
+      const maxCols = Math.max(1, Math.floor((W + GAP) / (CARD_MIN_W + GAP)))
+      const maxRows = Math.max(1, Math.floor((H + GAP) / (CARD_H + GAP)))
+      let bestCols = maxCols
+      let bestScore = Infinity
+      for (let c = maxCols; c >= 1; c--) {
+        const rows    = Math.ceil(N / c)
+        const fitsH   = rows <= maxRows ? 0 : 10_000
+        const orphans = N % c === 0 ? 0 : (c - (N % c)) * 100
+        const score   = fitsH + orphans - c   // meno è meglio; -c preferisce più colonne
+        if (score < bestScore) { bestScore = score; bestCols = c }
+      }
+      setCols(bestCols)
+    }
+    compute()
+    const obs = new ResizeObserver(compute)
+    if (gridRef.current) obs.observe(gridRef.current)
+    return () => obs.disconnect()
+  }, [N])
 
   async function handleDelete(id: string) {
     if (!confirm('Eliminare questo servizio?')) return
@@ -229,7 +263,7 @@ export default function ServicesPage() {
     <div className="flex-1 overflow-y-auto bg-slate-50">
       {/* Header */}
       <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-xl font-bold text-slate-800">Servizi</h1>
             <p className="text-slate-400 text-xs mt-0.5">{services.length} servizi totali</p>
@@ -247,7 +281,7 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4">
+      <div ref={gridRef} className="px-4 md:px-6 py-4">
         {loading ? <LoadingState /> : services.length === 0 ? (
           <EmptyState icon={Scissors} title="Nessun servizio"
             description="Importa la lista predefinita o aggiungi i servizi uno ad uno."
@@ -265,7 +299,10 @@ export default function ServicesPage() {
             }
           />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          >
             {services.map(service => (
               <ServiceCard key={service.id} service={service}
                 onToggle={() => toggleActive(service)}
