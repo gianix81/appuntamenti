@@ -15,7 +15,6 @@ import {
   UserCog,
   BarChart3,
   Package,
-  Mail,
   MessageCircle,
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
@@ -54,8 +53,7 @@ export function Sidebar() {
     { href: '/services',     label: 'Servizi',      icon: Scissors,        show: !isStaff },
     { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: !isStaff },
-    { href: '/marketing',    label: 'Email',        icon: Mail,            show: !isStaff },
-    { href: '/promo',        label: 'Promo WA',     icon: MessageCircle,   show: !isStaff },
+{ href: '/promo',        label: 'Promo WA',     icon: MessageCircle,   show: !isStaff },
     { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse && !isStaff },
     { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
   ].filter(item => item.show)
