@@ -16,6 +16,7 @@ import {
   BarChart3,
   Package,
   Mail,
+  MessageCircle,
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 import { useUserRole } from '@/hooks/useUserRole'
@@ -28,6 +29,7 @@ const NAV_COLORS: Record<string, string> = {
   '/staff':        'from-sky-400 to-blue-600',
   '/reports':      'from-amber-400 to-orange-600',
   '/marketing':    'from-violet-400 to-purple-600',
+  '/promo':        'from-green-400 to-emerald-600',
   '/inventory':    'from-pink-400 to-rose-600',
   '/settings':     'from-slate-400 to-slate-600',
 }
@@ -53,6 +55,7 @@ export function Sidebar() {
     { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing && !isStaff },
     { href: '/marketing',    label: 'Email',        icon: Mail,            show: hasMarketing && !isStaff },
+    { href: '/promo',        label: 'Promo WA',     icon: MessageCircle,   show: hasMarketing && !isStaff },
     { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse && !isStaff },
     { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
   ].filter(item => item.show)
