@@ -142,127 +142,109 @@ export default function ClientsPage() {
           />
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {(() => {
+              const gridCols = isStaff
+                ? '2rem 1fr 1fr 5rem 5rem'
+                : '2rem 1fr 1fr 1.5fr 1.8fr 5rem 5.5rem'
 
-            {/* Header — solo desktop */}
-            <div className="hidden md:grid border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wide"
-              style={{ gridTemplateColumns: isStaff ? '2rem 1fr 1fr 5rem 5rem' : '2rem 1fr 1fr 1.4fr 1.4fr 5rem 6rem' }}
-            >
-              <span>#</span>
-              <span>Cognome</span>
-              <span>Nome</span>
-              {!isStaff && <span>Telefono</span>}
-              {!isStaff && <span>Email</span>}
-              <span>Aggiunto</span>
-              <span />
-            </div>
-
-            {filtered.map((client, i) => (
-              <div
-                key={client.id}
-                className="flex flex-wrap md:flex-nowrap md:items-center border-b border-slate-100 last:border-0 hover:bg-violet-50/30 transition-colors px-4 gap-x-4"
-              >
-                {/* ── Riga 1 mobile / Col 1-3 desktop: # + Cognome Nome + buttons (mobile) */}
-                <div className="flex items-center gap-2 w-full md:w-auto md:shrink-0 md:flex-1 py-2.5 md:py-3 min-w-0">
-                  <span className="text-xs text-slate-300 font-mono tabular-nums w-5 shrink-0">{i + 1}</span>
-                  <span className="font-bold text-slate-800 shrink-0">{client.last_name}</span>
-                  <span className="text-slate-600 truncate">{client.first_name}</span>
-
-                  {/* Buttons — solo mobile, allineati a destra */}
-                  <div className="ml-auto flex items-center gap-0.5 md:hidden shrink-0">
-                    {isStaff && (
-                      <span className="text-xs text-slate-400 tabular-nums mr-1">
-                        {client.created_at ? format(new Date(client.created_at), 'dd/MM/yy') : '—'}
-                      </span>
-                    )}
-                    <Link
-                      href={`/clients/${client.id}`}
-                      className="p-1.5 text-slate-300 hover:text-violet-500 hover:bg-violet-50 rounded-lg transition-colors"
-                      title="Storico visite"
-                    >
-                      <Clock className="w-4 h-4" />
-                    </Link>
-                    {!isStaff && (
-                      <Link
-                        href={`/clients/${client.id}/edit`}
-                        className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Modifica"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Link>
-                    )}
-                    {!isStaff && (
-                      <button
-                        onClick={() => handleDelete(client.id)}
-                        disabled={deleting === client.id}
-                        className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
-                        title="Elimina"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── Riga 2 mobile / Col 4-6 desktop: phone + email + date */}
-                {!isStaff && (
-                  <div className="flex items-center gap-3 flex-wrap w-full md:flex-[2] md:w-auto pb-2.5 md:py-3">
-                    <a
-                      href={`tel:${client.phone}`}
-                      className="flex items-center gap-1 text-blue-500 hover:text-blue-700 text-sm shrink-0"
-                    >
-                      <Phone className="w-3 h-3 shrink-0" />
-                      {client.phone}
-                    </a>
-                    <span className="text-slate-500 text-sm truncate max-w-[200px]">
-                      {client.email ? (
-                        <a
-                          href={`mailto:${client.email}`}
-                          className="hover:text-blue-500 hover:underline transition-colors"
-                          title={client.email}
-                        >
-                          {client.email}
-                        </a>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
-                    </span>
-                    <span className="text-xs text-slate-400 tabular-nums whitespace-nowrap md:ml-auto">
-                      {client.created_at ? format(new Date(client.created_at), 'dd/MM/yy') : '—'}
-                    </span>
-                  </div>
-                )}
-
-                {/* ── Col azioni — solo desktop */}
-                <div className="hidden md:flex items-center justify-end gap-0.5 shrink-0 w-24 py-2">
-                  <Link
-                    href={`/clients/${client.id}`}
-                    className="p-1.5 text-slate-300 hover:text-violet-500 hover:bg-violet-50 rounded-lg transition-colors"
-                    title="Storico visite"
-                  >
+              const actionBtns = (client: Client) => (
+                <>
+                  <Link href={`/clients/${client.id}`}
+                    className="p-1.5 text-slate-300 hover:text-violet-500 hover:bg-violet-50 rounded-lg transition-colors" title="Storico">
                     <Clock className="w-4 h-4" />
                   </Link>
                   {!isStaff && (
-                    <Link
-                      href={`/clients/${client.id}/edit`}
-                      className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Modifica"
-                    >
+                    <Link href={`/clients/${client.id}/edit`}
+                      className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Modifica">
                       <Pencil className="w-4 h-4" />
                     </Link>
                   )}
                   {!isStaff && (
-                    <button
-                      onClick={() => handleDelete(client.id)}
-                      disabled={deleting === client.id}
-                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
-                      title="Elimina"
-                    >
+                    <button onClick={() => handleDelete(client.id)} disabled={deleting === client.id}
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40" title="Elimina">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
-                </div>
-              </div>
-            ))}
+                </>
+              )
+
+              return (
+                <>
+                  {/* Header — solo desktop, stesso grid delle righe */}
+                  <div className="hidden md:grid border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wide items-center"
+                    style={{ gridTemplateColumns: gridCols }}>
+                    <span>#</span>
+                    <span>Cognome</span>
+                    <span>Nome</span>
+                    {!isStaff && <span>Telefono</span>}
+                    {!isStaff && <span>Email</span>}
+                    <span>Aggiunto</span>
+                    <span />
+                  </div>
+
+                  {filtered.map((client, i) => (
+                    <div key={client.id} className="border-b border-slate-100 last:border-0 hover:bg-violet-50/30 transition-colors">
+
+                      {/* ── DESKTOP: grid allineato all'header ── */}
+                      <div className="hidden md:grid items-center px-4"
+                        style={{ gridTemplateColumns: gridCols }}>
+                        <span className="py-3 text-xs text-slate-300 font-mono tabular-nums">{i + 1}</span>
+                        <span className="py-3 font-bold text-slate-800 truncate pr-2">{client.last_name}</span>
+                        <span className="py-3 text-slate-600 truncate pr-2">{client.first_name}</span>
+                        {!isStaff && (
+                          <a href={`tel:${client.phone}`}
+                            className="py-3 flex items-center gap-1 text-blue-500 hover:text-blue-700 text-sm whitespace-nowrap">
+                            <Phone className="w-3 h-3 shrink-0" />{client.phone}
+                          </a>
+                        )}
+                        {!isStaff && (
+                          <span className="py-3 text-slate-500 text-sm truncate pr-2">
+                            {client.email
+                              ? <a href={`mailto:${client.email}`} className="hover:text-blue-500 hover:underline transition-colors" title={client.email}>{client.email}</a>
+                              : <span className="text-slate-300">—</span>}
+                          </span>
+                        )}
+                        <span className="py-3 text-xs text-slate-400 tabular-nums whitespace-nowrap">
+                          {client.created_at ? format(new Date(client.created_at), 'dd/MM/yy') : '—'}
+                        </span>
+                        <div className="py-2 flex items-center justify-end gap-0.5">{actionBtns(client)}</div>
+                      </div>
+
+                      {/* ── MOBILE: 2 righe ── */}
+                      <div className="md:hidden px-4">
+                        {/* Riga 1: # + Cognome Nome + bottoni */}
+                        <div className="flex items-center gap-2 py-2.5">
+                          <span className="text-xs text-slate-300 font-mono w-5 shrink-0">{i + 1}</span>
+                          <span className="font-bold text-slate-800 shrink-0">{client.last_name}</span>
+                          <span className="text-slate-600 flex-1 truncate">{client.first_name}</span>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {isStaff && <span className="text-xs text-slate-400 tabular-nums mr-1">{client.created_at ? format(new Date(client.created_at), 'dd/MM/yy') : '—'}</span>}
+                            {actionBtns(client)}
+                          </div>
+                        </div>
+                        {/* Riga 2: telefono + email + data */}
+                        {!isStaff && (
+                          <div className="flex items-center gap-3 pb-2.5 pl-7 flex-wrap">
+                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-blue-500 hover:text-blue-700 text-sm shrink-0">
+                              <Phone className="w-3 h-3" />{client.phone}
+                            </a>
+                            <span className="text-slate-500 text-sm truncate">
+                              {client.email
+                                ? <a href={`mailto:${client.email}`} className="hover:text-blue-500 hover:underline">{client.email}</a>
+                                : <span className="text-slate-300">—</span>}
+                            </span>
+                            <span className="text-xs text-slate-400 tabular-nums ml-auto whitespace-nowrap">
+                              {client.created_at ? format(new Date(client.created_at), 'dd/MM/yy') : '—'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  ))}
+                </>
+              )
+            })()}
 
             {/* Footer count */}
             <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 text-xs text-slate-400">
