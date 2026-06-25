@@ -224,193 +224,151 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointment.status, autoReminderAttempted, autoReminderSent, msToStart])
 
+  const avatar = (
+    <div className={clsx('w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-xs', avatarBg(clientFullName))}>
+      {clientInitials}
+    </div>
+  )
+
+  const timeBadge = (
+    <div className="flex items-center gap-1 shrink-0">
+      <span className="font-bold text-blue-600 tabular-nums text-sm">{format(start, 'HH:mm')}</span>
+      <ChevronRight className="w-3 h-3 text-slate-300" />
+      <span className="text-slate-400 tabular-nums text-sm">{format(end, 'HH:mm')}</span>
+      <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', isActive ? 'bg-green-100 text-green-700' : isDone ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600')}>
+        {isActive ? 'In corso' : isDone ? 'Terminato' : `tra ${formatCountdown(msToStart)}`}
+      </span>
+    </div>
+  )
+
+  const badges = (
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full', confM.cls)}>{confM.label}</span>
+      {appointment.staff && (
+        <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: appointment.staff.color }}>
+          {appointment.staff.initials}
+        </span>
+      )}
+      {confirmationSent && (
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
+          <Check className="w-3 h-3" /> Conf.
+        </span>
+      )}
+      {(autoReminderSent || reminderSent) && (
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
+          <Check className="w-3 h-3" /> Prom.
+        </span>
+      )}
+      {autoReminderError && (
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-500">Prom. errore</span>
+      )}
+      {appointment.notes && (
+        <span className="text-xs text-slate-400 italic truncate max-w-[140px]">{appointment.notes}</span>
+      )}
+    </div>
+  )
+
+  const actionButtons = !isCancelled && (
+    <>
+      {!hideClientDetails ? (
+        <a href={`tel:${appointment.clients.phone}`} className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors shrink-0">
+          <Phone className="w-3.5 h-3.5" />{appointment.clients.phone}
+        </a>
+      ) : (
+        <span className="text-xs text-slate-300 italic shrink-0">Solo nominativo</span>
+      )}
+      {!hideClientDetails && (
+        <button type="button" onClick={handleSendWhatsApp} disabled={whatsAppLoading}
+          className={clsx('flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all shrink-0',
+            whatsAppSent ? 'bg-emerald-500 text-white' : 'bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60')}>
+          {whatsAppSent ? <><Check className="w-3 h-3" /> Inviato</> : <><MessageCircle className="w-3 h-3" />{whatsAppLoading ? '…' : 'Conferma'}</>}
+        </button>
+      )}
+      {!hideClientDetails && (
+        <button type="button" onClick={handleSendReminder} disabled={reminderLoading}
+          className={clsx('flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all shrink-0',
+            reminderSent ? 'bg-amber-500 text-white' : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60')}>
+          {reminderSent ? <><Check className="w-3 h-3" /> Inviato</> : <><MessageCircle className="w-3 h-3" />{reminderLoading ? '…' : 'Promemoria'}</>}
+        </button>
+      )}
+    </>
+  )
+
+  const editDelete = (
+    <>
+      <Link href={`/appointments/${appointment.id}/edit`}
+        className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Modifica">
+        <Pencil className="w-4 h-4" />
+      </Link>
+      {onDelete && (
+        <button onClick={() => setConfirmDelete(true)}
+          className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Elimina">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </>
+  )
+
   return (
-    <div className={clsx(
-      'border-l-[3px] border-b border-b-slate-100 last:border-b-0',
-      'flex flex-wrap md:flex-nowrap md:items-center',
-      'gap-x-4 gap-y-0',
-      borderCls,
-      isCancelled && 'opacity-60',
-    )}>
-      {/* ── Riga principale ─────────────────────────────────────────── */}
-      <div className="flex flex-wrap md:flex-nowrap md:items-center w-full gap-x-3 gap-y-0 px-4 py-3 hover:bg-slate-50/50 transition-colors">
+    <div className={clsx('border-l-[3px] border-b border-b-slate-100 last:border-b-0', borderCls, isCancelled && 'opacity-60')}>
 
-        {/* Col A — Avatar + Nome (+ edit/delete su mobile) ─ RIGA 1 mobile */}
-        <div className="flex items-center gap-2.5 w-full md:w-52 md:shrink-0">
-          <div className={clsx(
-            'w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-xs',
-            avatarBg(clientFullName),
-          )}>
-            {clientInitials}
-          </div>
-          <span className="font-semibold text-slate-800 text-sm truncate flex-1 min-w-0">
-            {clientFullName}
-          </span>
-          {/* Edit / Delete visibili solo su mobile in questa colonna */}
-          <div className="flex items-center gap-0.5 md:hidden shrink-0">
-            <Link
-              href={`/appointments/${appointment.id}/edit`}
-              className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Link>
-            {onDelete && (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      {/* ── DESKTOP: singola riga compatta ───────────────────────── */}
+      <div className="hidden md:flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50/50 transition-colors">
+        {avatar}
+        <span className="font-semibold text-slate-800 text-sm whitespace-nowrap">{clientFullName}</span>
+        <span className="text-slate-200 select-none">·</span>
+        <span className="text-sm text-slate-500 whitespace-nowrap">
+          {appointment.services.name}
+          <span className="text-slate-300 mx-1">·</span>
+          {appointment.services.duration_minutes}min
+        </span>
+        <span className="text-slate-200 select-none">·</span>
+        {timeBadge}
+        {badges}
+        {/* Spacer */}
+        <div className="flex-1" />
+        {/* Azioni */}
+        <div className="flex items-center gap-2 shrink-0">
+          {actionButtons}
+          <div className="flex items-center gap-0.5 ml-1">{editDelete}</div>
         </div>
+      </div>
 
-        {/* Col B — Servizio + Orario + Badges ─ RIGA 2 mobile */}
-        <div className="flex items-center gap-3 flex-wrap w-full md:flex-1 md:w-auto py-1.5 md:py-0">
+      {/* ── MOBILE: 3 righe ──────────────────────────────────────── */}
+      <div className="md:hidden px-3 py-2.5 space-y-1.5">
+        {/* Riga 1: avatar + nome + edit/delete */}
+        <div className="flex items-center gap-2">
+          {avatar}
+          <span className="font-semibold text-slate-800 text-sm flex-1 min-w-0 truncate">{clientFullName}</span>
+          <div className="flex items-center gap-0.5 shrink-0">{editDelete}</div>
+        </div>
+        {/* Riga 2: servizio + orario + badges */}
+        <div className="flex items-center gap-2 flex-wrap pl-10">
           <span className="text-sm text-slate-500 shrink-0">
-            {appointment.services.name}
-            <span className="text-slate-300 mx-1">·</span>
-            {appointment.services.duration_minutes}min
+            {appointment.services.name}<span className="text-slate-300 mx-1">·</span>{appointment.services.duration_minutes}min
           </span>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="font-bold text-blue-600 tabular-nums text-sm">{format(start, 'HH:mm')}</span>
-            <ChevronRight className="w-3 h-3 text-slate-300" />
-            <span className="text-slate-400 tabular-nums text-sm">{format(end, 'HH:mm')}</span>
-            <span className={clsx(
-              'text-xs font-semibold px-2 py-0.5 rounded-full',
-              isActive ? 'bg-green-100 text-green-700'
-                       : isDone ? 'bg-slate-100 text-slate-500'
-                                : 'bg-blue-50 text-blue-600',
-            )}>
-              {isActive ? 'In corso' : isDone ? 'Terminato' : `tra ${formatCountdown(msToStart)}`}
-            </span>
-          </div>
-          {/* Badges */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full', confM.cls)}>
-              {confM.label}
-            </span>
-            {appointment.staff && (
-              <span
-                className="text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-                style={{ backgroundColor: appointment.staff.color }}
-              >
-                {appointment.staff.initials}
-              </span>
-            )}
-            {confirmationSent && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
-                <Check className="w-3 h-3" /> Conf.
-              </span>
-            )}
-            {(autoReminderSent || reminderSent) && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
-                <Check className="w-3 h-3" /> Prom.
-              </span>
-            )}
-            {autoReminderError && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-                Prom. errore
-              </span>
-            )}
-            {appointment.notes && (
-              <span className="text-xs text-slate-400 italic truncate max-w-[160px]">{appointment.notes}</span>
-            )}
-          </div>
+          {timeBadge}
+          {badges}
         </div>
-
-        {/* Col C — Azioni ─ RIGA 3 mobile */}
+        {/* Riga 3: azioni */}
         {!isCancelled && (
-          <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto md:shrink-0 pb-2.5 md:pb-0">
-            {!hideClientDetails ? (
-              <a
-                href={`tel:${appointment.clients.phone}`}
-                className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors mr-1"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                {appointment.clients.phone}
-              </a>
-            ) : (
-              <span className="text-xs text-slate-300 italic mr-1">Solo nominativo</span>
-            )}
-
-            {!hideClientDetails && (
-              <button
-                type="button"
-                onClick={handleSendWhatsApp}
-                disabled={whatsAppLoading}
-                title="Invia messaggio di conferma WhatsApp"
-                className={clsx(
-                  'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
-                  whatsAppSent
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60',
-                )}
-              >
-                {whatsAppSent
-                  ? <><Check className="w-3 h-3" /> Inviato</>
-                  : <><MessageCircle className="w-3 h-3" /> {whatsAppLoading ? '…' : 'Conferma'}</>}
-              </button>
-            )}
-
-            {!hideClientDetails && (
-              <button
-                type="button"
-                onClick={handleSendReminder}
-                disabled={reminderLoading}
-                title="Invia promemoria WhatsApp"
-                className={clsx(
-                  'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
-                  reminderSent
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60',
-                )}
-              >
-                {reminderSent
-                  ? <><Check className="w-3 h-3" /> Inviato</>
-                  : <><MessageCircle className="w-3 h-3" /> {reminderLoading ? '…' : 'Promemoria'}</>}
-              </button>
-            )}
-
-            {/* Edit / Delete — solo desktop */}
-            <div className="hidden md:flex items-center gap-0.5 ml-1">
-              <Link
-                href={`/appointments/${appointment.id}/edit`}
-                className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
-                title="Modifica"
-              >
-                <Pencil className="w-4 h-4" />
-              </Link>
-              {onDelete && (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                  title="Elimina"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+          <div className="flex items-center gap-1.5 flex-wrap pl-10">
+            {actionButtons}
           </div>
         )}
       </div>
 
       {/* ── Confirm delete ─────────────────────────────────────────── */}
       {confirmDelete && (
-        <div className="w-full bg-red-50 border-t border-red-100 px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="bg-red-50 border-t border-red-100 px-4 py-2.5 flex items-center justify-between gap-3">
           <span className="text-xs text-red-600 font-semibold">Eliminare questo appuntamento?</span>
           <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => setConfirmDelete(false)}
-              className="text-xs text-slate-500 hover:text-slate-700 font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-200 transition-colors"
-            >
+            <button onClick={() => setConfirmDelete(false)}
+              className="text-xs text-slate-500 hover:text-slate-700 font-medium px-3 py-1.5 rounded-lg bg-white border border-slate-200 transition-colors">
               Annulla
             </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="text-xs text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 font-semibold px-3 py-1.5 rounded-lg transition-colors"
-            >
+            <button onClick={handleDelete} disabled={deleting}
+              className="text-xs text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 font-semibold px-3 py-1.5 rounded-lg transition-colors">
               {deleting ? '…' : 'Elimina'}
             </button>
           </div>
