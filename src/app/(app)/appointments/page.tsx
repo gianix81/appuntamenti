@@ -10,7 +10,7 @@ import { it } from 'date-fns/locale'
 import { collection, onSnapshot, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
-import { AppointmentCard } from '@/components/appointments/AppointmentCard'
+import { AppointmentRow } from '@/components/appointments/AppointmentRow'
 import { AgendaView } from '@/components/appointments/AgendaView'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -107,7 +107,7 @@ export default function AppointmentsPage() {
   )
 
   return (
-    <div className={clsx('flex-1 overflow-y-auto p-4 md:p-6 w-full', viewMode === 'list' && 'max-w-3xl mx-auto')}>
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 w-full">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-800">Appuntamenti</h1>
         <div className="flex items-center gap-2">
@@ -257,8 +257,8 @@ export default function AppointmentsPage() {
           }
         />
       ) : (
-        /* Lista settimanale raggruppata per giorno */
-        <div className="space-y-6">
+        /* Tabella settimanale raggruppata per giorno */
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {days.map(day => {
             const dayApts = weekAppointments.filter(a =>
               isSameDay(new Date(a.start_time), day),
@@ -266,22 +266,20 @@ export default function AppointmentsPage() {
             if (dayApts.length === 0) return null
             return (
               <div key={day.toISOString()}>
-                <p className={clsx(
-                  'text-xs font-bold uppercase tracking-wide mb-2 capitalize',
-                  isToday(day) ? 'text-blue-600' : 'text-slate-400',
+                <div className={clsx(
+                  'px-4 py-2 border-b border-slate-100 text-xs font-bold uppercase tracking-wide capitalize',
+                  isToday(day) ? 'bg-blue-50 text-blue-600' : 'bg-slate-50/80 text-slate-400',
                 )}>
                   {isToday(day) ? 'Oggi · ' : ''}{format(day, 'EEEE d MMMM', { locale: it })}
-                </p>
-                <div className="space-y-3">
-                  {dayApts.map(apt => (
-                    <AppointmentCard
-                      key={apt.id}
-                      appointment={apt}
-                      onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
-                      hideClientDetails={isStaff}
-                    />
-                  ))}
                 </div>
+                {dayApts.map(apt => (
+                  <AppointmentRow
+                    key={apt.id}
+                    appointment={apt}
+                    onDelete={id => setAppointments(prev => prev.filter(a => a.id !== id))}
+                    hideClientDetails={isStaff}
+                  />
+                ))}
               </div>
             )
           })}
