@@ -55,7 +55,7 @@ export function Sidebar() {
     { href: '/staff',        label: 'Staff',        icon: UserCog,         show: hasStaff && !isStaff },
     { href: '/reports',      label: 'Statistiche',  icon: BarChart3,       show: hasMarketing && !isStaff },
     { href: '/marketing',    label: 'Email',        icon: Mail,            show: hasMarketing && !isStaff },
-    { href: '/promo',        label: 'Promo WA',     icon: MessageCircle,   show: hasMarketing && !isStaff },
+    { href: '/promo',        label: 'Promo WA',     icon: MessageCircle,   show: !isStaff },
     { href: '/inventory',    label: 'Magazzino',    icon: Package,         show: hasWarehouse && !isStaff },
     { href: '/settings',     label: 'Impostazioni', icon: Settings,        show: true },
   ].filter(item => item.show)
