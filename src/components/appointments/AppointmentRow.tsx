@@ -8,12 +8,10 @@ import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AppointmentWithRelations } from '@/types/database'
 import {
-  Pencil, Trash2, CalendarPlus, Calendar, MessageCircle, Check,
+  Pencil, Trash2, MessageCircle, Check,
   ChevronRight, Phone,
 } from 'lucide-react'
 import { clsx } from 'clsx'
-import { getAlarmSettings } from '@/lib/alarmDB'
-import { generateICS, downloadICS } from '@/lib/icsGenerator'
 
 interface Props {
   appointment: AppointmentWithRelations
@@ -74,8 +72,6 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting]           = useState(false)
-  const [calAdded, setCalAdded]           = useState(false)
-  const [calLoading, setCalLoading]       = useState(false)
 
   const [whatsAppSent, setWhatsAppSent]       = useState(false)
   const [whatsAppLoading, setWhatsAppLoading] = useState(false)
@@ -132,33 +128,6 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
     }
   }
 
-  async function handleAddToCalendar() {
-    setCalLoading(true)
-    try {
-      const settings = await getAlarmSettings()
-      const offsets  = settings?.offsets_minutes ?? [120, 30]
-      const ics = generateICS(
-        {
-          id:           appointment.id,
-          start_time:   appointment.start_time,
-          end_time:     appointment.end_time,
-          client_name:  clientFullName,
-          client_phone: appointment.clients.phone,
-          service_name: appointment.services.name,
-          notes:        appointment.notes,
-        },
-        { offsets_minutes: offsets },
-      )
-      downloadICS(ics, clientFullName, start)
-      setCalAdded(true)
-      setTimeout(() => setCalAdded(false), 4000)
-    } catch {
-      alert('Errore generazione calendario.')
-    } finally {
-      setCalLoading(false)
-    }
-  }
-
   async function handleSendWhatsApp() {
     setWhatsAppLoading(true)
     try {
@@ -202,14 +171,6 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
     }
   }
 
-  function handleSendCalendarToClient() {
-    const icsUrl      = `${window.location.origin}/api/appointments/${appointment.id}/ics`
-    const firstName   = appointment.clients.first_name
-    const serviceName = appointment.services.name
-    const phone       = appointment.clients.phone.replace(/\s+/g, '').replace(/^\+/, '')
-    const msg = `Ciao ${firstName}! Aggiungi il tuo appuntamento per ${serviceName} al calendario: ${icsUrl}`
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer')
-  }
 
   async function sendReminderWhatsApp() {
     try {
@@ -272,10 +233,10 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
       isCancelled && 'opacity-60',
     )}>
       {/* ── Riga principale ─────────────────────────────────────────── */}
-      <div className="flex flex-wrap md:flex-nowrap md:items-center w-full gap-x-4 gap-y-0 px-4 py-3 hover:bg-slate-50/50 transition-colors">
+      <div className="flex flex-wrap md:flex-nowrap md:items-center w-full gap-x-3 gap-y-0 px-4 py-3 hover:bg-slate-50/50 transition-colors">
 
         {/* Col A — Avatar + Nome (+ edit/delete su mobile) ─ RIGA 1 mobile */}
-        <div className="flex items-center gap-2.5 w-full md:w-44 md:shrink-0">
+        <div className="flex items-center gap-2.5 w-full md:w-52 md:shrink-0">
           <div className={clsx(
             'w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-xs',
             avatarBg(clientFullName),
@@ -371,32 +332,6 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
               </a>
             ) : (
               <span className="text-xs text-slate-300 italic mr-1">Solo nominativo</span>
-            )}
-
-            <button
-              onClick={handleAddToCalendar}
-              disabled={calLoading}
-              title="Aggiungi al tuo calendario"
-              className={clsx(
-                'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
-                calAdded
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600',
-              )}
-            >
-              {calAdded ? <><Check className="w-3 h-3" /> Ok!</> : <><CalendarPlus className="w-3 h-3" /> Cal</>}
-            </button>
-
-            {!hideClientDetails && (
-              <button
-                type="button"
-                onClick={handleSendCalendarToClient}
-                title="Invia calendario al cliente via WhatsApp"
-                className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-600 hover:border-sky-300 hover:text-sky-600 transition-all"
-              >
-                <Calendar className="w-3 h-3" />
-                <span>Cal →</span>
-              </button>
             )}
 
             {!hideClientDetails && (
