@@ -390,37 +390,58 @@ export default function ClientHistoryPage() {
                 <p className="text-slate-400 text-sm">Nessun appuntamento registrato</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {completedApts.map(apt => {
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                {/* Header desktop */}
+                <div className="hidden md:grid border-b border-slate-100 bg-slate-50 px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wide"
+                  style={{ gridTemplateColumns: '6rem 1fr 7rem 7rem 5rem' }}>
+                  <span>Data</span>
+                  <span>Servizio</span>
+                  <span>Orario</span>
+                  <span>Operatrice</span>
+                  <span className="text-right">€</span>
+                </div>
+                {completedApts.map((apt, i) => {
                   const st   = STATUS_LABEL[apt.status] ?? { label: apt.status, color: 'bg-slate-100 text-slate-600' }
                   const date = parseISO(apt.start_time)
                   return (
                     <Link key={apt.id} href={`/appointments/${apt.id}/edit`}
-                      className="block bg-white rounded-2xl border border-slate-100 p-4 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', st.color)}>{st.label}</span>
-                            {apt.services?.price && apt.status !== 'cancelled' && apt.status !== 'no_show' && (
-                              <span className="text-xs font-bold text-emerald-600">€{apt.services.price}</span>
-                            )}
-                          </div>
-                          <p className="font-semibold text-slate-800 text-sm truncate">{apt.services?.name ?? '—'}</p>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {format(date, 'HH:mm')}–{format(parseISO(apt.end_time), 'HH:mm')}
-                            </span>
-                            {apt.staff && (
-                              <span className="flex items-center gap-1">
-                                <User className="w-3 h-3" /> {apt.staff.name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
+                      className={clsx('block hover:bg-violet-50/30 transition-colors', i > 0 && 'border-t border-slate-50')}>
+
+                      {/* ── Desktop: riga singola ── */}
+                      <div className="hidden md:grid items-center px-4 py-2.5"
+                        style={{ gridTemplateColumns: '6rem 1fr 7rem 7rem 5rem' }}>
+                        <div>
                           <p className="text-sm font-bold text-slate-700">{format(date, 'd MMM', { locale: it })}</p>
-                          <p className="text-xs text-slate-400">{format(date, 'yyyy')}</p>
+                          <p className="text-[10px] text-slate-400">{format(date, 'yyyy')}</p>
+                        </div>
+                        <div className="min-w-0 pr-2">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{apt.services?.name ?? '—'}</p>
+                          <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-full', st.color)}>{st.label}</span>
+                        </div>
+                        <span className="text-xs text-slate-500">
+                          {format(date, 'HH:mm')}–{format(parseISO(apt.end_time), 'HH:mm')}
+                        </span>
+                        <span className="text-xs text-slate-500 truncate">
+                          {apt.staff?.name ?? <span className="text-slate-300">—</span>}
+                        </span>
+                        <span className="text-xs font-bold text-emerald-600 text-right">
+                          {apt.services?.price ? `€${apt.services.price}` : <span className="text-slate-300">—</span>}
+                        </span>
+                      </div>
+
+                      {/* ── Mobile: 2 righe ── */}
+                      <div className="md:hidden px-4 py-2.5 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0', st.color)}>{st.label}</span>
+                          <span className="text-sm font-semibold text-slate-800 truncate flex-1">{apt.services?.name ?? '—'}</span>
+                          {apt.services?.price && (
+                            <span className="text-xs font-bold text-emerald-600 shrink-0">€{apt.services.price}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-400 pl-0.5">
+                          <span>{format(date, 'd MMM yyyy', { locale: it })}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{format(date, 'HH:mm')}–{format(parseISO(apt.end_time), 'HH:mm')}</span>
+                          {apt.staff && <span className="flex items-center gap-1"><User className="w-3 h-3" />{apt.staff.name}</span>}
                         </div>
                       </div>
                     </Link>
@@ -440,22 +461,32 @@ export default function ClientHistoryPage() {
                     Annullati / No-show
                     <span className="ml-auto text-[10px] group-open:rotate-180 transition-transform">▼</span>
                   </summary>
-                  <div className="mt-2 space-y-2">
-                    {cancelled.map(apt => {
+                  <div className="mt-2 bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden opacity-80">
+                    {cancelled.map((apt, i) => {
                       const st   = STATUS_LABEL[apt.status] ?? { label: apt.status, color: 'bg-slate-100 text-slate-600' }
                       const date = parseISO(apt.start_time)
                       return (
                         <Link key={apt.id} href={`/appointments/${apt.id}/edit`}
-                          className="block bg-white rounded-2xl border border-rose-100 p-4 shadow-sm opacity-70 hover:opacity-100 transition-opacity">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', st.color)}>{st.label}</span>
-                              <p className="font-semibold text-slate-600 text-sm mt-1">{apt.services?.name ?? '—'}</p>
-                              {apt.staff && <p className="text-xs text-slate-400 mt-0.5">{apt.staff.name}</p>}
+                          className={clsx('block hover:opacity-100 hover:bg-rose-50/20 transition-all', i > 0 && 'border-t border-rose-50')}>
+                          {/* Desktop */}
+                          <div className="hidden md:flex items-center justify-between gap-4 px-4 py-2.5">
+                            <div className="shrink-0">
+                              <p className="text-sm font-bold text-slate-500">{format(date, 'd MMM', { locale: it })}</p>
+                              <p className="text-[10px] text-slate-300">{format(date, 'yyyy')}</p>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-semibold text-slate-500">{format(date, 'd MMM', { locale: it })}</p>
-                              <p className="text-xs text-slate-300">{format(date, 'yyyy')}</p>
+                            <p className="flex-1 text-sm font-semibold text-slate-500 truncate">{apt.services?.name ?? '—'}</p>
+                            <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0', st.color)}>{st.label}</span>
+                            {apt.staff && <span className="text-xs text-slate-400 shrink-0">{apt.staff.name}</span>}
+                          </div>
+                          {/* Mobile */}
+                          <div className="md:hidden px-4 py-2.5 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0', st.color)}>{st.label}</span>
+                              <span className="text-sm font-semibold text-slate-500 truncate">{apt.services?.name ?? '—'}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-slate-400">
+                              <span>{format(date, 'd MMM yyyy', { locale: it })}</span>
+                              {apt.staff && <span>{apt.staff.name}</span>}
                             </div>
                           </div>
                         </Link>
