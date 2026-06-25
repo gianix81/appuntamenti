@@ -272,9 +272,9 @@ export default function ClientHistoryPage() {
         {/* ── Stats ── */}
         <div className="grid grid-cols-4 gap-2">
           {[
-            { label: 'Appunt.',   value: completedApts.length },
-            { label: 'Tratt.',    value: treatments.length },
-            { label: 'Totale',    value: `€${totalSpent.toFixed(0)}` },
+            { label: 'Visite',    value: completedApts.length + treatments.length },
+            { label: 'Speso',     value: `€${totalSpent.toFixed(0)}` },
+            { label: 'Media',     value: (completedApts.length + treatments.length) > 0 ? `€${(totalSpent / (completedApts.length + treatments.length)).toFixed(0)}` : '—' },
             { label: 'Cadenza',   value: globalFreq ?? '—' },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm text-center">
@@ -384,14 +384,14 @@ export default function ClientHistoryPage() {
               </div>
             </div>
 
-            {apts.length === 0 ? (
+            {completedApts.length === 0 ? (
               <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-10 text-center">
                 <CalendarDays className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                 <p className="text-slate-400 text-sm">Nessun appuntamento registrato</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {apts.map(apt => {
+                {completedApts.map(apt => {
                   const st   = STATUS_LABEL[apt.status] ?? { label: apt.status, color: 'bg-slate-100 text-slate-600' }
                   const date = parseISO(apt.start_time)
                   return (
@@ -428,6 +428,43 @@ export default function ClientHistoryPage() {
                 })}
               </div>
             )}
+
+            {/* ── Annullati / No-show ── */}
+            {(() => {
+              const cancelled = apts.filter(a => a.status === 'cancelled' || a.status === 'no_show')
+              if (cancelled.length === 0) return null
+              return (
+                <details className="group mt-4">
+                  <summary className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-400 hover:text-rose-500 transition-colors list-none select-none">
+                    <span className="w-5 h-5 rounded-full bg-rose-50 text-rose-400 flex items-center justify-center text-[10px] font-black">{cancelled.length}</span>
+                    Annullati / No-show
+                    <span className="ml-auto text-[10px] group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-2 space-y-2">
+                    {cancelled.map(apt => {
+                      const st   = STATUS_LABEL[apt.status] ?? { label: apt.status, color: 'bg-slate-100 text-slate-600' }
+                      const date = parseISO(apt.start_time)
+                      return (
+                        <Link key={apt.id} href={`/appointments/${apt.id}/edit`}
+                          className="block bg-white rounded-2xl border border-rose-100 p-4 shadow-sm opacity-70 hover:opacity-100 transition-opacity">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', st.color)}>{st.label}</span>
+                              <p className="font-semibold text-slate-600 text-sm mt-1">{apt.services?.name ?? '—'}</p>
+                              {apt.staff && <p className="text-xs text-slate-400 mt-0.5">{apt.staff.name}</p>}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-semibold text-slate-500">{format(date, 'd MMM', { locale: it })}</p>
+                              <p className="text-xs text-slate-300">{format(date, 'yyyy')}</p>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </details>
+              )
+            })()}
           </div>
         )}
 
