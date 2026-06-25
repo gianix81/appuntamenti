@@ -105,7 +105,15 @@ export default function PromoPage() {
           }
         })
         .filter(c => c.phone.trim().length > 0)
-      setClients(rows)
+      // Dedup: stessa chiave nome+cognome+telefono → tieni solo il primo
+      const seen = new Set<string>()
+      const deduped = rows.filter(c => {
+        const key = `${c.first_name}|${c.last_name}|${c.phone}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      setClients(deduped)
       setSelected(new Set(rows.map(c => c.id)))
       setLoading(false)
 
