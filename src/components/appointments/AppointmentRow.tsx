@@ -312,25 +312,27 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
   return (
     <div className={clsx('border-l-[3px] border-b border-b-slate-100 last:border-b-0', borderCls, isCancelled && 'opacity-60')}>
 
-      {/* ── DESKTOP: singola riga compatta ───────────────────────── */}
-      <div className="hidden md:flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50/50 transition-colors">
-        {avatar}
-        <span className="font-semibold text-slate-800 text-sm whitespace-nowrap">{clientFullName}</span>
-        <span className="text-slate-200 select-none">·</span>
-        <span className="text-sm text-slate-500 whitespace-nowrap">
+      {/* ── DESKTOP: riga distribuita justify-between ──────────────── */}
+      <div className="hidden md:flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50/50 transition-colors">
+        {/* Gruppo 1: avatar + nome */}
+        <div className="flex items-center gap-2 shrink-0">
+          {avatar}
+          <span className="font-semibold text-slate-800 text-sm whitespace-nowrap">{clientFullName}</span>
+        </div>
+        {/* Gruppo 2: servizio + durata */}
+        <span className="text-sm text-slate-500 whitespace-nowrap shrink-0">
           {appointment.services.name}
           <span className="text-slate-300 mx-1">·</span>
           {appointment.services.duration_minutes}min
         </span>
-        <span className="text-slate-200 select-none">·</span>
-        {timeBadge}
-        {badges}
-        {/* Spacer */}
-        <div className="flex-1" />
-        {/* Azioni */}
+        {/* Gruppo 3: orario + stato */}
+        <div className="shrink-0">{timeBadge}</div>
+        {/* Gruppo 4: badges */}
+        <div className="shrink-0">{badges}</div>
+        {/* Gruppo 5: azioni */}
         <div className="flex items-center gap-2 shrink-0">
           {actionButtons}
-          <div className="flex items-center gap-0.5 ml-1">{editDelete}</div>
+          <div className="flex items-center gap-0.5">{editDelete}</div>
         </div>
       </div>
 
