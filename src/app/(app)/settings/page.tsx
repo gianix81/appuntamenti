@@ -228,266 +228,226 @@ export default function SettingsPage() {
     }
   }
 
+  const inputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800'
+
   if (loading) return <div className="p-6 text-slate-400 text-sm">Caricamento…</div>
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 max-w-lg mx-auto w-full">
-      <h1 className="text-xl font-bold text-slate-800 mb-6">Impostazioni</h1>
+    <div className="flex-1 overflow-y-auto bg-slate-50">
 
-      <form onSubmit={handleSave} className="space-y-4">
+      {/* Header */}
+      <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-3 sticky top-0 z-10">
+        <h1 className="text-base font-bold text-slate-800">Impostazioni</h1>
+      </div>
 
-        {/* ── Tipo di attività ──────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-slate-700">Tipo di attività</h2>
-          <p className="text-xs text-slate-500">
-            Cambiando livello appaiono o scompaiono le sezioni Staff, Statistiche e Magazzino.
-          </p>
-          <div className="space-y-2">
-            {LEVEL_OPTIONS.map(({ value, icon: Icon, title, desc }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setBusinessLevel(value)}
-                className={clsx(
-                  'w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all',
-                  businessLevel === value
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
-                )}
-              >
-                <div className={clsx(
-                  'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
-                  businessLevel === value ? 'bg-blue-600' : 'bg-slate-100',
-                )}>
-                  <Icon className={clsx('w-4 h-4', businessLevel === value ? 'text-white' : 'text-slate-400')} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={clsx('text-sm font-medium', businessLevel === value ? 'text-blue-700' : 'text-slate-700')}>{title}</p>
-                  <p className="text-xs text-slate-400">{desc}</p>
-                </div>
-                {businessLevel === value && <CheckCircle className="w-4 h-4 text-blue-600 shrink-0" />}
-              </button>
-            ))}
-          </div>
-        </div>
+      <form onSubmit={handleSave} className="px-4 md:px-6 py-3">
+        <div className="grid md:grid-cols-2 gap-3">
 
-        {/* ── Sincronizzazione calendario ────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-slate-700">Google Calendar</h2>
-          </div>
-          <p className="text-xs text-slate-500">
-            Collega Google Calendar: ogni appuntamento creato, modificato o annullato viene
-            scritto direttamente nel calendario Google.
-          </p>
-          {googleStatus?.configured === false && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-              Configura GOOGLE_CALENDAR_CLIENT_ID e GOOGLE_CALENDAR_CLIENT_SECRET sul server.
-            </p>
-          )}
-          {googleNotice && (
-            <p className={clsx(
-              'text-xs rounded-xl px-3 py-2 border',
-              googleNotice.type === 'success'
-                ? 'text-green-700 bg-green-50 border-green-100'
-                : 'text-red-700 bg-red-50 border-red-100',
-            )}>
-              {googleNotice.text}
-            </p>
-          )}
-          {googleStatus?.connected && (
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" />
-              Google Calendar collegato
-              {googleStatus.connectedAt ? ` dal ${new Date(googleStatus.connectedAt).toLocaleDateString('it-IT')}` : ''}
-            </p>
-          )}
-          {!googleStatus?.connected ? (
-            <button
-              type="button"
-              onClick={handleConnectGoogleCalendar}
-              disabled={googleStatus?.configured === false}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              Collega Google Calendar
-            </button>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleSyncGoogleCalendar}
-                disabled={googleSyncing}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
-              >
-                <Calendar className="w-4 h-4" />
-                {googleSyncing ? 'Sincronizzo…' : 'Sincronizza ora'}
-              </button>
-              <button
-                type="button"
-                onClick={handleDisconnectGoogleCalendar}
-                disabled={googleSyncing}
-                className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-60 text-slate-600 text-sm font-medium py-3 rounded-xl transition-colors"
-              >
-                Scollega
-              </button>
+          {/* ── COLONNA SINISTRA ── */}
+          <div className="space-y-3">
+
+            {/* Tipo di attività */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+              <div>
+                <h2 className="text-xs font-bold text-slate-700">Tipo di attività</h2>
+                <p className="text-[10px] text-slate-400">Staff, Statistiche e Magazzino dipendono da questo.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {LEVEL_OPTIONS.map(({ value, icon: Icon, title, desc }) => (
+                  <button key={value} type="button" onClick={() => setBusinessLevel(value)}
+                    className={clsx(
+                      'flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition-all',
+                      businessLevel === value ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
+                    )}>
+                    <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
+                      businessLevel === value ? 'bg-blue-600' : 'bg-slate-100')}>
+                      <Icon className={clsx('w-3.5 h-3.5', businessLevel === value ? 'text-white' : 'text-slate-400')} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className={clsx('text-xs font-semibold truncate', businessLevel === value ? 'text-blue-700' : 'text-slate-700')}>{title}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-          <div className="border-t border-slate-100 pt-4 space-y-3">
-            <p className="text-xs text-slate-400">
-              Link ICS di emergenza, utile solo per calendari che non supportano il collegamento Google diretto.
-            </p>
-          <button
-            type="button"
-            onClick={handleSubscribeCalendar}
-              className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-medium py-2.5 rounded-xl transition-colors"
-          >
-            <Calendar className="w-4 h-4" />
-              Apri feed ICS
-          </button>
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-sm font-medium py-2.5 rounded-xl transition-colors"
-          >
-            <Copy className="w-3.5 h-3.5" />
-            {copied ? 'Link copiato!' : 'Copia link (per Google Calendar)'}
-          </button>
+
+            {/* Informazioni centro */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+              <h2 className="text-xs font-bold text-slate-700">Informazioni centro</h2>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">Nome centro</label>
+                  <input type="text" value={form.center_name} onChange={e => set('center_name', e.target.value)}
+                    placeholder="Il tuo salone…" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">Telefono</label>
+                  <input type="tel" value={form.phone_number} onChange={e => set('phone_number', e.target.value)}
+                    placeholder="+39 …" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">Indirizzo</label>
+                  <input type="text" value={form.address} onChange={e => set('address', e.target.value)}
+                    placeholder="Via …" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-1">Città</label>
+                  <input type="text" value={form.city} onChange={e => set('city', e.target.value)}
+                    placeholder="Roma, Milano…" className={inputCls} />
+                </div>
+              </div>
+            </div>
+
+            {/* Messaggi WhatsApp */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-green-600" />
+                <h2 className="text-xs font-bold text-slate-700">Messaggi WhatsApp</h2>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Variabili: <code className="bg-slate-100 px-1 rounded">{'{nome}'}</code>{' '}
+                <code className="bg-slate-100 px-1 rounded">{'{servizio}'}</code>{' '}
+                <code className="bg-slate-100 px-1 rounded">{'{data}'}</code>{' '}
+                <code className="bg-slate-100 px-1 rounded">{'{ora}'}</code>
+              </p>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Messaggio di conferma</label>
+                <textarea rows={2} value={msgConfirmation} onChange={e => setMsgConfirmation(e.target.value)}
+                  placeholder={`Ciao {nome}! Ti confermiamo l'appuntamento per {servizio} {data} alle {ora}.`}
+                  className={clsx(inputCls, 'resize-none')} />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Messaggio promemoria</label>
+                <textarea rows={2} value={msgReminder} onChange={e => setMsgReminder(e.target.value)}
+                  placeholder={`Ciao {nome}, ti ricordiamo l'appuntamento per {servizio} {data} alle {ora}.`}
+                  className={clsx(inputCls, 'resize-none')} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── COLONNA DESTRA ── */}
+          <div className="space-y-3">
+
+            {/* Google Calendar */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                <h2 className="text-xs font-bold text-slate-700">Google Calendar</h2>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Ogni appuntamento creato, modificato o annullato viene scritto nel calendario Google.
+              </p>
+              {googleStatus?.configured === false && (
+                <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
+                  Configura GOOGLE_CALENDAR_CLIENT_ID e GOOGLE_CALENDAR_CLIENT_SECRET sul server.
+                </p>
+              )}
+              {googleNotice && (
+                <p className={clsx('text-[10px] rounded-lg px-2.5 py-1.5 border',
+                  googleNotice.type === 'success' ? 'text-green-700 bg-green-50 border-green-100' : 'text-red-700 bg-red-50 border-red-100')}>
+                  {googleNotice.text}
+                </p>
+              )}
+              {googleStatus?.connected && (
+                <p className="text-[10px] text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  Collegato{googleStatus.connectedAt ? ` dal ${new Date(googleStatus.connectedAt).toLocaleDateString('it-IT')}` : ''}
+                </p>
+              )}
+              {!googleStatus?.connected ? (
+                <button type="button" onClick={handleConnectGoogleCalendar}
+                  disabled={googleStatus?.configured === false}
+                  className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  <Calendar className="w-3.5 h-3.5" /> Collega Google Calendar
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleSyncGoogleCalendar} disabled={googleSyncing}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                    <Calendar className="w-3.5 h-3.5" /> {googleSyncing ? 'Sincronizzo…' : 'Sincronizza ora'}
+                  </button>
+                  <button type="button" onClick={handleDisconnectGoogleCalendar} disabled={googleSyncing}
+                    className="px-3 flex items-center justify-center bg-slate-50 hover:bg-slate-100 disabled:opacity-60 text-slate-600 text-xs font-medium py-2.5 rounded-xl transition-colors">
+                    Scollega
+                  </button>
+                </div>
+              )}
+              <div className="border-t border-slate-100 pt-2 flex gap-2">
+                <button type="button" onClick={handleSubscribeCalendar}
+                  className="flex-1 flex items-center justify-center gap-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[10px] font-medium py-2 rounded-lg transition-colors">
+                  <Calendar className="w-3 h-3" /> Apri feed ICS
+                </button>
+                <button type="button" onClick={handleCopyLink}
+                  className="flex-1 flex items-center justify-center gap-1 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[10px] font-medium py-2 rounded-lg transition-colors">
+                  <Copy className="w-3 h-3" /> {copied ? 'Copiato!' : 'Copia link ICS'}
+                </button>
+              </div>
+            </div>
+
+            {/* WhatsApp status */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-green-600" />
+                <h2 className="text-xs font-bold text-slate-700">WhatsApp</h2>
+              </div>
+              {whatsAppStatus?.configured ? (
+                <p className="text-[10px] text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Invio WhatsApp collegato
+                </p>
+              ) : (
+                <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5">
+                  Configura GIGAWA_USER_ID e GIGAWA_SESSION_ID sul server.
+                </p>
+              )}
+              <p className="text-[10px] text-slate-400">Il pulsante WA negli appuntamenti invia messaggi reali tramite Gigawa.</p>
+            </div>
+
+            {/* Sveglie */}
+            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Bell className="w-3.5 h-3.5 text-blue-600" />
+                <h2 className="text-xs font-bold text-slate-700">Timing sveglie</h2>
+              </div>
+              {notifPerm === 'unsupported' && (
+                <p className="text-[10px] text-slate-400">Notifiche non supportate su questo browser.</p>
+              )}
+              {notifPerm === 'default' && (
+                <button type="button" onClick={requestNotifPermission}
+                  className="w-full text-xs bg-blue-50 text-blue-700 font-medium py-2 rounded-xl hover:bg-blue-100 transition-colors">
+                  Attiva notifiche in-app
+                </button>
+              )}
+              {notifPerm === 'granted' && (
+                <p className="text-[10px] text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Notifiche in-app attive
+                </p>
+              )}
+              {notifPerm === 'denied' && (
+                <p className="text-[10px] text-red-500">Notifiche bloccate — abilitale nelle impostazioni del browser.</p>
+              )}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {ALARM_OPTIONS.map(opt => (
+                  <label key={opt.minutes} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" checked={alarmOffsets.includes(opt.minutes)}
+                      onChange={() => toggleOffset(opt.minutes)}
+                      className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer" />
+                    <span className="text-xs text-slate-700 group-hover:text-blue-600 transition-colors">{opt.label}</span>
+                  </label>
+                ))}
+              </div>
+              {alarmOffsets.length === 0 && (
+                <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5">
+                  Seleziona almeno un timing.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── WhatsApp ───────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-slate-700">WhatsApp</h2>
-          </div>
-          {whatsAppStatus?.configured ? (
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" />
-              Invio WhatsApp collegato
-            </p>
-          ) : (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-              Configura GIGAWA_USER_ID e GIGAWA_SESSION_ID sul server.
-            </p>
-          )}
-          <p className="text-xs text-slate-500">
-            Il pulsante WhatsApp negli appuntamenti invia un messaggio reale tramite Gigawa.
-          </p>
-        </div>
-
-        {/* ── Messaggi WhatsApp ─────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-green-600" />
-            <h2 className="text-sm font-semibold text-slate-700">Messaggi WhatsApp</h2>
-          </div>
-          <p className="text-xs text-slate-400">
-            Variabili disponibili: <code className="bg-slate-100 px-1 rounded">{'{nome}'}</code>{' '}
-            <code className="bg-slate-100 px-1 rounded">{'{servizio}'}</code>{' '}
-            <code className="bg-slate-100 px-1 rounded">{'{data}'}</code>{' '}
-            <code className="bg-slate-100 px-1 rounded">{'{ora}'}</code>
-          </p>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Messaggio di conferma</label>
-            <textarea
-              rows={3}
-              value={msgConfirmation}
-              onChange={e => setMsgConfirmation(e.target.value)}
-              placeholder={`Ciao {nome}! Ti confermiamo l'appuntamento per {servizio} {data} alle {ora}. Rispondi per confermare o disdire. Grazie!`}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Messaggio promemoria</label>
-            <textarea
-              rows={3}
-              value={msgReminder}
-              onChange={e => setMsgReminder(e.target.value)}
-              placeholder={`Ciao {nome}, ti ricordiamo l'appuntamento per {servizio} {data} alle {ora}. A presto!`}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none"
-            />
-          </div>
-        </div>
-
-        {/* ── Sveglie ────────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-blue-600" />
-            <h2 className="text-sm font-semibold text-slate-700">Timing sveglie</h2>
-          </div>
-
-          {notifPerm === 'unsupported' && (
-            <p className="text-xs text-slate-400">Notifiche non supportate su questo browser.</p>
-          )}
-          {notifPerm === 'default' && (
-            <button type="button" onClick={requestNotifPermission}
-              className="w-full text-sm bg-blue-50 text-blue-700 font-medium py-2.5 rounded-xl hover:bg-blue-100 transition-colors">
-              Attiva notifiche in-app
-            </button>
-          )}
-          {notifPerm === 'granted' && (
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <CheckCircle className="w-3.5 h-3.5" /> Notifiche in-app attive
-            </p>
-          )}
-          {notifPerm === 'denied' && (
-            <p className="text-xs text-red-500">Notifiche bloccate. Abilitale nelle impostazioni del browser.</p>
-          )}
-
-          <p className="text-xs text-slate-500">Sveglie per ogni appuntamento:</p>
-          <div className="space-y-2">
-            {ALARM_OPTIONS.map(opt => (
-              <label key={opt.minutes} className="flex items-center gap-3 cursor-pointer group">
-                <input type="checkbox" checked={alarmOffsets.includes(opt.minutes)}
-                  onChange={() => toggleOffset(opt.minutes)}
-                  className="w-4 h-4 rounded accent-blue-600 cursor-pointer" />
-                <span className="text-sm text-slate-700 group-hover:text-blue-600 transition-colors">
-                  {opt.label}
-                </span>
-              </label>
-            ))}
-          </div>
-          {alarmOffsets.length === 0 && (
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-              Seleziona almeno un timing per le sveglie.
-            </p>
-          )}
-        </div>
-
-        {/* ── Informazioni centro ────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-700">Informazioni centro</h2>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Nome centro</label>
-            <input type="text" value={form.center_name} onChange={e => set('center_name', e.target.value)}
-              placeholder="Il tuo salone…"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Telefono</label>
-            <input type="tel" value={form.phone_number} onChange={e => set('phone_number', e.target.value)}
-              placeholder="+39 …"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Indirizzo</label>
-            <input type="text" value={form.address} onChange={e => set('address', e.target.value)}
-              placeholder="Via …"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Città</label>
-            <input type="text" value={form.city} onChange={e => set('city', e.target.value)}
-              placeholder="Roma, Milano…"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
-          </div>
-        </div>
-
+        {/* Save */}
         <button type="submit" disabled={saving}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+          className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
           {saved ? <><CheckCircle className="w-4 h-4" /> Salvato!</> : saving ? 'Salvataggio…' : 'Salva impostazioni'}
         </button>
       </form>
