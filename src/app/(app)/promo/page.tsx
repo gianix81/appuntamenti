@@ -67,7 +67,7 @@ Abbiamo una promozione speciale per te...
 
 Ti aspettiamo! ❤️`
 
-const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm bg-white'
+const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-300 text-sm text-slate-800 bg-white'
 
 // ── Component ─────────────────────────────────────────────────────────────
 export default function PromoPage() {
