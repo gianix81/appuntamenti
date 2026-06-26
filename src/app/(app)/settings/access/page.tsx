@@ -58,10 +58,13 @@ export default function AccessPage() {
   // Real-time listener per richieste pendenti
   useEffect(() => {
     if (role !== 'admin') return
-    const q = query(collection(db, 'access_requests'), where('status', '==', 'pending'), orderBy('requested_at', 'desc'))
+    // Senza orderBy per evitare indice composto — ordiniamo lato client
+    const q = query(collection(db, 'access_requests'), where('status', '==', 'pending'))
     const unsub = onSnapshot(q, snap => {
-      setPendingReqs(snap.docs.map(d => d.data() as AccessRequest))
-    }, () => setPendingReqs([]))
+      const reqs = snap.docs.map(d => d.data() as AccessRequest)
+      reqs.sort((a, b) => b.requested_at.localeCompare(a.requested_at))
+      setPendingReqs(reqs)
+    }, (err) => { console.error('access_requests listener:', err); setPendingReqs([]) })
     return () => unsub()
   }, [role])
 
