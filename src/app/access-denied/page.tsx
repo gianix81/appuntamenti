@@ -163,14 +163,14 @@ export default function AccessDeniedPage() {
                 <input type="text" required value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Nome e cognome"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" />
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 placeholder:text-slate-400" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Messaggio (opzionale)</label>
                 <textarea rows={2} value={message}
                   onChange={e => setMessage(e.target.value)}
                   placeholder="Perché vuoi accedere all'app?"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none" />
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800 placeholder:text-slate-400 resize-none" />
               </div>
               <button type="submit" disabled={sending}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
