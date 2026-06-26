@@ -420,7 +420,7 @@ export default function SettingsPage() {
               )}
               {notifPerm === 'default' && (
                 <button type="button" onClick={requestNotifPermission}
-                  className="w-full text-xs bg-orange-50 text-orange-700 font-medium py-2 rounded-xl hover:bg-blue-100 transition-colors">
+                  className="w-full text-xs bg-orange-50 text-orange-700 font-medium py-2 rounded-xl hover:bg-orange-100 transition-colors">
                   Attiva notifiche in-app
                 </button>
               )}

@@ -19,12 +19,12 @@ interface Props {
 
 const CATS: { key: TreatmentCategory; label: string; activeClass: string }[] = [
   { key: 'corpo',    label: '💆 Corpo',          activeClass: 'bg-indigo-600 text-white' },
-  { key: 'viso',     label: '✨ Viso/Décolleté', activeClass: 'bg-violet-600 text-white' },
+  { key: 'viso',     label: '✨ Viso/Décolleté', activeClass: 'bg-orange-500 text-white' },
   { key: 'laser',    label: '⚡ Laser',           activeClass: 'bg-rose-600 text-white'   },
   { key: 'prodotto', label: '🧴 Prodotto Casa',   activeClass: 'bg-emerald-600 text-white' },
 ]
 
-const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-300 text-sm bg-white'
+const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm bg-white'
 const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5'
 
 export function TreatmentModal({ clientId, defaultCategory = 'corpo', existing, onSaved, onClose }: Props) {

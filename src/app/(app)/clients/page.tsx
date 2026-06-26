@@ -103,7 +103,7 @@ export default function ClientsPage() {
             )}
             <Link
               href="/clients/new"
-              className="flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-purple-200 hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Nuovo</span>
@@ -122,7 +122,7 @@ export default function ClientsPage() {
             placeholder="Cerca per nome, telefono, email…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300 text-sm placeholder:text-slate-400"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm placeholder:text-slate-400"
           />
         </div>
 
@@ -137,14 +137,14 @@ export default function ClientsPage() {
             action={!search ? (
               <Link
                 href="/clients/new"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-md shadow-purple-200 hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity"
               >
                 <Plus className="w-4 h-4" /> Aggiungi cliente
               </Link>
             ) : undefined}
           />
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 overflow-hidden">
             {(() => {
               const gridCols = isStaff
                 ? '2rem 1fr 1fr 5rem 5rem'
@@ -153,12 +153,12 @@ export default function ClientsPage() {
               const actionBtns = (client: Client) => (
                 <>
                   <Link href={`/clients/${client.id}`}
-                    className="p-1.5 text-slate-300 hover:text-violet-500 hover:bg-violet-50 rounded-lg transition-colors" title="Storico">
+                    className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="Storico">
                     <Clock className="w-4 h-4" />
                   </Link>
                   {!isStaff && (
                     <Link href={`/clients/${client.id}/edit`}
-                      className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Modifica">
+                      className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="Modifica">
                       <Pencil className="w-4 h-4" />
                     </Link>
                   )}
@@ -186,7 +186,7 @@ export default function ClientsPage() {
                   </div>
 
                   {filtered.map((client, i) => (
-                    <div key={client.id} className="border-b border-slate-100 last:border-0 hover:bg-violet-50/30 transition-colors">
+                    <div key={client.id} className="border-b border-slate-100 last:border-0 hover:bg-orange-50/30 transition-colors">
 
                       {/* ── DESKTOP: grid allineato all'header ── */}
                       <div className="hidden md:grid items-center px-4"
@@ -196,14 +196,14 @@ export default function ClientsPage() {
                         <span className="py-3 text-slate-600 truncate pr-2">{client.first_name}</span>
                         {!isStaff && (
                           <a href={`tel:${client.phone}`}
-                            className="py-3 flex items-center gap-1 text-blue-500 hover:text-blue-700 text-sm whitespace-nowrap">
+                            className="py-3 flex items-center gap-1 text-slate-600 hover:text-orange-500 text-sm whitespace-nowrap">
                             <Phone className="w-3 h-3 shrink-0" />{client.phone}
                           </a>
                         )}
                         {!isStaff && (
                           <span className="py-3 text-slate-500 text-sm truncate pr-2">
                             {client.email
-                              ? <a href={`mailto:${client.email}`} className="hover:text-blue-500 hover:underline transition-colors" title={client.email}>{client.email}</a>
+                              ? <a href={`mailto:${client.email}`} className="hover:text-orange-500 hover:underline transition-colors" title={client.email}>{client.email}</a>
                               : <span className="text-slate-300">—</span>}
                           </span>
                         )}
@@ -228,12 +228,12 @@ export default function ClientsPage() {
                         {/* Riga 2: telefono + email + data */}
                         {!isStaff && (
                           <div className="flex items-center gap-3 pb-2.5 pl-7 flex-wrap">
-                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-blue-500 hover:text-blue-700 text-sm shrink-0">
+                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-slate-600 hover:text-orange-500 text-sm shrink-0">
                               <Phone className="w-3 h-3" />{client.phone}
                             </a>
                             <span className="text-slate-500 text-sm truncate">
                               {client.email
-                                ? <a href={`mailto:${client.email}`} className="hover:text-blue-500 hover:underline">{client.email}</a>
+                                ? <a href={`mailto:${client.email}`} className="hover:text-orange-500 hover:underline">{client.email}</a>
                                 : <span className="text-slate-300">—</span>}
                             </span>
                             <span className="text-xs text-slate-400 tabular-nums ml-auto whitespace-nowrap">

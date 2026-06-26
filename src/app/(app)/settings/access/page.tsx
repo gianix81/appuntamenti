@@ -197,7 +197,7 @@ export default function AccessPage() {
                     <select
                       value={approveRole[req.uid] ?? 'staff'}
                       onChange={e => setApproveRole(p => ({ ...p, [req.uid]: e.target.value as 'admin' | 'staff' }))}
-                      className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-blue-300">
+                      className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-orange-300">
                       <option value="staff">Staff — accesso limitato</option>
                       <option value="admin">Admin — accesso completo</option>
                     </select>
@@ -243,21 +243,21 @@ export default function AccessPage() {
         {staffList.length > 0 && (
           <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-3.5 h-3.5 text-violet-500" />
+              <Users className="w-3.5 h-3.5 text-orange-500" />
               <h2 className="text-xs font-bold text-slate-700">Staff con accesso</h2>
-              <span className="text-[10px] text-slate-400 ml-auto">Gestito da <Link href="/staff" className="text-violet-500 hover:underline">Sezione Staff</Link></span>
+              <span className="text-[10px] text-slate-400 ml-auto">Gestito da <Link href="/staff" className="text-orange-500 hover:underline">Sezione Staff</Link></span>
             </div>
             <div className="space-y-1">
               {staffList.map(s => (
-                <div key={s.id} className="flex items-center gap-3 px-3 py-2 bg-violet-50 rounded-xl border border-violet-100">
-                  <div className="w-7 h-7 rounded-lg bg-violet-500 flex items-center justify-center shrink-0 text-white text-[10px] font-black">
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2 bg-orange-50 rounded-xl border border-orange-100">
+                  <div className="w-7 h-7 rounded-lg bg-orange-500 flex items-center justify-center shrink-0 text-white text-[10px] font-black">
                     {s.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-800 truncate">{s.name}</p>
                     <p className="text-[10px] text-slate-500 truncate">{s.login_email}</p>
                   </div>
-                  <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full shrink-0">Staff</span>
+                  <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full shrink-0">Staff</span>
                 </div>
               ))}
             </div>
@@ -275,7 +275,7 @@ export default function AccessPage() {
               {activeUsers.map(u => (
                 <div key={u.id} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
                   <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white text-[10px] font-black',
-                    u.role === 'admin' ? 'bg-blue-500' : 'bg-violet-500')}>
+                    u.role === 'admin' ? 'bg-slate-700' : 'bg-orange-500')}>
                     {(u.display_name || u.email).charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -286,7 +286,7 @@ export default function AccessPage() {
                     </p>
                   </div>
                   <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
-                    u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700')}>
+                    u.role === 'admin' ? 'bg-slate-100 text-slate-700' : 'bg-orange-100 text-orange-700')}>
                     {u.role === 'admin' ? 'Admin' : 'Staff'}
                   </span>
                   <button onClick={() => handleRevoke(u.email)}
@@ -302,7 +302,7 @@ export default function AccessPage() {
         {/* Aggiungi nuovo accesso */}
         <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <UserPlus className="w-3.5 h-3.5 text-blue-500" />
+            <UserPlus className="w-3.5 h-3.5 text-orange-500" />
             <h2 className="text-xs font-bold text-slate-700">Aggiungi accesso</h2>
           </div>
           <form onSubmit={handleAdd} className="space-y-2">
@@ -312,19 +312,19 @@ export default function AccessPage() {
                 <input type="email" required value={form.email}
                   onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                   placeholder="email@esempio.com"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300" />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 mb-1">Nome (opzionale)</label>
                 <input type="text" value={form.display_name}
                   onChange={e => setForm(p => ({ ...p, display_name: e.target.value }))}
                   placeholder="Nome cognome"
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300" />
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 mb-1">Tipo di accesso</label>
                 <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as 'admin' | 'staff' }))}
-                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 bg-white">
                   <option value="admin">Admin — accesso completo</option>
                   <option value="staff">Staff — accesso limitato</option>
                 </select>
@@ -361,7 +361,7 @@ export default function AccessPage() {
                     <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
                   </div>
                   <button onClick={() => handleRestore(u.email)}
-                    className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 shrink-0">
+                    className="text-[10px] font-semibold text-orange-500 hover:text-orange-600 shrink-0">
                     Ripristina
                   </button>
                 </div>

@@ -287,7 +287,7 @@ export function AppointmentForm({ existing }: Props) {
           {/* Trigger input */}
           <div
             className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm bg-white cursor-pointer transition-all ${
-              clientOpen ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200 hover:border-slate-300'
+              clientOpen ? 'border-orange-400 ring-2 ring-orange-100' : 'border-slate-200 hover:border-slate-300'
             }`}
             onClick={() => { setClientOpen(v => !v); setClientSearch('') }}
           >
@@ -345,8 +345,8 @@ export function AppointmentForm({ existing }: Props) {
                       key={c.id}
                       type="button"
                       onClick={() => { set('client_id', c.id); setClientOpen(false); setClientSearch('') }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center justify-between gap-2 ${
-                        form.client_id === c.id ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-orange-50 transition-colors flex items-center justify-between gap-2 ${
+                        form.client_id === c.id ? 'bg-orange-50 text-orange-700 font-semibold' : 'text-slate-700'
                       }`}
                     >
                       <span>{c.last_name} {c.first_name}</span>
@@ -360,7 +360,7 @@ export function AppointmentForm({ existing }: Props) {
               <div className="border-t border-slate-100">
                 <Link
                   href={`/clients/new${clientSearch ? `?prefill=${encodeURIComponent(clientSearch)}` : ''}`}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 font-semibold transition-colors"
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-orange-500 hover:bg-orange-50 font-semibold transition-colors"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> Crea nuovo cliente
                 </Link>

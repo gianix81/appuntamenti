@@ -82,7 +82,7 @@ function TreatmentTab({
         </div>
         <button
           onClick={onAdd}
-          className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-violet-500 to-purple-700 text-white px-3 py-1.5 rounded-xl shadow hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-orange-500 to-amber-600 text-white px-3 py-1.5 rounded-xl shadow hover:opacity-90 transition-opacity"
         >
           <Plus className="w-3.5 h-3.5" /> Aggiungi
         </button>
@@ -93,7 +93,7 @@ function TreatmentTab({
           <p className="text-slate-400 text-sm mb-3">Nessun {meta.label.toLowerCase()} registrato</p>
           <button
             onClick={onAdd}
-            className="text-xs font-semibold text-violet-600 hover:text-violet-700"
+            className="text-xs font-semibold text-orange-500 hover:text-orange-600"
           >
             + Aggiungi il primo
           </button>
@@ -254,7 +254,7 @@ export default function ClientHistoryPage() {
             <ArrowLeft className="w-5 h-5 text-slate-500" />
           </Link>
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white font-bold text-sm shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
               {initials}
             </div>
             <div className="min-w-0">
@@ -264,7 +264,7 @@ export default function ClientHistoryPage() {
               </p>
             </div>
           </div>
-          <Link href={`/clients/${id}/edit`} className="text-xs font-semibold text-blue-600 hover:text-blue-700 shrink-0">
+          <Link href={`/clients/${id}/edit`} className="text-xs font-semibold text-orange-500 hover:text-orange-600 shrink-0">
             Modifica
           </Link>
         </div>
@@ -281,7 +281,7 @@ export default function ClientHistoryPage() {
             { label: 'Cadenza',   value: globalFreq ?? '—' },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm text-center">
-              <p className="text-base font-black text-violet-600 leading-tight">{value}</p>
+              <p className="text-base font-black text-orange-500 leading-tight">{value}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
             </div>
           ))}
@@ -290,7 +290,7 @@ export default function ClientHistoryPage() {
         {/* ── Contatti ── */}
         <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm flex flex-wrap gap-3">
           {client.phone && (
-            <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
+            <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-orange-500 hover:underline">
               <Phone className="w-4 h-4" /> {client.phone}
             </a>
           )}
@@ -329,7 +329,7 @@ export default function ClientHistoryPage() {
                 className={clsx(
                   'flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all',
                   tab === t.key
-                    ? 'bg-violet-600 text-white shadow'
+                    ? 'bg-orange-500 text-white shadow'
                     : 'text-slate-500 hover:bg-slate-50',
                 )}
               >
@@ -357,7 +357,7 @@ export default function ClientHistoryPage() {
                 <CalendarDays className="w-4 h-4 text-slate-400" /> Storico appuntamenti
               </h2>
               <Link href={`/appointments/new`}
-                className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700">
+                className="flex items-center gap-1 text-xs font-semibold text-orange-500 hover:text-orange-600">
                 <Plus className="w-3.5 h-3.5" /> Nuovo
               </Link>
             </div>
@@ -408,7 +408,7 @@ export default function ClientHistoryPage() {
                   const date = parseISO(apt.start_time)
                   return (
                     <Link key={apt.id} href={`/appointments/${apt.id}/edit`}
-                      className={clsx('block hover:bg-violet-50/30 transition-colors', i > 0 && 'border-t border-slate-50')}>
+                      className={clsx('block hover:bg-orange-50/30 transition-colors', i > 0 && 'border-t border-slate-50')}>
 
                       {/* ── Desktop: riga singola ── */}
                       <div className="hidden md:grid items-center px-4 py-2.5"

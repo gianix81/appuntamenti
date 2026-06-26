@@ -357,7 +357,7 @@ export default function StaffPage() {
                     ) : (
                       <div className="flex gap-1">
                         <a href={icsUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-1.5 rounded-lg transition-colors">
+                          className="flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold text-orange-500 bg-orange-50 hover:bg-orange-100 px-2 py-1.5 rounded-lg transition-colors">
                           <Calendar className="w-3 h-3" /> Calendario
                         </a>
                         <button

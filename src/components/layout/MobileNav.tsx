@@ -64,12 +64,12 @@ export function MobileNav() {
               active ? (ACTIVE_BG[href] ?? 'bg-slate-100') : 'bg-transparent',
             )}>
               <Icon
-                className={clsx('transition-colors', active ? (ACTIVE_COLORS[href] ?? 'text-blue-600') : 'text-slate-400')}
+                className={clsx('transition-colors', active ? (ACTIVE_COLORS[href] ?? 'text-orange-500') : 'text-slate-400')}
                 style={{ width: '18px', height: '18px' }}
               />
             </div>
             <span className={clsx('text-[10px] font-semibold',
-              active ? (ACTIVE_COLORS[href] ?? 'text-blue-600') : 'text-slate-400')}>
+              active ? (ACTIVE_COLORS[href] ?? 'text-orange-500') : 'text-slate-400')}>
               {label}
             </span>
           </Link>

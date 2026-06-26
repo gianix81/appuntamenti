@@ -535,7 +535,7 @@ export default function ReportsPage() {
                       </div>
                       {c.phone && (
                         <a href={`tel:${c.phone}`}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors">
+                          className="shrink-0 flex items-center gap-1 text-[10px] font-semibold text-orange-500 bg-orange-50 hover:bg-orange-100 px-2.5 py-1 rounded-lg transition-colors">
                           <PhoneCall className="w-3 h-3" /> Chiama
                         </a>
                       )}

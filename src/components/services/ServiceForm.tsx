@@ -60,24 +60,24 @@ export function ServiceForm({ existing }: Props) {
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Nome servizio *</label>
         <input required value={form.name} onChange={e => set('name', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" placeholder="Es. Manicure, Pulizia viso…" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-slate-800" placeholder="Es. Manicure, Pulizia viso…" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Durata (minuti) *</label>
           <input required type="number" min={5} step={5} value={form.duration_minutes} onChange={e => set('duration_minutes', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-slate-800" />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Prezzo (€) *</label>
           <input required type="number" min={0} step={0.5} value={form.price} onChange={e => set('price', e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800" />
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-slate-800" />
         </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Descrizione</label>
         <textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)}
-          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm resize-none" />
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm resize-none" />
       </div>
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => set('active', !form.active)}

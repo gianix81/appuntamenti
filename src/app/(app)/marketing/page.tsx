@@ -81,7 +81,7 @@ export default function MarketingPage() {
               <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
                 <Users className="w-4 h-4 text-slate-400" /> Destinatari
               </p>
-              <button onClick={toggleAll} className="text-xs font-semibold text-violet-600 hover:text-violet-700">
+              <button onClick={toggleAll} className="text-xs font-semibold text-orange-500 hover:text-orange-600">
                 {selected.size === clients.length ? 'Deseleziona tutti' : 'Seleziona tutti'}
               </button>
             </div>
@@ -98,9 +98,9 @@ export default function MarketingPage() {
                   return (
                     <button key={c.id} onClick={() => toggle(c.id)}
                       className={clsx('w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors',
-                        isSelected ? 'bg-violet-50/40' : '')}>
+                        isSelected ? 'bg-orange-50/40' : '')}>
                       {isSelected
-                        ? <CheckSquare className="w-4 h-4 text-violet-600 shrink-0" />
+                        ? <CheckSquare className="w-4 h-4 text-orange-500 shrink-0" />
                         : <Square className="w-4 h-4 text-slate-300 shrink-0" />}
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-slate-800 truncate">{c.first_name} {c.last_name}</p>

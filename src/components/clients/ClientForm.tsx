@@ -67,7 +67,7 @@ function ChipGroup<T extends string>({
           className={clsx(
             'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
             value === o.value
-              ? 'bg-violet-600 text-white shadow'
+              ? 'bg-orange-500 text-white shadow'
               : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
           )}
         >
@@ -205,7 +205,7 @@ export function ClientForm({ existing }: Props) {
 
           {/* Dati anagrafici */}
           <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <SectionHeader icon={User} title="Dati anagrafici" color="text-violet-600" />
+            <SectionHeader icon={User} title="Dati anagrafici" color="text-orange-500" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={LABEL}>Nome *</label>
@@ -250,7 +250,7 @@ export function ClientForm({ existing }: Props) {
 
           {/* Contatti */}
           <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <SectionHeader icon={Phone} title="Contatti" color="text-blue-600" />
+            <SectionHeader icon={Phone} title="Contatti" color="text-orange-500" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
                 <label className={LABEL}>Telefono cellulare *</label>
@@ -331,13 +331,13 @@ export function ClientForm({ existing }: Props) {
         <div className="space-y-4">
 
           {/* Banner */}
-          <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 text-xs text-violet-700">
+          <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 text-xs text-orange-700">
             Tutti i campi sono facoltativi. Le informazioni sanitarie sono riservate e visibili solo all'admin.
           </div>
 
           {/* Salute generale */}
           <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-            <SectionHeader icon={Activity} title="Salute generale" color="text-blue-600" />
+            <SectionHeader icon={Activity} title="Salute generale" color="text-orange-500" />
             <div className="space-y-3">
               <div>
                 <label className={LABEL}>Stato di salute attuale</label>

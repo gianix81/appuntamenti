@@ -407,7 +407,7 @@ export function AppointmentCard({ appointment, onDelete, hideClientDetails = fal
                 'flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg font-semibold transition-all',
                 calAdded
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600',
+                  : 'bg-white border border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-500',
               )}
             >
               {calAdded ? <><Check className="w-3 h-3" /> Ok!</> : <><CalendarPlus className="w-3 h-3" /> Cal</>}

@@ -45,8 +45,8 @@ const SEGMENTS: { key: FilterSegment; label: string; emoji: string; desc: string
 
 const SEG_COLORS: Record<FilterSegment, string> = {
   tutti:     'bg-slate-100 text-slate-700',
-  nuovo:     'bg-blue-50 text-blue-700 border border-blue-200',
-  frequente: 'bg-violet-50 text-violet-700 border border-violet-200',
+  nuovo:     'bg-orange-50 text-orange-700 border border-orange-200',
+  frequente: 'bg-amber-50 text-amber-700 border border-amber-200',
   abituale:  'bg-emerald-50 text-emerald-700 border border-emerald-200',
   a_rischio: 'bg-amber-50 text-amber-700 border border-amber-200',
   assente:   'bg-rose-50 text-rose-700 border border-rose-200',
@@ -56,7 +56,7 @@ const SEG_COLORS: Record<FilterSegment, string> = {
 const SEG_ACTIVE: Record<FilterSegment, string> = {
   tutti:     'bg-slate-800 text-white',
   nuovo:     'bg-orange-500 text-white',
-  frequente: 'bg-violet-600 text-white',
+  frequente: 'bg-amber-500 text-white',
   abituale:  'bg-emerald-600 text-white',
   a_rischio: 'bg-amber-500 text-white',
   assente:   'bg-rose-600 text-white',
