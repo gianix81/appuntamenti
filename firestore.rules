@@ -2,9 +2,35 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Solo utenti autenticati con Firebase Auth possono leggere e scrivere
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // L'admin principale ha sempre accesso
+    function isAdminEmail() {
+      return request.auth.token.email == 'siriomediahouse@gmail.com';
+    }
+
+    // Utente presente in allowed_users e attivo
+    function isAllowed() {
+      return isAdminEmail() || (
+        request.auth.token.email != null &&
+        exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)) &&
+        get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.active == true
+      );
+    }
+
+    // Dati app — solo utenti autorizzati
+    match /clients/{doc}           { allow read, write: if request.auth != null && isAllowed(); }
+    match /appointments/{doc}      { allow read, write: if request.auth != null && isAllowed(); }
+    match /services/{doc}          { allow read, write: if request.auth != null && isAllowed(); }
+    match /staff/{doc}             { allow read, write: if request.auth != null && isAllowed(); }
+    match /settings/{doc}          { allow read, write: if request.auth != null && isAllowed(); }
+    match /message_logs/{doc}      { allow read, write: if request.auth != null && isAllowed(); }
+    match /client_treatments/{doc} { allow read, write: if request.auth != null && isAllowed(); }
+    match /inventory/{doc}         { allow read, write: if request.auth != null && isAllowed(); }
+
+    // Gestione accessi — solo l'admin principale può scrivere
+    match /allowed_users/{email} {
+      allow read:  if request.auth != null && (isAdminEmail() || request.auth.token.email == email);
+      allow write: if request.auth != null && isAdminEmail();
     }
   }
 }

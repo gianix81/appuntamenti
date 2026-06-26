@@ -59,6 +59,16 @@ export async function POST(request: NextRequest) {
       updated_at:  new Date().toISOString(),
     })
 
+    // Add to allowed_users so Firestore rules and useUserRole recognize them
+    await db.collection('allowed_users').doc(email).set({
+      email,
+      role:         'staff',
+      display_name: existing?.name ?? null,
+      active:       true,
+      created_at:   new Date().toISOString(),
+      created_by:   'system',
+    })
+
     return NextResponse.json({ ok: true, uid: user.uid })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -99,11 +109,19 @@ export async function DELETE(request: NextRequest) {
     if (uid) await auth.deleteUser(uid)
   } catch { /* ignore if user was already deleted */ }
 
+  const loginEmail = staffDoc.data()?.login_email
   await db.collection('staff').doc(staffId).update({
     auth_uid:    null,
     login_email: null,
     updated_at:  new Date().toISOString(),
   })
+
+  // Revoke from allowed_users
+  if (loginEmail) {
+    try {
+      await db.collection('allowed_users').doc(loginEmail).update({ active: false })
+    } catch { /* ignore if doc doesn't exist */ }
+  }
 
   return NextResponse.json({ ok: true })
 }

@@ -3,31 +3,30 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSettings } from '@/contexts/SettingsContext'
+import { useUserRole } from '@/hooks/useUserRole'
 
-/**
- * Protegge le pagine dell'app: se l'utente è loggato ma non ha
- * completato l'onboarding, lo manda a /onboarding.
- *
- * Regole:
- * - isNewUser (no doc settings) → /onboarding
- * - settings.onboarding_completed === false → /onboarding
- * - settings esiste ma onboarding_completed è undefined (utente pre-feature) → passa
- * - settings.onboarding_completed === true → passa
- */
 export function OnboardingGuard({ children }: { children: React.ReactNode }) {
-  const { settings, loading, isAuthenticated, isNewUser } = useSettings()
+  const { settings, loading: settingsLoading, isAuthenticated, isNewUser } = useSettings()
+  const { role, loading: roleLoading } = useUserRole()
   const router = useRouter()
+
+  const loading = settingsLoading || roleLoading
 
   const needsOnboarding =
     isAuthenticated &&
     !loading &&
+    role !== 'unauthorized' &&
     (isNewUser || settings?.onboarding_completed === false)
 
+  const isUnauthorized = isAuthenticated && !loading && role === 'unauthorized'
+
   useEffect(() => {
-    if (needsOnboarding) {
+    if (isUnauthorized) {
+      router.replace('/access-denied')
+    } else if (needsOnboarding) {
       router.replace('/onboarding')
     }
-  }, [needsOnboarding, router])
+  }, [isUnauthorized, needsOnboarding, router])
 
   if (loading) {
     return (
@@ -37,7 +36,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (needsOnboarding) return null
+  if (isUnauthorized || needsOnboarding) return null
 
   return <>{children}</>
 }

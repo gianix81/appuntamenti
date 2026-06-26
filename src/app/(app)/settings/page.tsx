@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import { saveAlarmSettings, getAlarmSettings } from '@/lib/alarmDB'
-import { CheckCircle, Bell, Calendar, Copy, Scissors, Users, Building2, Globe } from 'lucide-react'
+import { CheckCircle, Bell, Calendar, Copy, Scissors, Users, Building2, Globe, ShieldCheck } from 'lucide-react'
 import type { BusinessLevel } from '@/types/database'
 import { clsx } from 'clsx'
+import Link from 'next/link'
+import { useUserRole } from '@/hooks/useUserRole'
 
 const ALARM_OPTIONS: { label: string; minutes: number }[] = [
   { label: '24 ore prima',        minutes: 1440 },
@@ -229,6 +231,7 @@ export default function SettingsPage() {
   }
 
   const inputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800'
+  const { role } = useUserRole()
 
   if (loading) return <div className="p-6 text-slate-400 text-sm">Caricamento…</div>
 
@@ -451,6 +454,23 @@ export default function SettingsPage() {
           {saved ? <><CheckCircle className="w-4 h-4" /> Salvato!</> : saving ? 'Salvataggio…' : 'Salva impostazioni'}
         </button>
       </form>
+
+      {/* Gestione accessi — solo admin principale */}
+      {role === 'admin' && (
+        <div className="px-4 md:px-6 pb-4">
+          <Link href="/settings/access"
+            className="mt-3 flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-3 shadow-sm hover:bg-slate-50 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-800">Gestione Accessi</p>
+              <p className="text-[11px] text-slate-400">Controlla chi può accedere all'app</p>
+            </div>
+            <span className="text-slate-300 text-xs">›</span>
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

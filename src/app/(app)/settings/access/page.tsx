@@ -1,0 +1,266 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { collection, doc, getDocs, setDoc, updateDoc, query, orderBy } from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
+import type { AllowedUser } from '@/types/database'
+import { useUserRole } from '@/hooks/useUserRole'
+import { ADMIN_EMAIL } from '@/lib/auth/constants'
+import { ShieldCheck, UserPlus, Trash2, ArrowLeft, Crown, Users, AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { format } from 'date-fns'
+import { it } from 'date-fns/locale'
+import { clsx } from 'clsx'
+
+type StaffEntry = { id: string; name: string; login_email: string | null; auth_uid: string | null }
+
+export default function AccessPage() {
+  const { role } = useUserRole()
+  const [allowedUsers, setAllowedUsers]   = useState<(AllowedUser & { id: string })[]>([])
+  const [staffList,    setStaffList]      = useState<StaffEntry[]>([])
+  const [loading,      setLoading]        = useState(true)
+  const [saving,       setSaving]         = useState(false)
+  const [form,         setForm]           = useState({ email: '', role: 'admin' as 'admin' | 'staff', display_name: '' })
+  const [error,        setError]          = useState('')
+
+  async function loadAll() {
+    setLoading(true)
+    try {
+      const [auSnap, stSnap] = await Promise.all([
+        getDocs(query(collection(db, 'allowed_users'), orderBy('created_at', 'desc'))),
+        getDocs(collection(db, 'staff')),
+      ])
+      setAllowedUsers(auSnap.docs.map(d => ({ id: d.id, ...d.data() }) as AllowedUser & { id: string }))
+      setStaffList(
+        stSnap.docs.map(d => {
+          const data = d.data()
+          return { id: d.id, name: data.name ?? '', login_email: data.login_email ?? null, auth_uid: data.auth_uid ?? null }
+        }).filter(s => s.auth_uid),
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { loadAll() }, [])
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    const email = form.email.trim().toLowerCase()
+    if (!email.includes('@')) { setError('Email non valida'); return }
+    if (email === ADMIN_EMAIL) { setError('Questo è già l\'account admin principale'); return }
+
+    setSaving(true)
+    try {
+      await setDoc(doc(db, 'allowed_users', email), {
+        email,
+        role:         form.role,
+        display_name: form.display_name.trim() || undefined,
+        active:       true,
+        created_at:   new Date().toISOString(),
+        created_by:   ADMIN_EMAIL,
+      } satisfies AllowedUser)
+      setForm({ email: '', role: 'admin', display_name: '' })
+      await loadAll()
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleRevoke(email: string) {
+    if (!confirm(`Revocare l'accesso a ${email}?`)) return
+    await updateDoc(doc(db, 'allowed_users', email), { active: false })
+    await loadAll()
+  }
+
+  async function handleRestore(email: string) {
+    await updateDoc(doc(db, 'allowed_users', email), { active: true })
+    await loadAll()
+  }
+
+  if (role !== 'admin') {
+    return (
+      <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+        Sezione riservata all'amministratore
+      </div>
+    )
+  }
+
+  const activeUsers  = allowedUsers.filter(u => u.active)
+  const revokedUsers = allowedUsers.filter(u => !u.active)
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-slate-50">
+
+      {/* Header */}
+      <div className="bg-white border-b border-slate-100 px-4 md:px-6 py-3 sticky top-0 z-10 flex items-center gap-3">
+        <Link href="/settings" className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+          <ArrowLeft className="w-4 h-4 text-slate-500" />
+        </Link>
+        <div>
+          <h1 className="text-base font-bold text-slate-800">Gestione Accessi</h1>
+          <p className="text-[11px] text-slate-400">Controlla chi può accedere all'app</p>
+        </div>
+      </div>
+
+      <div className="px-4 md:px-6 py-4 space-y-4 max-w-2xl">
+
+        {/* Admin principale — fisso */}
+        <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Crown className="w-3.5 h-3.5 text-amber-500" />
+            <h2 className="text-xs font-bold text-slate-700">Amministratore principale</h2>
+          </div>
+          <div className="flex items-center gap-3 px-3 py-2 bg-amber-50 rounded-xl border border-amber-100">
+            <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+              <Crown className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-slate-800">{ADMIN_EMAIL}</p>
+              <p className="text-[10px] text-amber-600">Accesso completo · non modificabile</p>
+            </div>
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Admin</span>
+          </div>
+        </div>
+
+        {/* Staff con login */}
+        {staffList.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-3.5 h-3.5 text-violet-500" />
+              <h2 className="text-xs font-bold text-slate-700">Staff con accesso</h2>
+              <span className="text-[10px] text-slate-400 ml-auto">Gestito da <Link href="/staff" className="text-violet-500 hover:underline">Sezione Staff</Link></span>
+            </div>
+            <div className="space-y-1">
+              {staffList.map(s => (
+                <div key={s.id} className="flex items-center gap-3 px-3 py-2 bg-violet-50 rounded-xl border border-violet-100">
+                  <div className="w-7 h-7 rounded-lg bg-violet-500 flex items-center justify-center shrink-0 text-white text-[10px] font-black">
+                    {s.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">{s.name}</p>
+                    <p className="text-[10px] text-slate-500 truncate">{s.login_email}</p>
+                  </div>
+                  <span className="text-[10px] font-bold bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full shrink-0">Staff</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Utenti aggiunti manualmente */}
+        {activeUsers.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <h2 className="text-xs font-bold text-slate-700">Accessi aggiuntivi</h2>
+            </div>
+            <div className="space-y-1">
+              {activeUsers.map(u => (
+                <div key={u.id} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                  <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-white text-[10px] font-black',
+                    u.role === 'admin' ? 'bg-blue-500' : 'bg-violet-500')}>
+                    {(u.display_name || u.email).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {u.display_name && <p className="text-xs font-bold text-slate-800 truncate">{u.display_name}</p>}
+                    <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
+                    <p className="text-[9px] text-slate-300">
+                      Aggiunto il {format(new Date(u.created_at), 'd MMM yyyy', { locale: it })}
+                    </p>
+                  </div>
+                  <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
+                    u.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700')}>
+                    {u.role === 'admin' ? 'Admin' : 'Staff'}
+                  </span>
+                  <button onClick={() => handleRevoke(u.email)}
+                    className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Aggiungi nuovo accesso */}
+        <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <UserPlus className="w-3.5 h-3.5 text-blue-500" />
+            <h2 className="text-xs font-bold text-slate-700">Aggiungi accesso</h2>
+          </div>
+          <form onSubmit={handleAdd} className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="col-span-2">
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Email</label>
+                <input type="email" required value={form.email}
+                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                  placeholder="email@esempio.com"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Nome (opzionale)</label>
+                <input type="text" value={form.display_name}
+                  onChange={e => setForm(p => ({ ...p, display_name: e.target.value }))}
+                  placeholder="Nome cognome"
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-slate-500 mb-1">Tipo di accesso</label>
+                <select value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value as 'admin' | 'staff' }))}
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+                  <option value="admin">Admin — accesso completo</option>
+                  <option value="staff">Staff — accesso limitato</option>
+                </select>
+              </div>
+            </div>
+            {error && (
+              <div className="flex items-center gap-1.5 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-2.5 py-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {error}
+              </div>
+            )}
+            <button type="submit" disabled={saving}
+              className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+              <UserPlus className="w-3.5 h-3.5" />
+              {saving ? 'Salvataggio…' : 'Aggiungi accesso'}
+            </button>
+          </form>
+        </div>
+
+        {/* Accessi revocati (collassabile) */}
+        {revokedUsers.length > 0 && (
+          <details className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+            <summary className="px-3 py-2.5 cursor-pointer text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-2 list-none select-none">
+              <span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-black">{revokedUsers.length}</span>
+              Accessi revocati
+            </summary>
+            <div className="divide-y divide-slate-50 px-3 pb-3">
+              {revokedUsers.map(u => (
+                <div key={u.id} className="flex items-center gap-3 py-2 opacity-50">
+                  <div className="w-7 h-7 rounded-lg bg-slate-300 flex items-center justify-center shrink-0 text-white text-[10px] font-black">
+                    {(u.display_name || u.email).charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {u.display_name && <p className="text-xs font-bold text-slate-600 truncate">{u.display_name}</p>}
+                    <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+                  </div>
+                  <button onClick={() => handleRestore(u.email)}
+                    className="text-[10px] font-semibold text-blue-600 hover:text-blue-700 shrink-0">
+                    Ripristina
+                  </button>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+
+        {loading && (
+          <div className="text-center py-4 text-xs text-slate-400">Caricamento…</div>
+        )}
+      </div>
+    </div>
+  )
+}

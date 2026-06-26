@@ -181,6 +181,15 @@ export interface MessageLog {
 
 export type BusinessLevel = 1 | 2 | 3 | 4
 
+export interface AllowedUser {
+  email: string
+  role: 'admin' | 'staff'
+  display_name?: string
+  active: boolean
+  created_at: string
+  created_by: string
+}
+
 export interface Settings {
   id?: string
   // ── Profilo business ──────────────────────────────────────────
