@@ -139,7 +139,7 @@ export default function AppointmentsPage() {
           </div>
           <Link
             href="/appointments/new"
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity"
           >
             <Plus className="w-4 h-4" /> Nuovo
           </Link>
@@ -147,7 +147,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Navigatore settimanale */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-3 mb-4">
+      <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 mb-4">
         <div className="flex items-center justify-between mb-3">
           <button onClick={prevWeek} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
             <ChevronLeft className="w-4 h-4 text-slate-500" />
@@ -253,7 +253,7 @@ export default function AppointmentsPage() {
           action={
             <Link
               href="/appointments/new"
-              className="inline-flex items-center gap-2 bg-orange-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-orange-600 transition-colors"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" /> Aggiungi appuntamento
             </Link>
@@ -261,7 +261,7 @@ export default function AppointmentsPage() {
         />
       ) : (
         /* Tabella settimanale raggruppata per giorno */
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 overflow-hidden">
           {days.map(day => {
             const dayApts = weekAppointments.filter(a =>
               isSameDay(new Date(a.start_time), day),
@@ -271,7 +271,7 @@ export default function AppointmentsPage() {
               <div key={day.toISOString()}>
                 <div className={clsx(
                   'px-4 py-2 border-b border-slate-100 text-xs font-bold uppercase tracking-wide capitalize',
-                  isToday(day) ? 'bg-orange-50 text-orange-500' : 'bg-slate-50/80 text-slate-400',
+                  isToday(day) ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500',
                 )}>
                   {isToday(day) ? 'Oggi · ' : ''}{format(day, 'EEEE d MMMM', { locale: it })}
                 </div>

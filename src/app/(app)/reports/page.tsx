@@ -293,18 +293,18 @@ export default function ReportsPage() {
             {/* ── RIGA 1: KPI 4 colonne ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: 'Fatturato',          value: formatEur(stats.revenue),    icon: TrendingUp,    color: 'bg-indigo-50 text-indigo-600' },
-                { label: 'Appuntamenti',        value: String(stats.validCount),    icon: CalendarCheck, color: 'bg-emerald-50 text-emerald-600' },
-                { label: 'Scontrino medio',     value: formatEur(stats.avgRev),     icon: Star,          color: 'bg-amber-50 text-amber-600' },
-                { label: 'Clienti nel periodo', value: String(stats.uniqueClients), icon: Users,         color: 'bg-violet-50 text-violet-600' },
-              ].map(({ label, value, icon: Icon, color }) => (
-                <div key={label} className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm flex items-center gap-3">
-                  <div className={clsx('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', color)}>
-                    <Icon className="w-4 h-4" />
+                { label: 'Fatturato',          value: formatEur(stats.revenue),    icon: TrendingUp,    iconBg: 'bg-orange-500',  gradient: 'from-slate-800 to-slate-900' },
+                { label: 'Appuntamenti',        value: String(stats.validCount),    icon: CalendarCheck, iconBg: 'bg-emerald-500', gradient: 'from-slate-800 to-slate-900' },
+                { label: 'Scontrino medio',     value: formatEur(stats.avgRev),     icon: Star,          iconBg: 'bg-amber-500',   gradient: 'from-slate-800 to-slate-900' },
+                { label: 'Clienti nel periodo', value: String(stats.uniqueClients), icon: Users,         iconBg: 'bg-violet-500',  gradient: 'from-slate-800 to-slate-900' },
+              ].map(({ label, value, icon: Icon, iconBg, gradient }) => (
+                <div key={label} className={clsx('bg-gradient-to-br rounded-2xl p-3.5 shadow-lg flex items-center gap-3', gradient)}>
+                  <div className={clsx('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', iconBg)}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xl font-black text-slate-800 leading-none">{value}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 font-medium">{label}</p>
+                    <p className="text-xl font-black text-white leading-none">{value}</p>
+                    <p className="text-[11px] text-white/60 mt-0.5 font-medium">{label}</p>
                   </div>
                 </div>
               ))}
@@ -314,7 +314,7 @@ export default function ReportsPage() {
             <div className="grid md:grid-cols-3 gap-3">
 
               {/* Andamento mensile */}
-              <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+              <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="w-3.5 h-3.5 text-indigo-500" />
                   <h2 className="font-bold text-slate-800 text-xs">Andamento mensile</h2>
@@ -345,7 +345,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Classifica operatrici */}
-              <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+              <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Trophy className="w-3.5 h-3.5 text-amber-500" />
                   <h2 className="font-bold text-slate-800 text-xs">Classifica operatrici</h2>
@@ -377,7 +377,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Top servizi */}
-              <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+              <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-3.5 h-3.5 text-violet-500" />
                   <h2 className="font-bold text-slate-800 text-xs">Servizi più richiesti</h2>
@@ -408,7 +408,7 @@ export default function ReportsPage() {
 
               {/* Tasso completamento */}
               {stats.totalCount > 0 && (
-                <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+                <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-1.5">
                       <CalendarCheck className="w-3.5 h-3.5 text-emerald-500" />
@@ -431,7 +431,7 @@ export default function ReportsPage() {
 
               {/* Segmentazione clientela */}
               {!loadingExtra && clientStats.totalActive > 0 && (
-                <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+                <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-3.5 h-3.5 text-violet-500" />
                     <h2 className="font-bold text-slate-800 text-xs">Segmentazione clientela · 18 mesi</h2>
@@ -462,7 +462,7 @@ export default function ReportsPage() {
               <div className="grid md:grid-cols-2 gap-3">
 
                 {/* Top per frequenza */}
-                <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+                <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="w-3.5 h-3.5 text-violet-500" />
                     <h2 className="font-bold text-slate-800 text-xs">Top clienti per visite</h2>
@@ -486,7 +486,7 @@ export default function ReportsPage() {
                 </div>
 
                 {/* Top per spesa */}
-                <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+                <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
                     <h2 className="font-bold text-slate-800 text-xs">Top clienti per fatturato</h2>
@@ -513,7 +513,7 @@ export default function ReportsPage() {
 
             {/* Da ricontattare */}
             {!loadingExtra && clientStats.toContact.length > 0 && (
-              <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+              <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <PhoneCall className="w-3.5 h-3.5 text-amber-500" />
                   <h2 className="font-bold text-slate-800 text-xs">Da ricontattare</h2>

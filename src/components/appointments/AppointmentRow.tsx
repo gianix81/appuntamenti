@@ -236,10 +236,17 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
 
   const timeBadge = (
     <div className="flex items-center gap-1 shrink-0">
-      <span className="font-bold text-blue-600 tabular-nums text-sm">{format(start, 'HH:mm')}</span>
-      <ChevronRight className="w-3 h-3 text-slate-300" />
-      <span className="text-slate-400 tabular-nums text-sm">{format(end, 'HH:mm')}</span>
-      <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', isActive ? 'bg-green-100 text-green-700' : isDone ? 'bg-slate-100 text-slate-500' : 'bg-blue-50 text-blue-600')}>
+      <div className={clsx(
+        'flex flex-col items-center justify-center w-14 py-1.5 px-1 rounded-xl shrink-0',
+        isCancelled ? 'bg-slate-400' :
+        isDone      ? 'bg-slate-600' :
+        isActive    ? 'bg-emerald-500' :
+                      'bg-orange-500',
+      )}>
+        <span className="text-white font-black text-base tabular-nums leading-none">{format(start, 'HH:mm')}</span>
+        <span className="text-white/70 text-[9px] tabular-nums">{format(end, 'HH:mm')}</span>
+      </div>
+      <span className={clsx('text-xs font-semibold px-2 py-0.5 rounded-full', isActive ? 'bg-emerald-100 text-emerald-700' : isDone ? 'bg-slate-100 text-slate-500' : 'bg-orange-50 text-orange-600')}>
         {isActive ? 'In corso' : isDone ? 'Terminato' : `tra ${formatCountdown(msToStart)}`}
       </span>
     </div>
@@ -275,7 +282,7 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
   const actionButtons = !isCancelled && (
     <>
       {!hideClientDetails ? (
-        <a href={`tel:${appointment.clients.phone}`} className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors shrink-0">
+        <a href={`tel:${appointment.clients.phone}`} className="flex items-center gap-1 text-slate-500 text-xs font-semibold hover:text-orange-500 transition-colors shrink-0">
           <Phone className="w-3.5 h-3.5" />{appointment.clients.phone}
         </a>
       ) : (
@@ -301,7 +308,7 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
   const editDelete = (
     <>
       <Link href={`/appointments/${appointment.id}/edit`}
-        className="p-1.5 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Modifica">
+        className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="Modifica">
         <Pencil className="w-4 h-4" />
       </Link>
       {onDelete && (
@@ -314,10 +321,10 @@ export function AppointmentRow({ appointment, onDelete, hideClientDetails = fals
   )
 
   return (
-    <div className={clsx('border-l-[3px] border-b border-b-slate-100 last:border-b-0', borderCls, isCancelled && 'opacity-60')}>
+    <div className={clsx('border-b border-b-slate-100 last:border-b-0', isCancelled && 'opacity-60')}>
 
       {/* ── DESKTOP: riga distribuita justify-between ──────────────── */}
-      <div className="hidden md:flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50/50 transition-colors">
+      <div className="hidden md:flex items-center justify-between gap-3 px-4 py-2 hover:bg-orange-50/20 transition-colors">
         {/* Gruppo 1: avatar + nome */}
         <div className="flex items-center gap-2 shrink-0">
           {avatar}

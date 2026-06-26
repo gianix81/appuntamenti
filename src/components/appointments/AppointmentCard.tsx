@@ -270,120 +270,125 @@ export function AppointmentCard({ appointment, onDelete, hideClientDetails = fal
 
   return (
     <div className={clsx(
-      'bg-white rounded-2xl shadow-sm overflow-hidden border-t-[3px] transition-all',
-      statusM.card,
+      'bg-white rounded-2xl shadow-md shadow-slate-200/80 overflow-hidden transition-all',
       isCancelled && 'opacity-60',
     )}>
       {/* ── Main body ─────────────────────────────────────────────── */}
-      <div className="p-4">
-        <div className="flex items-start gap-3">
+      <div className="flex items-stretch">
 
-          {/* Avatar cliente */}
-          <div className={clsx(
-            'w-11 h-11 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-sm',
-            avatarBg(clientFullName),
-          )}>
-            {clientInitials}
-          </div>
+        {/* Blocco data/ora — sinistra */}
+        <div className={clsx(
+          'w-[72px] shrink-0 flex flex-col items-center justify-center py-4 px-2 rounded-l-2xl',
+          isCancelled ? 'bg-slate-400' :
+          isDone      ? 'bg-slate-600' :
+          isActive    ? 'bg-emerald-500' :
+                        'bg-orange-500',
+        )}>
+          <span className="text-white font-black text-xl tabular-nums leading-none">
+            {format(start, 'd')}
+          </span>
+          <span className="text-white/80 text-[10px] font-semibold uppercase tracking-wide mt-0.5">
+            {format(start, 'MMM', { locale: it })}
+          </span>
+          <div className="w-8 h-px bg-white/30 my-1.5" />
+          <span className="text-white font-bold text-sm tabular-nums leading-none">
+            {format(start, 'HH:mm')}
+          </span>
+          <span className="text-white/70 text-[10px] tabular-nums">
+            {format(end, 'HH:mm')}
+          </span>
+        </div>
 
-          {/* Info principale */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
+        {/* Info principale */}
+        <div className="flex-1 min-w-0 p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={clsx(
+                'w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-white font-bold text-xs',
+                avatarBg(clientFullName),
+              )}>
+                {clientInitials}
+              </div>
               <div className="min-w-0">
-                <p className="font-bold text-slate-800 text-base leading-tight truncate">
+                <p className="font-bold text-slate-800 text-sm leading-tight truncate">
                   {clientFullName}
                 </p>
-                <p className="text-slate-500 text-sm truncate">
+                <p className="text-slate-500 text-xs truncate">
                   {appointment.services.name}
                   <span className="text-slate-300 mx-1">·</span>
                   {appointment.services.duration_minutes} min
                 </p>
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <Link
-                  href={`/appointments/${appointment.id}/edit`}
-                  className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
-                  title="Modifica"
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0">
+              <Link
+                href={`/appointments/${appointment.id}/edit`}
+                className="p-1.5 text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded-xl transition-colors"
+                title="Modifica"
+              >
+                <Pencil className="w-4 h-4" />
+              </Link>
+              {onDelete && (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  title="Elimina"
                 >
-                  <Pencil className="w-4 h-4" />
-                </Link>
-                {onDelete && (
-                  <button
-                    onClick={() => setConfirmDelete(true)}
-                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                    title="Elimina"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Orario + status in una riga */}
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="font-bold text-blue-600 text-lg tabular-nums">
-                {format(start, 'HH:mm')}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-slate-400 text-sm tabular-nums">
-                {format(end, 'HH:mm')}
-              </span>
-              <span className={clsx(
-                'ml-1 text-xs font-semibold px-2 py-0.5 rounded-full',
-                isActive  ? 'bg-green-100 text-green-700' :
-                isDone    ? 'bg-slate-100 text-slate-500' :
-                            'bg-blue-50 text-blue-600',
-              )}>
-                {isActive ? 'In corso' : isDone ? 'Terminato' : `tra ${formatCountdown(msToStart)}`}
-              </span>
-            </div>
-
-            {/* Badges riga */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full', confM.cls)}>
-                {confM.label}
-              </span>
-              {appointment.staff && (
-                <span
-                  className="text-xs font-semibold px-2 py-0.5 rounded-full text-white"
-                  style={{ backgroundColor: appointment.staff.color }}
-                >
-                  {appointment.staff.initials} · {appointment.staff.name.split(' ')[0]}
-                </span>
-              )}
-              {confirmationSent && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
-                  <Check className="w-3 h-3" /> Conf. inviata
-                </span>
-              )}
-              {(autoReminderSent || reminderSent) && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
-                  <Check className="w-3 h-3" /> Prom. inviato
-                </span>
-              )}
-              {autoReminderError && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-500">
-                  Prom. non inviato
-                </span>
+                  <Trash2 className="w-4 h-4" />
+                </button>
               )}
             </div>
+          </div>
 
-            {/* Note */}
-            {appointment.notes && (
-              <p className="text-xs text-slate-400 italic mt-2 truncate">{appointment.notes}</p>
+          {/* Status + badges */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            <span className={clsx(
+              'text-xs font-semibold px-2 py-0.5 rounded-full',
+              isActive  ? 'bg-emerald-100 text-emerald-700' :
+              isDone    ? 'bg-slate-100 text-slate-500' :
+                          'bg-orange-50 text-orange-600',
+            )}>
+              {isActive ? 'In corso' : isDone ? 'Terminato' : `tra ${formatCountdown(msToStart)}`}
+            </span>
+            <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-full', confM.cls)}>
+              {confM.label}
+            </span>
+            {appointment.staff && (
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full text-white"
+                style={{ backgroundColor: appointment.staff.color }}
+              >
+                {appointment.staff.initials} · {appointment.staff.name.split(' ')[0]}
+              </span>
+            )}
+            {confirmationSent && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
+                <Check className="w-3 h-3" /> Conf.
+              </span>
+            )}
+            {(autoReminderSent || reminderSent) && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 flex items-center gap-0.5">
+                <Check className="w-3 h-3" /> Prom.
+              </span>
+            )}
+            {autoReminderError && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-500">!</span>
             )}
           </div>
+          {appointment.notes && (
+            <p className="text-xs text-slate-400 italic mt-1 truncate">{appointment.notes}</p>
+          )}
         </div>
       </div>
 
       {/* ── Action footer ─────────────────────────────────────────── */}
       {!isCancelled && (
-        <div className="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between gap-2 bg-slate-50/60 flex-wrap">
+        <div className="border-t border-slate-100 px-3 py-2 flex items-center justify-between gap-2 bg-slate-50/60 flex-wrap">
           {/* Telefono — solo admin */}
           {!hideClientDetails ? (
             <a
               href={`tel:${appointment.clients.phone}`}
-              className="flex items-center gap-1 text-blue-500 text-xs font-semibold hover:text-blue-700 transition-colors"
+              className="flex items-center gap-1 text-slate-500 text-xs font-semibold hover:text-orange-500 transition-colors"
             >
               <Phone className="w-3.5 h-3.5" />
               {appointment.clients.phone}

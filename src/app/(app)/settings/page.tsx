@@ -253,7 +253,7 @@ export default function SettingsPage() {
           <div className="space-y-3">
 
             {/* Tipo di attività */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-2">
               <div>
                 <h2 className="text-xs font-bold text-slate-700">Tipo di attività</h2>
                 <p className="text-[10px] text-slate-400">Staff, Statistiche e Magazzino dipendono da questo.</p>
@@ -279,7 +279,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Informazioni centro */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-2">
               <h2 className="text-xs font-bold text-slate-700">Informazioni centro</h2>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -306,7 +306,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Messaggi WhatsApp */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-2">
               <div className="flex items-center gap-1.5">
                 <Bell className="w-3.5 h-3.5 text-green-600" />
                 <h2 className="text-xs font-bold text-slate-700">Messaggi WhatsApp</h2>
@@ -336,7 +336,7 @@ export default function SettingsPage() {
           <div className="space-y-3">
 
             {/* Google Calendar */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-2">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-orange-500" />
                 <h2 className="text-xs font-bold text-slate-700">Google Calendar</h2>
@@ -392,7 +392,7 @@ export default function SettingsPage() {
             </div>
 
             {/* WhatsApp status */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-1.5">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Bell className="w-3.5 h-3.5 text-green-600" />
                 <h2 className="text-xs font-bold text-slate-700">WhatsApp</h2>
@@ -410,7 +410,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Sveglie */}
-            <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+            <div className="bg-white rounded-2xl shadow-md shadow-slate-200/60 p-3 space-y-2">
               <div className="flex items-center gap-1.5">
                 <Bell className="w-3.5 h-3.5 text-orange-500" />
                 <h2 className="text-xs font-bold text-slate-700">Timing sveglie</h2>
@@ -453,7 +453,7 @@ export default function SettingsPage() {
 
         {/* Save */}
         <button type="submit" disabled={saving}
-          className="w-full mt-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
+          className="w-full mt-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-full shadow-md shadow-orange-200 transition-opacity flex items-center justify-center gap-2 text-sm">
           {saved ? <><CheckCircle className="w-4 h-4" /> Salvato!</> : saving ? 'Salvataggio…' : 'Salva impostazioni'}
         </button>
       </form>

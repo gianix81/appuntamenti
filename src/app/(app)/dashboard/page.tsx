@@ -263,12 +263,12 @@ export default function DashboardPage() {
             </button>
             {/* Desktop: testo + icona */}
             <Link href="/appointments/new"
-              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity">
               <Plus className="w-3.5 h-3.5" /> Nuovo
             </Link>
             {/* Mobile: solo icona */}
             <Link href="/appointments/new"
-              className="md:hidden w-7 h-7 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-600 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              className="md:hidden w-7 h-7 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-600 rounded-full shadow-md shadow-orange-200 hover:opacity-90 transition-opacity">
               <Plus className="w-4 h-4 text-white" />
             </Link>
           </div>
@@ -492,7 +492,7 @@ export default function DashboardPage() {
 
       {/* FAB */}
       <Link href="/appointments/new"
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg shadow-orange-200 hover:scale-105 transition-transform z-50">
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center shadow-xl shadow-orange-300 hover:scale-110 active:scale-95 transition-transform z-50">
         <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
       </Link>
     </div>

@@ -223,7 +223,7 @@ export function StaffForm({ existing }: Props) {
         <button type="button" onClick={() => router.back()} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
           Annulla
         </button>
-        <button type="submit" disabled={loading} className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+        <button type="submit" disabled={loading} className="flex-1 bg-gradient-to-r from-orange-500 to-amber-600 hover:opacity-90 disabled:opacity-50 text-white text-sm font-bold py-2.5 rounded-full shadow-md shadow-orange-200 transition-opacity">
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Aggiungi operatrice'}
         </button>
       </div>

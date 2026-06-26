@@ -274,7 +274,7 @@ export default function StaffPage() {
 
               return (
                 <div key={s.id} className={clsx(
-                  'bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden',
+                  'bg-white rounded-2xl shadow-md shadow-slate-200/60 flex flex-col overflow-hidden',
                   !s.active && 'opacity-60',
                 )}>
                   {/* Top: photo + color accent */}

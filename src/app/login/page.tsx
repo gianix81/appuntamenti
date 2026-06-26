@@ -134,7 +134,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-3 rounded-xl transition-colors"
+              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:opacity-90 disabled:opacity-50 text-white font-bold py-3 rounded-full shadow-md shadow-orange-200 transition-opacity"
             >
               {loading ? 'Accesso in corso…' : 'Accedi'}
             </button>

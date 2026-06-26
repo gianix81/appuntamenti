@@ -158,7 +158,7 @@ function ServiceCard({ service, onToggle, onDelete }: {
   const hasPrice = Number(service.price) > 0
 
   return (
-    <div className={clsx('bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col transition-all', !service.active && 'opacity-50')}>
+    <div className={clsx('bg-white rounded-2xl shadow-md shadow-slate-200/60 overflow-hidden flex flex-col transition-all', !service.active && 'opacity-50')}>
       {/* Coloured header */}
       <div className={clsx('bg-gradient-to-br h-20 flex items-center justify-center relative', style.bg)}>
         <Icon className="w-10 h-10 text-white/80" strokeWidth={1.5} />
