@@ -1,9 +1,11 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { doc, onSnapshot } from 'firebase/firestore'
+import { onSnapshot } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth, db } from '@/lib/firebase/client'
+import { useWorkspace } from './WorkspaceContext'
+import { wsDoc } from '@/lib/firebase/workspace'
 import type { Settings } from '@/types/database'
 
 interface SettingsContextValue {
@@ -27,7 +29,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
 
+  const { workspaceId, loading: workspaceLoading } = useWorkspace()
+
   useEffect(() => {
+    // Aspetta che il workspace sia risolto prima di sottoscrivere le settings
+    if (workspaceLoading) {
+      setLoading(true)
+      return
+    }
+
     let unsubSnap: (() => void) | undefined
 
     const unsubAuth = onAuthStateChanged(auth, user => {
@@ -43,7 +53,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       }
 
       setIsAuthenticated(true)
-      const ref = doc(db, 'settings', 'main')
+      const ref = wsDoc(db, workspaceId, 'settings', 'main')
 
       unsubSnap = onSnapshot(
         ref,
@@ -58,7 +68,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           setLoading(false)
         },
         () => {
-          // errore Firestore — non bloccare l'app
           setLoading(false)
         },
       )
@@ -68,7 +77,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       unsubAuth()
       unsubSnap?.()
     }
-  }, [])
+  }, [workspaceId, workspaceLoading])
 
   return (
     <SettingsContext.Provider value={{ settings, loading, isAuthenticated, isNewUser }}>

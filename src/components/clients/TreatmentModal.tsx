@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { collection, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { ClientTreatment, TreatmentCategory } from '@/types/database'
 import { clsx } from 'clsx'
 import { X, Trash2 } from 'lucide-react'
@@ -26,6 +28,7 @@ const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outli
 const LABEL = 'block text-xs font-semibold text-slate-500 mb-1.5'
 
 export function TreatmentModal({ clientId, defaultCategory = 'corpo', existing, onSaved, onClose }: Props) {
+  const { workspaceId } = useWorkspace()
   const [category, setCategory] = useState<TreatmentCategory>(existing?.category ?? defaultCategory)
   const [form, setForm] = useState({
     date:           existing?.date           ?? new Date().toISOString().split('T')[0],
@@ -70,9 +73,9 @@ export function TreatmentModal({ clientId, defaultCategory = 'corpo', existing, 
 
     try {
       if (existing) {
-        await updateDoc(doc(db, 'client_treatments', existing.id), payload)
+        await updateDoc(wsDoc(db, workspaceId, 'client_treatments', existing.id), payload)
       } else {
-        await addDoc(collection(db, 'client_treatments'), { ...payload, created_at: new Date().toISOString() })
+        await addDoc(wsCol(db, workspaceId, 'client_treatments'), { ...payload, created_at: new Date().toISOString() })
       }
       onSaved()
       onClose()
@@ -86,7 +89,7 @@ export function TreatmentModal({ clientId, defaultCategory = 'corpo', existing, 
     if (!existing || !confirm('Eliminare questo record?')) return
     setDeleting(true)
     try {
-      await deleteDoc(doc(db, 'client_treatments', existing.id))
+      await deleteDoc(wsDoc(db, workspaceId, 'client_treatments', existing.id))
       onSaved()
       onClose()
     } catch {

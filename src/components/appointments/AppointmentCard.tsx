@@ -6,6 +6,8 @@ import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { deleteDoc, doc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsDoc } from '@/lib/firebase/workspace'
 import type { AppointmentWithRelations } from '@/types/database'
 import {
   Pencil, Trash2, CalendarPlus, Calendar, MessageCircle, Check,
@@ -69,6 +71,7 @@ const CONF_META: Record<string, { label: string; cls: string }> = {
 }
 
 export function AppointmentCard({ appointment, onDelete, hideClientDetails = false }: Props) {
+  const { workspaceId } = useWorkspace()
   const hasConfirmedReminder     = Boolean(appointment.notifications_sent?.whatsapp_reminder_30 && appointment.reminder_sent_at)
   const hasConfirmedConfirmation = Boolean(appointment.notifications_sent?.whatsapp_confirmation)
 
@@ -126,7 +129,7 @@ export function AppointmentCard({ appointment, onDelete, hideClientDetails = fal
         const body = await syncRes.json().catch(() => ({}))
         throw new Error(body.error ?? 'Sincronizzazione Google Calendar non riuscita')
       }
-      await deleteDoc(doc(db, 'appointments', appointment.id))
+      await deleteDoc(wsDoc(db, workspaceId, 'appointments', appointment.id))
       onDelete?.(appointment.id)
     } catch {
       setDeleting(false)

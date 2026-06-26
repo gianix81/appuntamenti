@@ -2,14 +2,17 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Service } from '@/types/database'
 
 interface Props { existing?: Service }
 
 export function ServiceForm({ existing }: Props) {
   const router = useRouter()
+  const { workspaceId } = useWorkspace()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -40,9 +43,9 @@ export function ServiceForm({ existing }: Props) {
 
     try {
       if (existing) {
-        await updateDoc(doc(db, 'services', existing.id), payload)
+        await updateDoc(wsDoc(db, workspaceId, 'services', existing.id), payload)
       } else {
-        await addDoc(collection(db, 'services'), { ...payload, created_at: new Date().toISOString() })
+        await addDoc(wsCol(db, workspaceId, 'services'), { ...payload, created_at: new Date().toISOString() })
       }
       router.push('/services')
       router.refresh()

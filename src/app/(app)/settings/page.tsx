@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { getDoc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsDoc } from '@/lib/firebase/workspace'
 import { saveAlarmSettings, getAlarmSettings } from '@/lib/alarmDB'
 import { CheckCircle, Bell, Calendar, Copy, Scissors, Users, Building2, Globe, ShieldCheck } from 'lucide-react'
 import type { BusinessLevel } from '@/types/database'
@@ -25,6 +27,7 @@ const LEVEL_OPTIONS: { value: BusinessLevel; icon: React.ComponentType<{ classNa
 ]
 
 export default function SettingsPage() {
+  const { workspaceId } = useWorkspace()
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
   const [saved, setSaved]         = useState(false)
@@ -62,7 +65,7 @@ export default function SettingsPage() {
     async function load() {
       try {
         const [snap, idbSettings] = await Promise.all([
-          getDoc(doc(db, 'settings', 'main')).catch(() => null),
+          getDoc(wsDoc(db, workspaceId, 'settings', 'main')).catch(() => null),
           getAlarmSettings().catch(() => null),
         ])
         if (snap?.exists()) {
@@ -142,7 +145,7 @@ export default function SettingsPage() {
   async function ensureCalendarToken(): Promise<string> {
     if (calToken) return calToken
     const token = crypto.randomUUID()
-    await setDoc(doc(db, 'settings', 'main'), { calendar_token: token }, { merge: true })
+    await setDoc(wsDoc(db, workspaceId, 'settings', 'main'), { calendar_token: token }, { merge: true })
     setCalToken(token)
     return token
   }
@@ -208,7 +211,7 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       await saveAlarmSettings({ offsets_minutes: alarmOffsets })
-      await setDoc(doc(db, 'settings', 'main'), {
+      await setDoc(wsDoc(db, workspaceId, 'settings', 'main'), {
         business_level:        businessLevel,
         center_name:           form.center_name.trim(),
         phone_number:          form.phone_number.trim() || null,

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { format, addMinutes, parseISO, startOfDay, endOfDay } from 'date-fns'
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, query, orderBy, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Client, Service, Appointment, AppointmentStatus, ConfirmationStatus, Staff } from '@/types/database'
 import { scheduleAlarms, cancelAlarms } from '@/lib/alarmScheduler'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
@@ -16,6 +18,7 @@ interface Props { existing?: Appointment }
 
 export function AppointmentForm({ existing }: Props) {
   const router = useRouter()
+  const { workspaceId } = useWorkspace()
   const { hasStaff } = useBusinessLevel()
   const { role } = useUserRole()
   const isStaff = role === 'staff'
@@ -56,17 +59,17 @@ export function AppointmentForm({ existing }: Props) {
 
   useEffect(() => {
     Promise.all([
-      getDocs(query(collection(db, 'clients'),  orderBy('last_name'))),
-      getDocs(query(collection(db, 'services'), orderBy('name'))),
+      getDocs(query(wsCol(db, workspaceId, 'clients'),  orderBy('last_name'))),
+      getDocs(query(wsCol(db, workspaceId, 'services'), orderBy('name'))),
     ]).then(([cSnap, sSnap]) => {
       setClients(cSnap.docs.map(d => ({ id: d.id, ...d.data() }) as Client))
       setServices(sSnap.docs.map(d => ({ id: d.id, ...d.data() }) as Service).filter(s => s.active))
     }).catch(err => setError(`Errore caricamento dati: ${err.message}`))
-  }, [])
+  }, [workspaceId])
 
   useEffect(() => {
     if (!hasStaff) return
-    getDocs(query(collection(db, 'staff'), orderBy('name')))
+    getDocs(query(wsCol(db, workspaceId, 'staff'), orderBy('name')))
       .then(snap => {
         setStaffList(
           snap.docs
@@ -75,7 +78,7 @@ export function AppointmentForm({ existing }: Props) {
         )
       })
       .catch(() => {})
-  }, [hasStaff])
+  }, [hasStaff, workspaceId])
 
   // Deduplicate clients by last_name+first_name+phone, then filter by search
   const dedupedClients = useMemo(() => {
@@ -196,7 +199,7 @@ export function AppointmentForm({ existing }: Props) {
       const dayEnd   = endOfDay(startDt).toISOString()
 
       const conflictSnap = await getDocs(query(
-        collection(db, 'appointments'),
+        wsCol(db, workspaceId, 'appointments'),
         where('start_time', '>=', dayStart),
         where('start_time', '<=', dayEnd),
         orderBy('start_time'),
@@ -235,10 +238,10 @@ export function AppointmentForm({ existing }: Props) {
       let appointmentId: string
 
       if (existing) {
-        await updateDoc(doc(db, 'appointments', existing.id), payload)
+        await updateDoc(wsDoc(db, workspaceId, 'appointments', existing.id), payload)
         appointmentId = existing.id
       } else {
-        const ref = await addDoc(collection(db, 'appointments'), {
+        const ref = await addDoc(wsCol(db, workspaceId, 'appointments'), {
           ...payload,
           created_at: new Date().toISOString(),
         })
@@ -247,8 +250,8 @@ export function AppointmentForm({ existing }: Props) {
 
       // Schedule in-app alarms (IndexedDB) in background
       const [clientSnap, serviceSnap] = await Promise.all([
-        getDoc(doc(db, 'clients',  form.client_id)),
-        getDoc(doc(db, 'services', form.service_id)),
+        getDoc(wsDoc(db, workspaceId, 'clients',  form.client_id)),
+        getDoc(wsDoc(db, workspaceId, 'services', form.service_id)),
       ])
       const client  = clientSnap.exists()  ? { id: clientSnap.id,  ...clientSnap.data()  } as Client  : null
       const service = serviceSnap.exists() ? { id: serviceSnap.id, ...serviceSnap.data() } as Service : null

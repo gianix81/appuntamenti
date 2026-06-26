@@ -79,6 +79,7 @@ export default function AccessPage() {
         active:       true,
         created_at:   new Date().toISOString(),
         created_by:   ADMIN_EMAIL,
+        workspace_id: req.uid,  // ogni utente approvato ha il suo archivio isolato
       } satisfies AllowedUser)
       await updateDoc(doc(db, 'access_requests', req.uid), {
         status:      'approved',

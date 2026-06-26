@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
+import { getDocs, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol } from '@/lib/firebase/workspace'
 import type { Service, Staff } from '@/types/database'
 import { LoadingState } from '@/components/ui/LoadingState'
 import {
@@ -61,6 +63,7 @@ function HBar({ pct, color = 'bg-gradient-to-r from-violet-500 to-purple-700', l
 }
 
 export default function ReportsPage() {
+  const { workspaceId } = useWorkspace()
   const [period, setPeriod]     = useState<Period>('month')
   const [loading, setLoading]   = useState(true)
   const [loadingExtra, setLoadingExtra] = useState(true)
@@ -77,9 +80,9 @@ export default function ReportsPage() {
   // Carica servizi + staff + clienti (una volta)
   useEffect(() => {
     Promise.all([
-      getDocs(collection(db, 'services')),
-      getDocs(collection(db, 'staff')),
-      getDocs(collection(db, 'clients')),
+      getDocs(wsCol(db, workspaceId, 'services')),
+      getDocs(wsCol(db, workspaceId, 'staff')),
+      getDocs(wsCol(db, workspaceId, 'clients')),
     ]).then(([sSnap, stSnap, cSnap]) => {
       const sm: Record<string, Service & { id: string }> = {}
       sSnap.docs.forEach(d => { sm[d.id] = { id: d.id, ...d.data() } as Service & { id: string } })
@@ -97,27 +100,27 @@ export default function ReportsPage() {
       setStaffMap(stm)
       setClientMap(cm)
     })
-  }, [])
+  }, [workspaceId])
 
   // Carica tutti gli appuntamenti ultimi 18 mesi (per analisi clienti)
   useEffect(() => {
     const since = subMonths(new Date(), 18).toISOString()
     getDocs(query(
-      collection(db, 'appointments'),
+      wsCol(db, workspaceId, 'appointments'),
       where('start_time', '>=', since),
       orderBy('start_time', 'asc'),
     )).then(snap => {
       setAllApts(snap.docs.map(d => ({ id: d.id, ...d.data() }) as AptRaw))
       setLoadingExtra(false)
     }).catch(() => setLoadingExtra(false))
-  }, [])
+  }, [workspaceId])
 
   // Carica appuntamenti per il periodo selezionato
   useEffect(() => {
     setLoading(true)
     const [start, end] = getPeriodRange(period)
     getDocs(query(
-      collection(db, 'appointments'),
+      wsCol(db, workspaceId, 'appointments'),
       where('start_time', '>=', startOfDay(start).toISOString()),
       where('start_time', '<=', endOfDay(end).toISOString()),
       orderBy('start_time'),
@@ -125,7 +128,7 @@ export default function ReportsPage() {
       setApts(snap.docs.map(d => ({ id: d.id, ...d.data() }) as AptRaw))
       setLoading(false)
     }).catch(() => setLoading(false))
-  }, [period])
+  }, [period, workspaceId])
 
   // ── Stats per il periodo ──────────────────────────────────────────────────
   const stats = useMemo(() => {

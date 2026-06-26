@@ -9,6 +9,8 @@ import {
 import { it } from 'date-fns/locale'
 import { collection, onSnapshot, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { AppointmentRow } from '@/components/appointments/AppointmentRow'
 import { AgendaView } from '@/components/appointments/AgendaView'
@@ -25,6 +27,7 @@ export default function AppointmentsPage() {
   const { hasStaff } = useBusinessLevel()
   const { role, staffId: myStaffId } = useUserRole()
   const isStaff = role === 'staff'
+  const { workspaceId } = useWorkspace()
 
   const [weekStart, setWeekStart]       = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }))
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -44,17 +47,17 @@ export default function AppointmentsPage() {
   // Carica staff una volta
   useEffect(() => {
     if (!hasStaff) return
-    getDocs(query(collection(db, 'staff'), orderBy('name')))
+    getDocs(query(wsCol(db, workspaceId, 'staff'), orderBy('name')))
       .then(snap => setStaffList(snap.docs.map(d => ({ id: d.id, ...d.data() }) as StaffDoc)))
       .catch(() => {})
-  }, [hasStaff])
+  }, [hasStaff, workspaceId])
 
   /* Real-time listener — stessa logica del dashboard, cancellati esclusi */
   useEffect(() => {
     setLoading(true)
     const wEnd = endOfWeek(weekStart, { weekStartsOn: 1 })
     const q = query(
-      collection(db, 'appointments'),
+      wsCol(db, workspaceId, 'appointments'),
       where('start_time', '>=', startOfDay(weekStart).toISOString()),
       where('start_time', '<=', endOfDay(wEnd).toISOString()),
       orderBy('start_time'),
@@ -68,8 +71,8 @@ export default function AppointmentsPage() {
         const serviceIds = [...new Set(active.map(a => a.service_id))]
 
         const [cSnaps, sSnaps] = await Promise.all([
-          Promise.all(clientIds.map(id  => getDoc(doc(db, 'clients',  id)))),
-          Promise.all(serviceIds.map(id => getDoc(doc(db, 'services', id)))),
+          Promise.all(clientIds.map(id  => getDoc(wsDoc(db, workspaceId, 'clients',  id)))),
+          Promise.all(serviceIds.map(id => getDoc(wsDoc(db, workspaceId, 'services', id)))),
         ])
 
         const cMap  = Object.fromEntries(cSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))
@@ -91,7 +94,7 @@ export default function AppointmentsPage() {
 
     return unsub
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekStart, staffList.map(s => s.id).join(',')])
+  }, [weekStart, workspaceId, staffList.map(s => s.id).join(',')])
 
   function prevWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() - 7); return n }) }
   function nextWeek() { setWeekStart(d => { const n = new Date(d); n.setDate(n.getDate() + 7); return n }) }

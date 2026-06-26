@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol } from '@/lib/firebase/workspace'
 import type { Client } from '@/types/database'
 import { clsx } from 'clsx'
 import { differenceInDays } from 'date-fns'
@@ -71,6 +73,7 @@ const INPUT = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outli
 
 // ── Component ─────────────────────────────────────────────────────────────
 export default function PromoPage() {
+  const { workspaceId } = useWorkspace()
   const [clients,       setClients]       = useState<ClientRow[]>([])
   const [loading,       setLoading]       = useState(true)
   const [loadingSegs,   setLoadingSegs]   = useState(true)
@@ -89,7 +92,7 @@ export default function PromoPage() {
 
   // Carica clienti (subito)
   useEffect(() => {
-    getDocs(query(collection(db, 'clients'), orderBy('last_name'))).then(snap => {
+    getDocs(query(wsCol(db, workspaceId, 'clients'), orderBy('last_name'))).then(snap => {
       const rows: ClientRow[] = snap.docs
         .map(d => {
           const data = d.data()
@@ -121,7 +124,7 @@ export default function PromoPage() {
       const since = new Date()
       since.setMonth(since.getMonth() - 18)
       getDocs(query(
-        collection(db, 'appointments'),
+        wsCol(db, workspaceId, 'appointments'),
         where('start_time', '>=', since.toISOString()),
         orderBy('start_time', 'asc'),
       )).then(aptSnap => {
@@ -156,7 +159,7 @@ export default function PromoPage() {
         setLoadingSegs(false)
       }).catch(() => setLoadingSegs(false))
     }).catch(() => setLoading(false))
-  }, [])
+  }, [workspaceId])
 
   // Filtro attivo
   const filtered = useMemo(() => {

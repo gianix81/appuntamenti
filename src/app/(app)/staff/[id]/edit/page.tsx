@@ -4,18 +4,21 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsDoc } from '@/lib/firebase/workspace'
 import type { Staff } from '@/types/database'
 import { StaffForm } from '@/components/staff/StaffForm'
 import { LoadingState } from '@/components/ui/LoadingState'
 
 export default function EditStaffPage() {
   const { id } = useParams<{ id: string }>()
+  const { workspaceId } = useWorkspace()
   const [staff, setStaff]   = useState<(Staff & { id: string }) | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]   = useState<string | null>(null)
 
   useEffect(() => {
-    getDoc(doc(db, 'staff', id))
+    getDoc(wsDoc(db, workspaceId, 'staff', id))
       .then(snap => {
         if (snap.exists()) {
           setStaff({ id: snap.id, ...snap.data() } as Staff & { id: string })
@@ -25,7 +28,7 @@ export default function EditStaffPage() {
       })
       .catch(() => setError('Errore nel caricamento.'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, workspaceId])
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4 md:p-5 max-w-3xl mx-auto w-full">

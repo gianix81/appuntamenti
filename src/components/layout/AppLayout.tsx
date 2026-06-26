@@ -3,9 +3,11 @@ import { MobileNav } from './MobileNav'
 import { AlarmProvider } from './AlarmProvider'
 import { OnboardingGuard } from './OnboardingGuard'
 import { SettingsProvider } from '@/contexts/SettingsContext'
+import { WorkspaceProvider } from '@/contexts/WorkspaceContext'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
+    <WorkspaceProvider>
     <SettingsProvider>
       <OnboardingGuard>
         <AlarmProvider>
@@ -19,5 +21,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </AlarmProvider>
       </OnboardingGuard>
     </SettingsProvider>
+    </WorkspaceProvider>
   )
 }

@@ -188,6 +188,7 @@ export interface AllowedUser {
   active: boolean
   created_at: string
   created_by: string
+  workspace_id?: string  // UID del workspace; assente = usa flat collections (master admin)
 }
 
 export interface Settings {

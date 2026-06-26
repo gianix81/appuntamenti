@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { doc, addDoc, updateDoc, collection } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Staff, WeekSchedule, DaySchedule } from '@/types/database'
 import { clsx } from 'clsx'
 
@@ -42,6 +44,7 @@ interface Props { existing?: Staff & { id: string } }
 
 export function StaffForm({ existing }: Props) {
   const router = useRouter()
+  const { workspaceId } = useWorkspace()
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
 
@@ -83,9 +86,9 @@ export function StaffForm({ existing }: Props) {
     }
     try {
       if (existing) {
-        await updateDoc(doc(db, 'staff', existing.id), payload)
+        await updateDoc(wsDoc(db, workspaceId, 'staff', existing.id), payload)
       } else {
-        await addDoc(collection(db, 'staff'), { ...payload, created_at: new Date().toISOString() })
+        await addDoc(wsCol(db, workspaceId, 'staff'), { ...payload, created_at: new Date().toISOString() })
       }
       router.push('/staff')
       router.refresh()

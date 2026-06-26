@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Client, ClientAnamnesi, YesNo } from '@/types/database'
 import { clsx } from 'clsx'
 import {
@@ -106,6 +108,7 @@ function BoolChip({ label, checked, onChange }: { label: string; checked: boolea
 // ── Form principale ──────────────────────────────────────────────────────────
 export function ClientForm({ existing }: Props) {
   const router = useRouter()
+  const { workspaceId } = useWorkspace()
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState<string | null>(null)
   const [tab, setTab]         = useState<Tab>('anagrafica')
@@ -155,9 +158,9 @@ export function ClientForm({ existing }: Props) {
 
     try {
       if (existing) {
-        await updateDoc(doc(db, 'clients', existing.id), payload)
+        await updateDoc(wsDoc(db, workspaceId, 'clients', existing.id), payload)
       } else {
-        await addDoc(collection(db, 'clients'), { ...payload, created_at: new Date().toISOString() })
+        await addDoc(wsCol(db, workspaceId, 'clients'), { ...payload, created_at: new Date().toISOString() })
       }
       router.push('/clients')
       router.refresh()

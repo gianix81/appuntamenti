@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { getDocs, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol } from '@/lib/firebase/workspace'
 import type { Client } from '@/types/database'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { Mail, CheckSquare, Square, Send, Copy, Check, Users } from 'lucide-react'
 import { clsx } from 'clsx'
 
 export default function MarketingPage() {
+  const { workspaceId } = useWorkspace()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -17,7 +20,7 @@ export default function MarketingPage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    getDocs(query(collection(db, 'clients'), orderBy('last_name')))
+    getDocs(query(wsCol(db, workspaceId, 'clients'), orderBy('last_name')))
       .then(snap => {
         const all = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Client)
         const withEmail = all.filter(c => c.email)

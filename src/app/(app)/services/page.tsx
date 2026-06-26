@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc, addDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Service } from '@/types/database'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -58,6 +60,7 @@ type PresetRow = { name: string; duration_minutes: number; price: number; catego
 
 /* ── Import modal ────────────────────────────────────────── */
 function ImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const { workspaceId } = useWorkspace()
   const [rows, setRows]   = useState<PresetRow[]>(PRESET_SERVICES.map(s => ({ ...s, selected: true })))
   const [loading, setLoading] = useState(false)
   const selectedCount = rows.filter(r => r.selected).length
@@ -72,7 +75,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
     setLoading(true)
     try {
       const now = new Date().toISOString()
-      await Promise.all(toAdd.map(r => addDoc(collection(db, 'services'), {
+      await Promise.all(toAdd.map(r => addDoc(wsCol(db, workspaceId, 'services'), {
         name: r.name.trim(), duration_minutes: Number(r.duration_minutes),
         price: Number(r.price), description: null, active: true, created_at: now, updated_at: now,
       })))
@@ -202,6 +205,7 @@ function ServiceCard({ service, onToggle, onDelete }: {
 
 /* ── Page ────────────────────────────────────────────────── */
 export default function ServicesPage() {
+  const { workspaceId } = useWorkspace()
   const [services, setServices]   = useState<Service[]>([])
   const [loading, setLoading]     = useState(true)
   const [showImport, setShowImport] = useState(false)
@@ -209,12 +213,12 @@ export default function ServicesPage() {
   const gridRef                   = useRef<HTMLDivElement>(null)
 
   async function loadServices() {
-    const snap = await getDocs(query(collection(db, 'services'), orderBy('name')))
+    const snap = await getDocs(query(wsCol(db, workspaceId, 'services'), orderBy('name')))
     setServices(snap.docs.map(d => ({ id: d.id, ...d.data() }) as Service))
     setLoading(false)
   }
 
-  useEffect(() => { loadServices() }, [])
+  useEffect(() => { loadServices() }, [workspaceId])
 
   /* Calcola il numero ottimale di colonne:
      - tenta di riempire la larghezza disponibile
@@ -250,12 +254,12 @@ export default function ServicesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Eliminare questo servizio?')) return
-    await deleteDoc(doc(db, 'services', id))
+    await deleteDoc(wsDoc(db, workspaceId, 'services', id))
     await loadServices()
   }
 
   async function toggleActive(service: Service) {
-    await updateDoc(doc(db, 'services', service.id), { active: !service.active, updated_at: new Date().toISOString() })
+    await updateDoc(wsDoc(db, workspaceId, 'services', service.id), { active: !service.active, updated_at: new Date().toISOString() })
     await loadServices()
   }
 

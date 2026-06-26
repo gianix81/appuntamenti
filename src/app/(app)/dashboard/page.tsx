@@ -8,8 +8,10 @@ import {
   isToday, isSameDay, isSameMonth, startOfDay, endOfDay,
 } from 'date-fns'
 import { it } from 'date-fns/locale'
-import { collection, onSnapshot, getDocs, getDoc, doc, query, where, orderBy } from 'firebase/firestore'
+import { onSnapshot, getDocs, getDoc, query, where, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { AppointmentWithRelations, Client, Service, Staff } from '@/types/database'
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -45,6 +47,7 @@ export default function DashboardPage() {
   const { hasStaff } = useBusinessLevel()
   const { role, staffId: myStaffId } = useUserRole()
   const isStaff = role === 'staff'
+  const { workspaceId } = useWorkspace()
 
   const [viewMode, setViewMode]         = useState<ViewMode>('week')
   const [viewRef, setViewRef]           = useState(() => new Date())
@@ -153,7 +156,7 @@ export default function DashboardPage() {
   /* Load staff */
   useEffect(() => {
     if (!hasStaff) return
-    getDocs(query(collection(db, 'staff'), orderBy('name')))
+    getDocs(query(wsCol(db, workspaceId, 'staff'), orderBy('name')))
       .then(snap => setStaff(snap.docs.map(d => ({ id: d.id, ...d.data() }) as Staff & { id: string })))
       .catch(() => {})
   }, [hasStaff])
@@ -162,7 +165,7 @@ export default function DashboardPage() {
   useEffect(() => {
     setLoading(true)
     const q = query(
-      collection(db, 'appointments'),
+      wsCol(db, workspaceId, 'appointments'),
       where('start_time', '>=', startOfDay(rangeStart).toISOString()),
       where('start_time', '<=', endOfDay(rangeEnd).toISOString()),
       orderBy('start_time'),
@@ -177,8 +180,8 @@ export default function DashboardPage() {
         const cIds = [...new Set(active.map(a => a.client_id))]
         const sIds = [...new Set(active.map(a => a.service_id))]
         const [cs, ss] = await Promise.all([
-          Promise.all(cIds.map(id => getDoc(doc(db, 'clients',  id)))),
-          Promise.all(sIds.map(id => getDoc(doc(db, 'services', id)))),
+          Promise.all(cIds.map(id => getDoc(wsDoc(db, workspaceId, 'clients',  id)))),
+          Promise.all(sIds.map(id => getDoc(wsDoc(db, workspaceId, 'services', id)))),
         ])
 
         const cMap  = Object.fromEntries(cs.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Client]))

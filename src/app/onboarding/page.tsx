@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsDoc } from '@/lib/firebase/workspace'
 import { clsx } from 'clsx'
 import {
   Scissors, Users, Building2, Globe, CheckCircle,
@@ -60,6 +62,7 @@ const SPECIALTY_OPTIONS = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { workspaceId } = useWorkspace()
 
   const [step, setStep]           = useState(1)
   const [level, setLevel]         = useState<BusinessLevel>(1)
@@ -85,7 +88,7 @@ export default function OnboardingPage() {
     setError(null)
     try {
       await setDoc(
-        doc(db, 'settings', 'main'),
+        wsDoc(db, workspaceId, 'settings', 'main'),
         {
           business_level:         level,
           onboarding_completed:   true,

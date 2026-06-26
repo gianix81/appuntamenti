@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { collection, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Staff } from '@/types/database'
 import {
   Plus, Pencil, Trash2, Crown, UserCog, KeyRound,
@@ -31,6 +33,7 @@ function StaffAvatar({
   size?: number
   onPhotoUpdated?: (url: string) => void
 }) {
+  const { workspaceId } = useWorkspace()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [localUrl, setLocalUrl]   = useState<string | null>(staff.photo_url ?? null)
@@ -45,7 +48,7 @@ function StaffAvatar({
       const res = await fetch(`/api/staff/${staff.id}/upload-photo`, { method: 'POST', body: formData })
       if (!res.ok) throw new Error(await res.text())
       const { url } = await res.json()
-      await updateDoc(doc(db, 'staff', staff.id), { photo_url: url })
+      await updateDoc(wsDoc(db, workspaceId, 'staff', staff.id), { photo_url: url })
       setLocalUrl(url)
       onPhotoUpdated?.(url)
     } catch (err) {
@@ -201,6 +204,7 @@ function RevokeLoginModal({ staff, onClose, onSuccess }: { staff: StaffDoc; onCl
 
 /* ── Page ────────────────────────────────────────────────────── */
 export default function StaffPage() {
+  const { workspaceId } = useWorkspace()
   const [staffList, setStaffList]           = useState<StaffDoc[]>([])
   const [loading, setLoading]               = useState(true)
   const [confirmDelete, setConfirmDelete]   = useState<string | null>(null)
@@ -211,18 +215,18 @@ export default function StaffPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const snap = await getDocs(query(collection(db, 'staff'), orderBy('name')))
+      const snap = await getDocs(query(wsCol(db, workspaceId, 'staff'), orderBy('name')))
       setStaffList(snap.docs.map(d => ({ id: d.id, ...d.data() }) as StaffDoc))
     } catch (err) { console.error('[Staff] load:', err) }
     finally { setLoading(false) }
-  }, [])
+  }, [workspaceId])
 
   useEffect(() => { load() }, [load])
 
   async function handleDelete(id: string) {
     setDeleting(true)
     try {
-      await deleteDoc(doc(db, 'staff', id))
+      await deleteDoc(wsDoc(db, workspaceId, 'staff', id))
       setStaffList(prev => prev.filter(s => s.id !== id))
       setConfirmDelete(null)
     } finally { setDeleting(false) }

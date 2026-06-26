@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { doc, getDoc, getDocs, query, collection, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Client, AppointmentWithRelations, Service, Staff, ClientTreatment, TreatmentCategory } from '@/types/database'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { ArrowLeft, Phone, Mail, CalendarDays, Clock, User, CalendarPlus, Copy, Check, Plus, Pencil } from 'lucide-react'
@@ -163,6 +165,7 @@ type ActiveTab = 'agenda' | TreatmentCategory
 
 export default function ClientHistoryPage() {
   const { id } = useParams<{ id: string }>()
+  const { workspaceId } = useWorkspace()
   const [client,     setClient]     = useState<Client | null>(null)
   const [apts,       setApts]       = useState<AppointmentWithRelations[]>([])
   const [treatments, setTreatments] = useState<ClientTreatment[]>([])
@@ -175,8 +178,8 @@ export default function ClientHistoryPage() {
   useEffect(() => {
     async function load() {
       const [clientSnap, aptsSnap] = await Promise.all([
-        getDoc(doc(db, 'clients', id)),
-        getDocs(query(collection(db, 'appointments'), where('client_id', '==', id))),
+        getDoc(wsDoc(db, workspaceId, 'clients', id)),
+        getDocs(query(wsCol(db, workspaceId, 'appointments'), where('client_id', '==', id))),
       ])
       if (!clientSnap.exists()) { setLoading(false); return }
       setClient({ id: clientSnap.id, ...clientSnap.data() } as Client)
@@ -187,8 +190,8 @@ export default function ClientHistoryPage() {
       const sIds  = [...new Set(raw.map(a => a.service_id).filter(Boolean))]
       const stIds = [...new Set(raw.map(a => a.staff_id).filter((x): x is string => Boolean(x)))]
       const [sSnaps, stSnaps] = await Promise.all([
-        Promise.all(sIds.map(sid => getDoc(doc(db, 'services', sid)))),
-        Promise.all(stIds.map(sid => getDoc(doc(db, 'staff', sid)))),
+        Promise.all(sIds.map(sid => getDoc(wsDoc(db, workspaceId, 'services', sid)))),
+        Promise.all(stIds.map(sid => getDoc(wsDoc(db, workspaceId, 'staff', sid)))),
       ])
       const sMap:  Record<string, Service> = Object.fromEntries(sSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Service]))
       const stMap: Record<string, Staff>   = Object.fromEntries(stSnaps.filter(s => s.exists()).map(s => [s.id, { id: s.id, ...s.data() } as Staff]))
@@ -201,14 +204,14 @@ export default function ClientHistoryPage() {
       setLoading(false)
     }
     load()
-  }, [id])
+  }, [id, workspaceId])
 
   // ── Carica trattamenti (ricaricabile dopo save) ────────────────────────────
   const loadTreatments = useCallback(async () => {
-    const snap = await getDocs(query(collection(db, 'client_treatments'), where('client_id', '==', id)))
+    const snap = await getDocs(query(wsCol(db, workspaceId, 'client_treatments'), where('client_id', '==', id)))
     const raw  = snap.docs.map(d => ({ id: d.id, ...d.data() }) as ClientTreatment)
     setTreatments(raw.sort((a, b) => b.date.localeCompare(a.date)))
-  }, [id])
+  }, [id, workspaceId])
 
   useEffect(() => { loadTreatments() }, [loadTreatments])
 

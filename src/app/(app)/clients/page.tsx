@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { wsCol, wsDoc } from '@/lib/firebase/workspace'
 import type { Client } from '@/types/database'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { LoadingState } from '@/components/ui/LoadingState'
@@ -14,6 +16,7 @@ import { useUserRole } from '@/hooks/useUserRole'
 export default function ClientsPage() {
   const { role } = useUserRole()
   const isStaff = role === 'staff'
+  const { workspaceId } = useWorkspace()
 
   const [clients,  setClients]  = useState<Client[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -21,17 +24,17 @@ export default function ClientsPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function loadClients() {
-    const snap = await getDocs(query(collection(db, 'clients'), orderBy('last_name')))
+    const snap = await getDocs(query(wsCol(db, workspaceId, 'clients'), orderBy('last_name')))
     setClients(snap.docs.map(d => ({ id: d.id, ...d.data() }) as Client))
     setLoading(false)
   }
 
-  useEffect(() => { loadClients() }, [])
+  useEffect(() => { loadClients() }, [workspaceId])
 
   async function handleDelete(id: string) {
     if (!confirm('Eliminare questo cliente?')) return
     setDeleting(id)
-    await deleteDoc(doc(db, 'clients', id))
+    await deleteDoc(wsDoc(db, workspaceId, 'clients', id))
     await loadClients()
     setDeleting(null)
   }
