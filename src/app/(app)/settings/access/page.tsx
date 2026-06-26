@@ -1,27 +1,38 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { collection, doc, getDocs, setDoc, updateDoc, query, orderBy } from 'firebase/firestore'
+import { collection, doc, getDocs, setDoc, updateDoc, query, orderBy, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase/client'
 import type { AllowedUser } from '@/types/database'
 import { useUserRole } from '@/hooks/useUserRole'
 import { ADMIN_EMAIL } from '@/lib/auth/constants'
-import { ShieldCheck, UserPlus, Trash2, ArrowLeft, Crown, Users, AlertTriangle } from 'lucide-react'
+import { ShieldCheck, UserPlus, Trash2, ArrowLeft, Crown, Users, AlertTriangle, Clock, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { it } from 'date-fns/locale'
 import { clsx } from 'clsx'
 
 type StaffEntry = { id: string; name: string; login_email: string | null; auth_uid: string | null }
+interface AccessRequest {
+  uid: string
+  email: string
+  display_name: string
+  message?: string | null
+  status: 'pending' | 'approved' | 'denied'
+  requested_at: string
+}
 
 export default function AccessPage() {
   const { role } = useUserRole()
-  const [allowedUsers, setAllowedUsers]   = useState<(AllowedUser & { id: string })[]>([])
-  const [staffList,    setStaffList]      = useState<StaffEntry[]>([])
-  const [loading,      setLoading]        = useState(true)
-  const [saving,       setSaving]         = useState(false)
-  const [form,         setForm]           = useState({ email: '', role: 'admin' as 'admin' | 'staff', display_name: '' })
-  const [error,        setError]          = useState('')
+  const [pendingReqs,  setPendingReqs]  = useState<AccessRequest[]>([])
+  const [allowedUsers, setAllowedUsers] = useState<(AllowedUser & { id: string })[]>([])
+  const [staffList,    setStaffList]    = useState<StaffEntry[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [saving,       setSaving]       = useState(false)
+  const [approvingId,  setApprovingId]  = useState<string | null>(null)
+  const [approveRole,  setApproveRole]  = useState<Record<string, 'admin' | 'staff'>>({})
+  const [form,         setForm]         = useState({ email: '', role: 'admin' as 'admin' | 'staff', display_name: '' })
+  const [error,        setError]        = useState('')
 
   async function loadAll() {
     setLoading(true)
@@ -43,6 +54,48 @@ export default function AccessPage() {
   }
 
   useEffect(() => { loadAll() }, [])
+
+  // Real-time listener per richieste pendenti
+  useEffect(() => {
+    if (role !== 'admin') return
+    const q = query(collection(db, 'access_requests'), where('status', '==', 'pending'), orderBy('requested_at', 'desc'))
+    const unsub = onSnapshot(q, snap => {
+      setPendingReqs(snap.docs.map(d => d.data() as AccessRequest))
+    }, () => setPendingReqs([]))
+    return () => unsub()
+  }, [role])
+
+  async function handleApprove(req: AccessRequest) {
+    const chosenRole = approveRole[req.uid] ?? 'staff'
+    setApprovingId(req.uid)
+    try {
+      await setDoc(doc(db, 'allowed_users', req.email), {
+        email:        req.email,
+        role:         chosenRole,
+        display_name: req.display_name || undefined,
+        active:       true,
+        created_at:   new Date().toISOString(),
+        created_by:   ADMIN_EMAIL,
+      } satisfies AllowedUser)
+      await updateDoc(doc(db, 'access_requests', req.uid), {
+        status:      'approved',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: ADMIN_EMAIL,
+      })
+      await loadAll()
+    } finally {
+      setApprovingId(null)
+    }
+  }
+
+  async function handleDeny(req: AccessRequest) {
+    if (!confirm(`Negare l'accesso a ${req.display_name} (${req.email})?`)) return
+    await updateDoc(doc(db, 'access_requests', req.uid), {
+      status:      'denied',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: ADMIN_EMAIL,
+    })
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -107,6 +160,62 @@ export default function AccessPage() {
       </div>
 
       <div className="px-4 md:px-6 py-4 space-y-4 max-w-2xl">
+
+        {/* ── Richieste in attesa ── */}
+        {pendingReqs.length > 0 && (
+          <div className="bg-white rounded-xl border border-amber-200 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              <h2 className="text-xs font-bold text-slate-700">Richieste di accesso</h2>
+              <span className="ml-auto text-[10px] bg-amber-100 text-amber-700 font-black px-2 py-0.5 rounded-full">
+                {pendingReqs.length} in attesa
+              </span>
+            </div>
+            <div className="space-y-2">
+              {pendingReqs.map(req => (
+                <div key={req.uid} className="bg-amber-50 border border-amber-100 rounded-xl p-3 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-200 flex items-center justify-center shrink-0 text-amber-700 text-sm font-black">
+                      {req.display_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{req.display_name}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{req.email}</p>
+                      {req.message && (
+                        <p className="text-[10px] text-slate-500 italic mt-0.5">"{req.message}"</p>
+                      )}
+                      <p className="text-[9px] text-slate-300 mt-0.5">
+                        {format(new Date(req.requested_at), 'd MMM yyyy · HH:mm', { locale: it })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={approveRole[req.uid] ?? 'staff'}
+                      onChange={e => setApproveRole(p => ({ ...p, [req.uid]: e.target.value as 'admin' | 'staff' }))}
+                      className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-blue-300">
+                      <option value="staff">Staff — accesso limitato</option>
+                      <option value="admin">Admin — accesso completo</option>
+                    </select>
+                    <button
+                      onClick={() => handleApprove(req)}
+                      disabled={approvingId === req.uid}
+                      className="flex items-center gap-1 text-[10px] font-bold bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white px-2.5 py-1.5 rounded-lg transition-colors shrink-0">
+                      <CheckCircle className="w-3 h-3" />
+                      {approvingId === req.uid ? '…' : 'Approva'}
+                    </button>
+                    <button
+                      onClick={() => handleDeny(req)}
+                      className="flex items-center gap-1 text-[10px] font-bold bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 px-2.5 py-1.5 rounded-lg transition-colors shrink-0">
+                      <XCircle className="w-3 h-3" />
+                      Nega
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Admin principale — fisso */}
         <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">

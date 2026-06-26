@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { useBusinessLevel } from '@/hooks/useBusinessLevel'
 import { useUserRole } from '@/hooks/useUserRole'
+import { usePendingRequests } from '@/hooks/usePendingRequests'
 
 const NAV_COLORS: Record<string, string> = {
   '/dashboard':    'from-blue-500 to-indigo-600',
@@ -39,6 +40,7 @@ export function Sidebar() {
   const { hasStaff, hasMarketing, hasWarehouse } = useBusinessLevel()
   const { role, staffRecord } = useUserRole()
   const isStaff = role === 'staff'
+  const pendingCount = usePendingRequests()
 
   async function handleLogout() {
     await signOut(auth)
@@ -91,12 +93,19 @@ export function Sidebar() {
                   : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
               )}
             >
-              <div className={clsx(
-                'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br transition-opacity',
-                gradient,
-                active ? 'opacity-100 shadow-sm' : 'opacity-60',
-              )}>
-                <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+              <div className="relative shrink-0">
+                <div className={clsx(
+                  'w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br transition-opacity',
+                  gradient,
+                  active ? 'opacity-100 shadow-sm' : 'opacity-60',
+                )}>
+                  <Icon className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+                </div>
+                {href === '/settings' && pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none">
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                )}
               </div>
               {label}
               {active && (
