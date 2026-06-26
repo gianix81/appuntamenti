@@ -484,7 +484,7 @@ export function AppointmentForm({ existing }: Props) {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+          className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
         >
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Salva appuntamento'}
         </button>

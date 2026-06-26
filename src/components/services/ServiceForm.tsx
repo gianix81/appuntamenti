@@ -81,7 +81,7 @@ export function ServiceForm({ existing }: Props) {
       </div>
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => set('active', !form.active)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.active ? 'bg-blue-600' : 'bg-slate-200'}`}>
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.active ? 'bg-orange-500' : 'bg-slate-200'}`}>
           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${form.active ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
         <span className="text-sm text-slate-700">Servizio attivo</span>
@@ -91,7 +91,7 @@ export function ServiceForm({ existing }: Props) {
         <button type="button" onClick={() => router.back()}
           className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">Annulla</button>
         <button type="submit" disabled={loading}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+          className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Salva servizio'}
         </button>
       </div>

@@ -125,8 +125,8 @@ export default function OnboardingPage() {
           key={s}
           className={clsx(
             'h-1.5 rounded-full transition-all duration-300',
-            s === step   ? 'w-8 bg-sky-400'  :
-            s < step     ? 'w-3 bg-sky-700'  :
+            s === step   ? 'w-8 bg-orange-400'  :
+            s < step     ? 'w-3 bg-orange-700'  :
                            'w-3 bg-blue-800',
           )}
         />
@@ -139,7 +139,7 @@ export default function OnboardingPage() {
   const header = (
     <div className="flex items-center justify-between px-4 sm:px-6 pt-6 pb-4">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-sky-400 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-orange-400 flex items-center justify-center">
           <Scissors className="w-4 h-4 text-white" />
         </div>
         <span className="font-bold text-white text-sm leading-tight">
@@ -169,13 +169,13 @@ export default function OnboardingPage() {
             className={clsx(
               'w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all',
               level === value
-                ? 'bg-sky-400/10 border-sky-400'
+                ? 'bg-orange-400/10 border-orange-400'
                 : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20',
             )}
           >
             <div className={clsx(
               'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-              level === value ? 'bg-sky-400' : 'bg-white/10',
+              level === value ? 'bg-orange-400' : 'bg-white/10',
             )}>
               <Icon className="w-5 h-5 text-white" />
             </div>
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
               <p className="text-blue-300 text-xs mt-0.5">{desc}</p>
             </div>
             {level === value && (
-              <CheckCircle className="w-5 h-5 text-sky-400 ml-auto shrink-0" />
+              <CheckCircle className="w-5 h-5 text-orange-400 ml-auto shrink-0" />
             )}
           </button>
         ))}
@@ -218,7 +218,7 @@ export default function OnboardingPage() {
             onChange={e => setCenterName(e.target.value)}
             placeholder={level === 1 ? 'Es. Maria Rossi Estetica' : 'Es. Beauty Center Roma'}
             autoFocus
-            className="w-full px-4 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
+            className="w-full px-4 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
           />
         </div>
 
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
             value={city}
             onChange={e => setCity(e.target.value)}
             placeholder="Es. Roma, Milano, Napoli…"
-            className="w-full px-4 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-400 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
+            className="w-full px-4 py-3.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-blue-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
           />
         </div>
       </div>
@@ -259,7 +259,7 @@ export default function OnboardingPage() {
               className={clsx(
                 'w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 text-left transition-all',
                 selected
-                  ? 'bg-sky-400/10 border-sky-400'
+                  ? 'bg-orange-400/10 border-orange-400'
                   : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20',
               )}
             >
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
               )}>
                 {label}
               </span>
-              {selected && <CheckCircle className="w-4 h-4 text-sky-400 shrink-0" />}
+              {selected && <CheckCircle className="w-4 h-4 text-orange-400 shrink-0" />}
             </button>
           )
         })}
@@ -292,7 +292,7 @@ export default function OnboardingPage() {
   const step4 = (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-sky-400 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-orange-400 flex items-center justify-center">
           <Sparkles className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -303,7 +303,7 @@ export default function OnboardingPage() {
 
       <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 mt-2">
         <div className="flex items-center gap-3">
-          <selectedLevel.icon className="w-4 h-4 text-sky-400 shrink-0" />
+          <selectedLevel.icon className="w-4 h-4 text-orange-400 shrink-0" />
           <div>
             <p className="text-xs text-blue-400">Tipo di attività</p>
             <p className="text-white text-sm font-medium">{selectedLevel.title}</p>
@@ -312,7 +312,7 @@ export default function OnboardingPage() {
 
         {centerName.trim() && (
           <div className="flex items-center gap-3">
-            <Scissors className="w-4 h-4 text-sky-400 shrink-0" />
+            <Scissors className="w-4 h-4 text-orange-400 shrink-0" />
             <div>
               <p className="text-xs text-blue-400">Nome</p>
               <p className="text-white text-sm font-medium">
@@ -324,7 +324,7 @@ export default function OnboardingPage() {
 
         {selectedSpecs.length > 0 && (
           <div className="flex items-start gap-3">
-            <Sparkles className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+            <Sparkles className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-blue-400">Specialità</p>
               <p className="text-white text-sm font-medium">
@@ -335,8 +335,8 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      <div className="bg-sky-400/10 border border-sky-400/30 rounded-2xl px-4 py-3">
-        <p className="text-sky-200 text-xs leading-relaxed">
+      <div className="bg-orange-400/10 border border-orange-400/30 rounded-2xl px-4 py-3">
+        <p className="text-orange-200 text-xs leading-relaxed">
           💡 Puoi cambiare tutto questo in qualsiasi momento dalle{' '}
           <strong>Impostazioni</strong>. L'app si adatterà automaticamente.
         </p>
@@ -377,7 +377,7 @@ export default function OnboardingPage() {
         className={clsx(
           'flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-colors',
           canGoNext && !saving
-            ? 'bg-sky-400 hover:bg-sky-300 text-blue-950'
+            ? 'bg-orange-400 hover:bg-orange-400 text-white'
             : 'bg-white/10 text-blue-400 cursor-not-allowed',
         )}
       >

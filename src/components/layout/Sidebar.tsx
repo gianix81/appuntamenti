@@ -22,11 +22,11 @@ import { useUserRole } from '@/hooks/useUserRole'
 import { usePendingRequests } from '@/hooks/usePendingRequests'
 
 const NAV_COLORS: Record<string, string> = {
-  '/dashboard':    'from-blue-500 to-indigo-600',
+  '/dashboard':    'from-orange-500 to-amber-600',
   '/appointments': 'from-orange-400 to-rose-500',
   '/clients':      'from-violet-500 to-purple-700',
   '/services':     'from-emerald-400 to-teal-600',
-  '/staff':        'from-sky-400 to-blue-600',
+  '/staff':        'from-orange-400 to-amber-500',
   '/reports':      'from-amber-400 to-orange-600',
   '/marketing':    'from-violet-400 to-purple-600',
   '/promo':        'from-green-400 to-emerald-600',
@@ -65,7 +65,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="px-3 mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/50">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-900/50">
             <Scissors className="w-5 h-5 text-white" strokeWidth={1.8} />
           </div>
           <div>

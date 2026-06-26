@@ -107,20 +107,20 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
                 {catRows.map(({ r, i }) => (
                   <div key={i} className={clsx('flex items-center gap-3 px-5 py-2.5 border-b border-slate-50', !r.selected && 'opacity-40')}>
                     <button onClick={() => setRows(prev => prev.map((row, idx) => idx === i ? { ...row, selected: !row.selected } : row))}
-                      className={clsx('w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors', r.selected ? 'bg-blue-600 border-blue-600' : 'border-slate-300')}>
+                      className={clsx('w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors', r.selected ? 'bg-orange-500 border-orange-500' : 'border-slate-300')}>
                       {r.selected && <Check className="w-3 h-3 text-white" />}
                     </button>
                     <input type="text" value={r.name} onChange={e => updateRow(i, 'name', e.target.value)}
-                      className="flex-1 text-sm text-slate-800 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-blue-400 focus:outline-none py-0.5 min-w-0" />
+                      className="flex-1 text-sm text-slate-800 bg-transparent border-b border-transparent hover:border-slate-200 focus:border-orange-400 focus:outline-none py-0.5 min-w-0" />
                     <div className="flex items-center gap-1 shrink-0">
                       <input type="number" value={r.duration_minutes} min={1} onChange={e => updateRow(i, 'duration_minutes', e.target.value)}
-                        className="w-12 text-center text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-blue-300" />
+                        className="w-12 text-center text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-orange-300" />
                       <span className="text-xs text-slate-400">min</span>
                     </div>
                     <div className="flex items-center gap-0.5 shrink-0">
                       <span className="text-xs text-slate-400">€</span>
                       <input type="number" value={r.price || ''} min={0} placeholder="0" onChange={e => updateRow(i, 'price', e.target.value)}
-                        className="w-14 text-center text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-blue-300" />
+                        className="w-14 text-center text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-orange-300" />
                     </div>
                   </div>
                 ))}
@@ -136,7 +136,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 font-medium hover:bg-slate-50">Annulla</button>
             <button onClick={handleImport} disabled={loading || !selectedCount}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-colors">
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-colors">
               {loading ? 'Importando…' : `Importa ${selectedCount}`}
             </button>
           </div>
@@ -190,7 +190,7 @@ function ServiceCard({ service, onToggle, onDelete }: {
       {/* Actions */}
       <div className="border-t border-slate-50 flex">
         <Link href={`/services/${service.id}/edit`}
-          className="flex-1 flex items-center justify-center gap-1 py-2 text-xs text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+          className="flex-1 flex items-center justify-center gap-1 py-2 text-xs text-slate-400 hover:text-orange-500 hover:bg-orange-50 transition-colors">
           <Pencil className="w-3.5 h-3.5" /> Modifica
         </Link>
         <div className="w-px bg-slate-50" />
@@ -278,7 +278,7 @@ export default function ServicesPage() {
               <Download className="w-4 h-4" /> Importa lista
             </button>
             <Link href="/services/new"
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-3 py-2 rounded-xl transition-colors">
+              className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-3 py-2 rounded-xl transition-colors">
               <Plus className="w-4 h-4" /> Nuovo
             </Link>
           </div>
@@ -292,7 +292,7 @@ export default function ServicesPage() {
             action={
               <div className="flex gap-3 flex-wrap justify-center">
                 <button onClick={() => setShowImport(true)}
-                  className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
+                  className="inline-flex items-center gap-2 bg-orange-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-orange-600 transition-colors">
                   <Download className="w-4 h-4" /> Importa lista predefinita
                 </button>
                 <Link href="/services/new"

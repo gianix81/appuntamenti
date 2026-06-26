@@ -10,7 +10,7 @@ import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
 
 const ACTIVE_COLORS: Record<string, string> = {
-  '/dashboard':    'text-indigo-600',
+  '/dashboard':    'text-orange-500',
   '/appointments': 'text-rose-500',
   '/clients':      'text-purple-600',
   '/services':     'text-teal-600',
@@ -19,7 +19,7 @@ const ACTIVE_COLORS: Record<string, string> = {
 }
 
 const ACTIVE_BG: Record<string, string> = {
-  '/dashboard':    'bg-indigo-50',
+  '/dashboard':    'bg-orange-50',
   '/appointments': 'bg-rose-50',
   '/clients':      'bg-purple-50',
   '/services':     'bg-teal-50',

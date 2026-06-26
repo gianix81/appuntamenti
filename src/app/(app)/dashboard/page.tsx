@@ -258,17 +258,17 @@ export default function DashboardPage() {
             <span className="text-xs text-slate-300 font-medium hidden md:block">{loading ? '…' : visible.length}</span>
             <button onClick={goToday}
               className={clsx('text-xs font-bold px-2.5 py-1 rounded-lg transition-colors',
-                isCurrentPeriod ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600')}>
+                isCurrentPeriod ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-orange-50 hover:text-orange-500')}>
               Oggi
             </button>
             {/* Desktop: testo + icona */}
             <Link href="/appointments/new"
-              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              className="hidden md:flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
               <Plus className="w-3.5 h-3.5" /> Nuovo
             </Link>
             {/* Mobile: solo icona */}
             <Link href="/appointments/new"
-              className="md:hidden w-7 h-7 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
+              className="md:hidden w-7 h-7 flex items-center justify-center bg-gradient-to-r from-orange-500 to-amber-600 rounded-lg shadow-sm hover:opacity-90 transition-opacity">
               <Plus className="w-4 h-4 text-white" />
             </Link>
           </div>
@@ -319,10 +319,10 @@ export default function DashboardPage() {
               const extra   = dayApts.length - maxShow
               return (
                 <button key={i} onClick={() => { setViewRef(day); setViewMode('day') }}
-                  className="border-b border-r border-slate-100 p-1.5 min-h-[90px] text-left hover:bg-blue-50/30 transition-colors flex flex-col gap-0.5">
+                  className="border-b border-r border-slate-100 p-1.5 min-h-[90px] text-left hover:bg-orange-50/30 transition-colors flex flex-col gap-0.5">
                   <div className={clsx(
                     'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mb-0.5 self-start',
-                    today ? 'bg-blue-600 text-white' : 'text-slate-600',
+                    today ? 'bg-orange-500 text-white' : 'text-slate-600',
                   )}>
                     {format(day, 'd')}
                   </div>
@@ -356,12 +356,12 @@ export default function DashboardPage() {
                   <div className={clsx('flex flex-col items-center py-1.5 shrink-0',
                     laneCount > 1 && 'border-b border-slate-100')}>
                     <p className={clsx('font-semibold uppercase tracking-wide',
-                      today ? 'text-blue-600' : 'text-slate-400',
+                      today ? 'text-orange-500' : 'text-slate-400',
                       laneCount >= 4 ? 'text-[9px]' : 'text-[10px]')}>
                       {format(day, viewMode === 'day' ? 'EEEE' : (laneCount >= 5 ? 'EEEEE' : 'EEE'), { locale: it })}
                     </p>
                     <div className={clsx('rounded-full flex items-center justify-center mt-0.5',
-                      today ? 'bg-blue-600' : '', laneCount >= 4 ? 'w-6 h-6' : 'w-7 h-7')}>
+                      today ? 'bg-orange-500' : '', laneCount >= 4 ? 'w-6 h-6' : 'w-7 h-7')}>
                       <p className={clsx('font-bold', today ? 'text-white' : 'text-slate-700',
                         laneCount >= 4 ? 'text-xs' : 'text-sm')}>
                         {format(day, 'd')}
@@ -413,7 +413,7 @@ export default function DashboardPage() {
                 const dayApts = visible.filter(a => isSameDay(new Date(a.start_time), day))
                 return (
                   <div key={dayIdx}
-                    className={clsx('relative flex-1 border-l border-slate-100 first:border-l-0', today && 'bg-blue-50/25')}
+                    className={clsx('relative flex-1 border-l border-slate-100 first:border-l-0', today && 'bg-orange-50/25')}
                     style={{ height: GRID_H }}>
                     {HOURS.map((_, i) => (
                       <div key={i} className="absolute left-0 right-0 border-t border-slate-100" style={{ top: i * HOUR_PX }} />
@@ -424,8 +424,8 @@ export default function DashboardPage() {
                     {today && liveTop >= 0 && liveTop <= GRID_H && (
                       <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: liveTop }}>
                         <div className="flex items-center">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 -ml-1 shadow-sm shrink-0" />
-                          <div className="flex-1 border-t-2 border-blue-500" />
+                          <div className="w-2 h-2 rounded-full bg-orange-500 -ml-1 shadow-sm shrink-0" />
+                          <div className="flex-1 border-t-2 border-orange-500" />
                         </div>
                       </div>
                     )}
@@ -492,7 +492,7 @@ export default function DashboardPage() {
 
       {/* FAB */}
       <Link href="/appointments/new"
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-300 hover:scale-105 transition-transform z-50">
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full flex items-center justify-center shadow-lg shadow-orange-200 hover:scale-105 transition-transform z-50">
         <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
       </Link>
     </div>

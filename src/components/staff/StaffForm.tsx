@@ -177,7 +177,7 @@ export function StaffForm({ existing }: Props) {
               <label key={key} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 cursor-pointer">
                 <span className="text-xs font-medium text-slate-700">{label}</span>
                 <button type="button" onClick={() => setForm(p => ({ ...p, [key]: !value }))}
-                  className={clsx('relative w-9 h-5 rounded-full transition-colors shrink-0', value ? 'bg-blue-600' : 'bg-slate-300')}>
+                  className={clsx('relative w-9 h-5 rounded-full transition-colors shrink-0', value ? 'bg-orange-500' : 'bg-slate-300')}>
                   <span className={clsx('absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all', value ? 'left-4' : 'left-0.5')} />
                 </button>
               </label>
@@ -223,7 +223,7 @@ export function StaffForm({ existing }: Props) {
         <button type="button" onClick={() => router.back()} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors">
           Annulla
         </button>
-        <button type="submit" disabled={loading} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+        <button type="submit" disabled={loading} className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
           {loading ? 'Salvataggio…' : existing ? 'Aggiorna' : 'Aggiungi operatrice'}
         </button>
       </div>

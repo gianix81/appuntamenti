@@ -139,7 +139,7 @@ export default function AppointmentsPage() {
           </div>
           <Link
             href="/appointments/new"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" /> Nuovo
           </Link>
@@ -170,7 +170,7 @@ export default function AppointmentsPage() {
                 key={day.toISOString()}
                 className={clsx(
                   'flex flex-col items-center py-2 rounded-xl text-xs relative',
-                  isToday(day) ? 'bg-blue-600 text-white' : 'text-slate-600',
+                  isToday(day) ? 'bg-orange-500 text-white' : 'text-slate-600',
                 )}
               >
                 <span className="uppercase font-medium">{format(day, 'EEE', { locale: it }).slice(0, 3)}</span>
@@ -178,7 +178,7 @@ export default function AppointmentsPage() {
                 {dayCount > 0 && (
                   <span className={clsx(
                     'absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-bold',
-                    isToday(day) ? 'text-blue-200' : 'text-blue-500',
+                    isToday(day) ? 'text-orange-200' : 'text-orange-500',
                   )}>{dayCount}</span>
                 )}
               </div>
@@ -253,7 +253,7 @@ export default function AppointmentsPage() {
           action={
             <Link
               href="/appointments/new"
-              className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-orange-500 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-orange-600 transition-colors"
             >
               <Plus className="w-4 h-4" /> Aggiungi appuntamento
             </Link>
@@ -271,7 +271,7 @@ export default function AppointmentsPage() {
               <div key={day.toISOString()}>
                 <div className={clsx(
                   'px-4 py-2 border-b border-slate-100 text-xs font-bold uppercase tracking-wide capitalize',
-                  isToday(day) ? 'bg-blue-50 text-blue-600' : 'bg-slate-50/80 text-slate-400',
+                  isToday(day) ? 'bg-orange-50 text-orange-500' : 'bg-slate-50/80 text-slate-400',
                 )}>
                   {isToday(day) ? 'Oggi · ' : ''}{format(day, 'EEEE d MMMM', { locale: it })}
                 </div>

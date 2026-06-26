@@ -336,7 +336,7 @@ export default function AccessPage() {
               </div>
             )}
             <button type="submit" disabled={saving}
-              className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+              className="w-full flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
               <UserPlus className="w-3.5 h-3.5" />
               {saving ? 'Salvataggio…' : 'Aggiungi accesso'}
             </button>

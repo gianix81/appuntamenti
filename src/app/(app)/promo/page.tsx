@@ -55,7 +55,7 @@ const SEG_COLORS: Record<FilterSegment, string> = {
 
 const SEG_ACTIVE: Record<FilterSegment, string> = {
   tutti:     'bg-slate-800 text-white',
-  nuovo:     'bg-blue-600 text-white',
+  nuovo:     'bg-orange-500 text-white',
   frequente: 'bg-violet-600 text-white',
   abituale:  'bg-emerald-600 text-white',
   a_rischio: 'bg-amber-500 text-white',

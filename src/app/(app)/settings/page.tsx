@@ -123,7 +123,7 @@ export default function SettingsPage() {
       if ('Notification' in window) setNotifPerm(Notification.permission)
       else setNotifPerm('unsupported')
     })
-  }, [])
+  }, [workspaceId])
 
   function set(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -233,7 +233,7 @@ export default function SettingsPage() {
     }
   }
 
-  const inputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm text-slate-800'
+  const inputCls = 'w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-300 text-sm text-slate-800'
   const { role } = useUserRole()
 
   if (loading) return <div className="p-6 text-slate-400 text-sm">Caricamento…</div>
@@ -263,14 +263,14 @@ export default function SettingsPage() {
                   <button key={value} type="button" onClick={() => setBusinessLevel(value)}
                     className={clsx(
                       'flex items-center gap-2 p-2.5 rounded-xl border-2 text-left transition-all',
-                      businessLevel === value ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
+                      businessLevel === value ? 'border-orange-500 bg-orange-50' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50',
                     )}>
                     <div className={clsx('w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
-                      businessLevel === value ? 'bg-blue-600' : 'bg-slate-100')}>
+                      businessLevel === value ? 'bg-orange-500' : 'bg-slate-100')}>
                       <Icon className={clsx('w-3.5 h-3.5', businessLevel === value ? 'text-white' : 'text-slate-400')} />
                     </div>
                     <div className="min-w-0">
-                      <p className={clsx('text-xs font-semibold truncate', businessLevel === value ? 'text-blue-700' : 'text-slate-700')}>{title}</p>
+                      <p className={clsx('text-xs font-semibold truncate', businessLevel === value ? 'text-orange-700' : 'text-slate-700')}>{title}</p>
                       <p className="text-[10px] text-slate-400 truncate">{desc}</p>
                     </div>
                   </button>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
             {/* Google Calendar */}
             <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                <Calendar className="w-3.5 h-3.5 text-orange-500" />
                 <h2 className="text-xs font-bold text-slate-700">Google Calendar</h2>
               </div>
               <p className="text-[10px] text-slate-400">
@@ -364,13 +364,13 @@ export default function SettingsPage() {
               {!googleStatus?.connected ? (
                 <button type="button" onClick={handleConnectGoogleCalendar}
                   disabled={googleStatus?.configured === false}
-                  className="w-full flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                  className="w-full flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
                   <Calendar className="w-3.5 h-3.5" /> Collega Google Calendar
                 </button>
               ) : (
                 <div className="flex gap-2">
                   <button type="button" onClick={handleSyncGoogleCalendar} disabled={googleSyncing}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
                     <Calendar className="w-3.5 h-3.5" /> {googleSyncing ? 'Sincronizzo…' : 'Sincronizza ora'}
                   </button>
                   <button type="button" onClick={handleDisconnectGoogleCalendar} disabled={googleSyncing}
@@ -412,7 +412,7 @@ export default function SettingsPage() {
             {/* Sveglie */}
             <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
               <div className="flex items-center gap-1.5">
-                <Bell className="w-3.5 h-3.5 text-blue-600" />
+                <Bell className="w-3.5 h-3.5 text-orange-500" />
                 <h2 className="text-xs font-bold text-slate-700">Timing sveglie</h2>
               </div>
               {notifPerm === 'unsupported' && (
@@ -420,7 +420,7 @@ export default function SettingsPage() {
               )}
               {notifPerm === 'default' && (
                 <button type="button" onClick={requestNotifPermission}
-                  className="w-full text-xs bg-blue-50 text-blue-700 font-medium py-2 rounded-xl hover:bg-blue-100 transition-colors">
+                  className="w-full text-xs bg-orange-50 text-orange-700 font-medium py-2 rounded-xl hover:bg-blue-100 transition-colors">
                   Attiva notifiche in-app
                 </button>
               )}
@@ -437,8 +437,8 @@ export default function SettingsPage() {
                   <label key={opt.minutes} className="flex items-center gap-2 cursor-pointer group">
                     <input type="checkbox" checked={alarmOffsets.includes(opt.minutes)}
                       onChange={() => toggleOffset(opt.minutes)}
-                      className="w-3.5 h-3.5 rounded accent-blue-600 cursor-pointer" />
-                    <span className="text-xs text-slate-700 group-hover:text-blue-600 transition-colors">{opt.label}</span>
+                      className="w-3.5 h-3.5 rounded accent-orange-500 cursor-pointer" />
+                    <span className="text-xs text-slate-700 group-hover:text-orange-500 transition-colors">{opt.label}</span>
                   </label>
                 ))}
               </div>
@@ -453,7 +453,7 @@ export default function SettingsPage() {
 
         {/* Save */}
         <button type="submit" disabled={saving}
-          className="w-full mt-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
+          className="w-full mt-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm">
           {saved ? <><CheckCircle className="w-4 h-4" /> Salvato!</> : saving ? 'Salvataggio…' : 'Salva impostazioni'}
         </button>
       </form>
@@ -463,8 +463,8 @@ export default function SettingsPage() {
         <div className="px-4 md:px-6 pb-4">
           <Link href="/settings/access"
             className="mt-3 flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-3 shadow-sm hover:bg-slate-50 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4 text-orange-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-800">Gestione Accessi</p>

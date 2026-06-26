@@ -135,14 +135,14 @@ function CreateLoginModal({
             <label className="text-xs font-semibold text-slate-600 block mb-1">Email</label>
             <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
               placeholder="es. maria@salone.it"
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800" />
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 text-slate-800" />
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-600 block mb-1">Password (min. 6 caratteri)</label>
             <div className="relative">
               <input type={showPw ? 'text' : 'password'} required minLength={6} value={password}
                 onChange={e => setPassword(e.target.value)} placeholder="password…"
-                className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800" />
+                className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300 text-slate-800" />
               <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -153,7 +153,7 @@ function CreateLoginModal({
             <button type="button" onClick={onClose} disabled={loading}
               className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">Annulla</button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />} Crea accesso
             </button>
           </div>
@@ -244,7 +244,7 @@ export default function StaffPage() {
             <p className="text-slate-400 text-xs mt-0.5">{staffList.length} operatric{staffList.length === 1 ? 'e' : 'i'}</p>
           </div>
           <Link href="/staff/new"
-            className="flex items-center gap-2 bg-gradient-to-r from-sky-400 to-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-blue-200 hover:opacity-90 transition-opacity">
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-orange-200 hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" /> Nuova operatrice
           </Link>
         </div>
@@ -258,7 +258,7 @@ export default function StaffPage() {
             description="Aggiungi le operatrici del centro per assegnare gli appuntamenti."
             action={
               <Link href="/staff/new"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-400 to-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-blue-200 hover:opacity-90 transition-opacity">
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-orange-200 hover:opacity-90 transition-opacity">
                 <Plus className="w-4 h-4" /> Aggiungi operatrice
               </Link>
             }
@@ -351,7 +351,7 @@ export default function StaffPage() {
                     {/* Login / Calendar */}
                     {!hasLogin ? (
                       <button onClick={() => setCreateLoginFor(s)}
-                        className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-lg transition-colors">
+                        className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-orange-500 bg-orange-50 hover:bg-orange-100 px-2 py-1.5 rounded-lg transition-colors">
                         <KeyRound className="w-3 h-3" /> Crea accesso app
                       </button>
                     ) : (
