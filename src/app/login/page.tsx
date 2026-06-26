@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth } from '@/lib/firebase/client'
 
 async function createSession(idToken: string) {
@@ -33,7 +33,24 @@ export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState<string | null>(null)
-  const [loading, setLoading]   = useState(false)
+  const [loading, setLoading]   = useState(true)
+
+  // Controlla se stiamo tornando da un redirect Google
+  useEffect(() => {
+    if (!auth) { setLoading(false); return }
+    getRedirectResult(auth)
+      .then(async credential => {
+        if (!credential) { setLoading(false); return }
+        await createSession(await credential.user.getIdToken())
+        router.push('/dashboard')
+        router.refresh()
+      })
+      .catch(err => {
+        const msg = parseError(err)
+        if (msg) setError(msg)
+        setLoading(false)
+      })
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -51,20 +68,11 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogle() {
+  function handleGoogle() {
     setError(null)
     setLoading(true)
-    try {
-      const provider = new GoogleAuthProvider()
-      const credential = await signInWithPopup(auth, provider)
-      await createSession(await credential.user.getIdToken())
-      router.push('/dashboard')
-      router.refresh()
-    } catch (err) {
-      const msg = parseError(err)
-      if (msg) setError(msg)
-      setLoading(false)
-    }
+    signInWithRedirect(auth, new GoogleAuthProvider())
+    // La pagina naviga via — il risultato viene gestito nell'useEffect al ritorno
   }
 
   return (
@@ -94,7 +102,7 @@ export default function LoginPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Accedi con Google
+            {loading ? 'Caricamento…' : 'Accedi con Google'}
           </button>
 
           <div className="flex items-center gap-3">
@@ -112,7 +120,8 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800 placeholder-slate-400"
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800 placeholder-slate-400 disabled:opacity-50"
                 placeholder="tua@email.com"
               />
             </div>
@@ -123,7 +132,8 @@ export default function LoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800 placeholder-slate-400"
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 text-slate-800 placeholder-slate-400 disabled:opacity-50"
                 placeholder="••••••••"
               />
             </div>
